@@ -1,0 +1,58 @@
+Session notes for FE work
+=========================
+
+Purpose
+-------
+This file records what changed or was investigated in each working session, so future FE work can resume with context quickly.
+
+Format
+------
+Each session should include:
+- Date/time
+- Goal
+- Files touched
+- Summary of changes or findings
+- Verification performed
+- Follow-ups or known issues
+
+2026-06-16 - Initial project review
+-----------------------------------
+Goal:
+- Understand the web frontend project only, from a FE developer perspective.
+
+Findings:
+- This is a Vite + React + TypeScript SPA using TanStack Router and TanStack Query.
+- Dev server runs on port 5173.
+- Frontend API calls go through /api/*.
+- Vite dev proxy sends /api requests to API_PROXY_TARGET, defaulting to http://localhost:8080.
+- Login is not hardcoded in the real app. The login form posts tenant_slug, email, and password to POST /api/auth/login, then fetches GET /api/auth/me.
+- Hardcoded login responses exist only in Playwright e2e mocks under e2e/mock-api.ts.
+- Some README/comments/UI strings show mojibake encoding artifacts, but typecheck still passes.
+
+Verification:
+- npm.cmd run typecheck passed.
+- npm.cmd test passed: 9 test files, 40 tests.
+
+Follow-ups:
+- For FE-only UI work, avoid depending on a real backend unless needed.
+- Consider using or extending e2e/mock-api.ts style mocks for UI development/demo flows.
+- Consider cleaning mojibake text in UI and docs when touching related screens.
+
+2026-06-16 - Temporary auth bypass for FE dashboard work
+--------------------------------------------------------
+Goal:
+- Allow opening dashboard pages directly without logging in, so FE UI work is not blocked by backend auth.
+
+Files touched:
+- src/auth/session-store.ts
+- src/auth/guards.ts
+
+Changes:
+- Added DEV_AUTH_BYPASS = true in session-store.
+- Seeded a fake admin user when DEV_AUTH_BYPASS is true.
+- requireAuth now returns immediately while DEV_AUTH_BYPASS is true, skipping refresh/login redirect.
+- accessToken remains null, so useMe does not call GET /api/auth/me during the bypass.
+
+Important follow-up:
+- Before restoring real auth, set DEV_AUTH_BYPASS back to false and restore the normal empty initial session behavior.
+- This only bypasses FE auth gates. It does not mock real dashboard data APIs, so pages can still show API errors if no backend or mock API is available.

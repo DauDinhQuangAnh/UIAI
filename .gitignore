@@ -1,0 +1,12 @@
+node_modules
+dist
+.output
+.vite
+*.local
+.DS_Store
+npm-debug.log*
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

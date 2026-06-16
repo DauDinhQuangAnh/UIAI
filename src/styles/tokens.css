@@ -1,0 +1,84 @@
+/*
+ * Design tokens — single source of truth, ported from docs/design-guidelines.md §2/§4.
+ * Consumed by tailwind.config.ts (theme.extend -> var(--token)) and by shadcn's
+ * semantic contract. No raw hex belongs in components; reference these vars only.
+ * Light-mode only for P5b; semantic aliasing leaves room for a dark theme later.
+ */
+:root {
+  /* Brand — coral ramp */
+  --brand-50: #fff1ec;
+  --brand-100: #ffe0d4;
+  --brand-200: #ffc2ac;
+  --brand-300: #ff9d7a;
+  --brand-400: #ff7e59;
+  --brand-500: #f0653c;
+  --brand-600: #db4f26;
+  --brand-700: #b83f1b; /* coral text on white (AA), links, primary press */
+  --brand-800: #94341a;
+
+  /* Neutral — warm stone */
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f5f4f2;
+  --border-token: #eceae6;
+  --border-strong: #dcd9d3;
+  --text: #1c1a22;
+  --text-secondary: #56535e;
+  --text-dim: #6b6774; /* darkened to meet body-text contrast ≥4.5:1 (was #8a8693 = 3.6:1) */
+
+  /* Semantic — success (green) */
+  --success-fg: #0b5e3d;
+  --success-bg: #e6f6ee;
+  --success-border: #bce6d2;
+  --success-base: #15a06a;
+  /* Warning (gold — shifted off coral) */
+  --warning-fg: #7a5210;
+  --warning-bg: #fbf0d8;
+  --warning-border: #ead7a3;
+  --warning-base: #b7791f;
+  /* Danger (crimson — shifted off coral) */
+  --danger-fg: #9b1c2e;
+  --danger-bg: #fce8eb;
+  --danger-border: #f3c2c9;
+  --danger-base: #d62f45;
+  /* Info (blue) */
+  --info-fg: #1b4e9b;
+  --info-bg: #e9f1fd;
+  --info-border: #c2d9f7;
+  --info-base: #2d74e0;
+
+  /* shadcn semantic contract (mapped onto the warm-stone/coral system) */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--brand-500);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--brand-50);
+  --accent-foreground: var(--brand-800);
+  --destructive: var(--danger-base);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-token);
+  --input: var(--border-strong);
+  --ring: var(--brand-500);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px; /* cards = rounded-2xl */
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* Shadow — soft, warm-tinted rgba(28,26,34,…) */
+  --shadow-xs: 0 1px 2px rgba(28, 26, 34, 0.06);
+  --shadow-sm: 0 1px 3px rgba(28, 26, 34, 0.08), 0 1px 2px rgba(28, 26, 34, 0.04);
+  --shadow-md: 0 4px 12px rgba(28, 26, 34, 0.08), 0 2px 4px rgba(28, 26, 34, 0.04);
+  --shadow-lg: 0 12px 32px rgba(28, 26, 34, 0.12), 0 4px 8px rgba(28, 26, 34, 0.06);
+  --shadow-focus: 0 0 0 3px rgba(240, 101, 60, 0.32);
+}
