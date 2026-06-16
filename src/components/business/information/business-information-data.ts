@@ -1,73 +1,92 @@
-export interface Business {
+export interface BusinessPartner {
   id: string;
-  name: string;
-  address: string;
-  phone: string;
+  brandName: string;
+  logoUrl: string | null;
   email: string;
-  status: "Hoạt động" | "Không hoạt động";
-  owner: string;
+  phone: string;
+  representativeName: string;
+  representativeEmail: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string | null;
+  accountCreated?: boolean | null;
+  representativeEmailSent?: boolean | null;
+  businessOwnerEmailSent?: boolean | null;
+  usersCount?: number;
+  integrationsCount?: number;
 }
 
-export interface BusinessForm {
-  name: string;
-  address: string;
-  phone: string;
+export interface BusinessPartnerList {
+  items?: BusinessPartner[];
+  pageNumber?: number;
+  pageSize?: number;
+  totalCount?: number;
+}
+
+export interface BusinessPartnerCreate {
+  brandName: string;
+  logoUrl: string | null;
   email: string;
-  status: Business["status"];
-  owner: string;
+  phone: string;
   representativeName: string;
   representativeEmail: string;
 }
 
-export const INITIAL_BUSINESSES: Business[] = [
-  {
-    id: "clinic-physio",
-    name: "Phòng khám y dược cổ truyền Lupita",
-    address: "189 Nguyễn Thị Minh Khai, Quận 3, TP.HCM",
-    phone: "0368456329",
-    email: "lupita@gmail.com",
-    status: "Hoạt động",
-    owner: "Lupita",
-  },
-  {
-    id: "my-pham",
-    name: "Mỹ phẩm cao cấp Dược sĩ Tiến",
-    address: "189 Dương Quảng Hàm, Gò Vấp, TP.HCM",
-    phone: "0986912354",
-    email: "dst@gmail.com",
-    status: "Hoạt động",
-    owner: "Duocsitien",
-  },
-  {
-    id: "shop-hoa",
-    name: "Shop hoa Lily",
-    address: "88 Bạch Đằng, Bình Thạnh, TP.HCM",
-    phone: "0125478963",
-    email: "lily@gmail.com",
-    status: "Hoạt động",
-    owner: "Lily",
-  },
-  {
-    id: "salon-minamoto",
-    name: "Shop quần áo thời trang Minamoto",
-    address: "960 Âu Cơ, Tân Phú, TP.HCM",
-    phone: "0789654185",
-    email: "minamoto@gmail.com",
-    status: "Hoạt động",
-    owner: "Minamoto",
-  },
-];
+export interface BusinessPartnerUpdate extends BusinessPartnerCreate {
+  isActive: boolean;
+}
 
-export const EMPTY_BUSINESS_FORM: BusinessForm = {
-  name: "",
-  address: "",
-  phone: "",
+export interface BusinessPartnerForm {
+  brandName: string;
+  logoUrl: string;
+  email: string;
+  phone: string;
+  representativeName: string;
+  representativeEmail: string;
+  isActive: boolean;
+}
+
+export const EMPTY_BUSINESS_FORM: BusinessPartnerForm = {
+  brandName: "",
+  logoUrl: "",
   email: "",
-  status: "Hoạt động",
-  owner: "Lily",
+  phone: "",
   representativeName: "",
   representativeEmail: "",
+  isActive: true,
 };
 
-export const NEW_OWNER_VALUE = "not-existing";
-export const OWNER_OPTIONS = ["Lupita", "Duocsitien", "Lily", "Minamoto"];
+export function formFromBusinessPartner(partner: BusinessPartner): BusinessPartnerForm {
+  return {
+    brandName: partner.brandName,
+    logoUrl: partner.logoUrl ?? "",
+    email: partner.email,
+    phone: partner.phone,
+    representativeName: partner.representativeName,
+    representativeEmail: partner.representativeEmail,
+    isActive: partner.isActive,
+  };
+}
+
+export function createPayloadFromForm(form: BusinessPartnerForm): BusinessPartnerCreate {
+  return {
+    brandName: form.brandName.trim(),
+    logoUrl: cleanOptional(form.logoUrl),
+    email: form.email.trim(),
+    phone: form.phone.trim(),
+    representativeName: form.representativeName.trim(),
+    representativeEmail: form.representativeEmail.trim(),
+  };
+}
+
+export function updatePayloadFromForm(form: BusinessPartnerForm): BusinessPartnerUpdate {
+  return {
+    ...createPayloadFromForm(form),
+    isActive: form.isActive,
+  };
+}
+
+function cleanOptional(value: string): string | null {
+  const next = value.trim();
+  return next.length > 0 ? next : null;
+}

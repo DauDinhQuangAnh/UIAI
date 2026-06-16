@@ -5,45 +5,58 @@ import {
   BusinessDataTable,
   BusinessHeadCell,
 } from "@/components/business/business-management-table";
-import type { Business } from "./business-information-data";
+import type { BusinessPartner } from "./business-information-data";
 
 export function BusinessInformationTable({
   businesses,
   onEdit,
   onDelete,
 }: {
-  businesses: Business[];
-  onEdit: (business: Business) => void;
-  onDelete: (business: Business) => void;
+  businesses: BusinessPartner[];
+  onEdit: (business: BusinessPartner) => void;
+  onDelete: (business: BusinessPartner) => void;
 }) {
   return (
     <BusinessDataTable>
       <TableHeader className="bg-brand-700">
         <TableRow className="hover:bg-brand-700">
-          <BusinessHeadCell className="w-[24%]">Doanh nghiệp</BusinessHeadCell>
-          <BusinessHeadCell className="w-[30%]">Địa chỉ</BusinessHeadCell>
-          <BusinessHeadCell className="w-[12%]">SĐT</BusinessHeadCell>
-          <BusinessHeadCell className="w-[14%]">Email</BusinessHeadCell>
+          <BusinessHeadCell className="w-[22%]">Doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[22%]">Liên hệ chủ doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[22%]">Người đại diện</BusinessHeadCell>
           <BusinessHeadCell className="w-[10%]">Trạng thái</BusinessHeadCell>
-          <BusinessHeadCell className="w-[14%]">Chủ doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[12%]">Ngày tạo</BusinessHeadCell>
           <BusinessHeadCell className="w-24 text-right">Thao tác</BusinessHeadCell>
         </TableRow>
       </TableHeader>
       <TableBody>
         {businesses.map((business) => (
           <TableRow key={business.id}>
-            <TableCell className="font-medium">{business.name}</TableCell>
-            <TableCell className="text-text-secondary">{business.address}</TableCell>
-            <TableCell className="whitespace-nowrap font-mono text-xs text-text-secondary">{business.phone}</TableCell>
-            <TableCell className="whitespace-nowrap font-mono text-xs text-text-secondary">{business.email}</TableCell>
             <TableCell>
-              <Badge tone={business.status === "Hoạt động" ? "success" : "neutral"}>{business.status}</Badge>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="font-medium text-text-primary">{business.brandName}</span>
+                {business.logoUrl && (
+                  <span className="truncate text-xs text-text-dim">{business.logoUrl}</span>
+                )}
+              </div>
             </TableCell>
-            <TableCell className="whitespace-nowrap min-w-[120px]">{business.owner}</TableCell>
+            <TableCell>
+              <ContactBlock email={business.email} phone={business.phone} />
+            </TableCell>
+            <TableCell>
+              <ContactBlock name={business.representativeName} email={business.representativeEmail} />
+            </TableCell>
+            <TableCell>
+              <Badge tone={business.isActive ? "success" : "neutral"}>
+                {business.isActive ? "Hoạt động" : "Không hoạt động"}
+              </Badge>
+            </TableCell>
+            <TableCell className="whitespace-nowrap text-sm text-text-secondary">
+              {formatDate(business.createdAt)}
+            </TableCell>
             <TableCell>
               <BusinessActionButtons
-                editLabel={`Chỉnh sửa ${business.name}`}
-                deleteLabel={`Xóa ${business.name}`}
+                editLabel={`Chỉnh sửa ${business.brandName}`}
+                deleteLabel={`Xóa ${business.brandName}`}
                 onEdit={() => onEdit(business)}
                 onDelete={() => onDelete(business)}
               />
@@ -52,5 +65,22 @@ export function BusinessInformationTable({
         ))}
       </TableBody>
     </BusinessDataTable>
+  );
+}
+
+function ContactBlock({ name, email, phone }: { name?: string; email?: string; phone?: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      {name && <span className="truncate text-sm font-medium text-text-primary">{name}</span>}
+      {email && <span className="truncate font-mono text-xs text-text-secondary">{email}</span>}
+      {phone && <span className="whitespace-nowrap font-mono text-xs text-text-secondary">{phone}</span>}
+    </div>
+  );
+}
+
+function formatDate(value: string | undefined): string {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(
+    new Date(value),
   );
 }

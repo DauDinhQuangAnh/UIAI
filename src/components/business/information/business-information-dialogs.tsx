@@ -11,130 +11,40 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { NEW_OWNER_VALUE, type Business, type BusinessForm } from "./business-information-data";
+import type { BusinessPartner, BusinessPartnerForm } from "./business-information-data";
 
 export function AddBusinessDialog({
   open,
   form,
-  ownerOptions,
+  loading,
   onOpenChange,
   onFormChange,
   onSubmit,
 }: {
   open: boolean;
-  form: BusinessForm;
-  ownerOptions: string[];
+  form: BusinessPartnerForm;
+  loading?: boolean;
   onOpenChange: (open: boolean) => void;
-  onFormChange: (form: BusinessForm) => void;
+  onFormChange: (form: BusinessPartnerForm) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">Thêm thông tin doanh nghiệp</DialogTitle>
-          <DialogDescription>Nhập thông tin doanh nghiệp để hiển thị trong danh sách quản lý.</DialogDescription>
+          <DialogTitle className="text-brand-800">Thêm doanh nghiệp</DialogTitle>
+          <DialogDescription>
+            Backend sẽ tự tạo account người đại diện và gửi email nếu cấu hình gửi mail hoạt động.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
-          <BusinessField label="Doanh nghiệp" htmlFor="business_name" required>
-            <Input
-              id="business_name"
-              value={form.name}
-              placeholder="Shop bán hoa Lily"
-              onChange={(event) => onFormChange({ ...form, name: event.target.value })}
-              required
-            />
-          </BusinessField>
-          <BusinessField label="Địa chỉ" htmlFor="business_address">
-            <Input
-              id="business_address"
-              value={form.address}
-              placeholder="88 Bạch Đằng, Bình Thạnh, TP.HCM"
-              onChange={(event) => onFormChange({ ...form, address: event.target.value })}
-            />
-          </BusinessField>
-          <BusinessField label="Số điện thoại" htmlFor="business_phone" required>
-            <Input
-              id="business_phone"
-              value={form.phone}
-              placeholder="0125478963"
-              onChange={(event) => onFormChange({ ...form, phone: event.target.value })}
-              required
-            />
-          </BusinessField>
-          <BusinessField label="Email" htmlFor="business_email">
-            <Input
-              id="business_email"
-              type="email"
-              value={form.email}
-              placeholder="lily@gmail.com"
-              onChange={(event) => onFormChange({ ...form, email: event.target.value })}
-            />
-          </BusinessField>
-          <BusinessField label="Trạng thái" htmlFor="business_status">
-            <Select
-              value={form.status}
-              onValueChange={(status) => onFormChange({ ...form, status: status as Business["status"] })}
-            >
-              <SelectTrigger id="business_status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Hoạt động">Hoạt động</SelectItem>
-                <SelectItem value="Không hoạt động">Không hoạt động</SelectItem>
-              </SelectContent>
-            </Select>
-          </BusinessField>
-          <BusinessField label="Chủ doanh nghiệp" htmlFor="business_owner">
-            <Select value={form.owner} onValueChange={(owner) => onFormChange({ ...form, owner })}>
-              <SelectTrigger id="business_owner">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  value={NEW_OWNER_VALUE}
-                  className="bg-brand-50 font-semibold text-brand-800 focus:bg-brand-100"
-                >
-                  Chưa tồn tại
-                </SelectItem>
-                {ownerOptions.map((owner) => (
-                  <SelectItem key={owner} value={owner}>
-                    {owner}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </BusinessField>
-          {form.owner === NEW_OWNER_VALUE && (
-            <>
-              <BusinessField label="Người đại diện" htmlFor="representative_name" required>
-                <Input
-                  id="representative_name"
-                  value={form.representativeName}
-                  placeholder="Nguyễn Thị Ánh Ly"
-                  onChange={(event) => onFormChange({ ...form, representativeName: event.target.value })}
-                  required
-                />
-              </BusinessField>
-              <BusinessField label="Email đại diện" htmlFor="representative_email" required>
-                <Input
-                  id="representative_email"
-                  type="email"
-                  value={form.representativeEmail}
-                  placeholder="anhlynguyen@gmail.com"
-                  onChange={(event) => onFormChange({ ...form, representativeEmail: event.target.value })}
-                  required
-                />
-              </BusinessField>
-            </>
-          )}
-          <DialogFooter className="mt-3">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Hủy
-            </Button>
-            <Button type="submit">Lưu</Button>
-          </DialogFooter>
-        </form>
+        <BusinessPartnerFormFields
+          form={form}
+          loading={loading}
+          submitLabel="Tạo doanh nghiệp"
+          onFormChange={onFormChange}
+          onSubmit={onSubmit}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -143,90 +53,34 @@ export function AddBusinessDialog({
 export function EditBusinessDialog({
   target,
   form,
-  ownerOptions,
+  loading,
   onOpenChange,
   onFormChange,
   onSubmit,
 }: {
-  target: Business | null;
-  form: BusinessForm;
-  ownerOptions: string[];
+  target: BusinessPartner | null;
+  form: BusinessPartnerForm;
+  loading?: boolean;
   onOpenChange: (open: boolean) => void;
-  onFormChange: (form: BusinessForm) => void;
+  onFormChange: (form: BusinessPartnerForm) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">Sửa thông tin doanh nghiệp</DialogTitle>
-          <DialogDescription>Cập nhật thông tin cho {target?.name}.</DialogDescription>
+          <DialogTitle className="text-brand-800">Sửa doanh nghiệp</DialogTitle>
+          <DialogDescription>Cập nhật thông tin cho {target?.brandName}.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
-          <BusinessField label="Doanh nghiệp" htmlFor="edit_business_name">
-            <Input
-              id="edit_business_name"
-              value={form.name}
-              onChange={(event) => onFormChange({ ...form, name: event.target.value })}
-            />
-          </BusinessField>
-          <BusinessField label="Địa chỉ" htmlFor="edit_business_address">
-            <Input
-              id="edit_business_address"
-              value={form.address}
-              onChange={(event) => onFormChange({ ...form, address: event.target.value })}
-            />
-          </BusinessField>
-          <BusinessField label="Số điện thoại" htmlFor="edit_business_phone">
-            <Input
-              id="edit_business_phone"
-              value={form.phone}
-              onChange={(event) => onFormChange({ ...form, phone: event.target.value })}
-            />
-          </BusinessField>
-          <BusinessField label="Email" htmlFor="edit_business_email">
-            <Input
-              id="edit_business_email"
-              type="email"
-              value={form.email}
-              onChange={(event) => onFormChange({ ...form, email: event.target.value })}
-            />
-          </BusinessField>
-          <BusinessField label="Trạng thái" htmlFor="edit_business_status">
-            <Select
-              value={form.status}
-              onValueChange={(status) => onFormChange({ ...form, status: status as Business["status"] })}
-            >
-              <SelectTrigger id="edit_business_status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Hoạt động">Hoạt động</SelectItem>
-                <SelectItem value="Không hoạt động">Không hoạt động</SelectItem>
-              </SelectContent>
-            </Select>
-          </BusinessField>
-          <BusinessField label="Chủ doanh nghiệp" htmlFor="edit_business_owner">
-            <Select value={form.owner} onValueChange={(owner) => onFormChange({ ...form, owner })}>
-              <SelectTrigger id="edit_business_owner">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ownerOptions.map((owner) => (
-                  <SelectItem key={owner} value={owner}>
-                    {owner}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </BusinessField>
-          <DialogFooter className="mt-3">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Hủy
-            </Button>
-            <Button type="submit">Lưu</Button>
-          </DialogFooter>
-        </form>
+        <BusinessPartnerFormFields
+          form={form}
+          loading={loading}
+          submitLabel="Lưu thay đổi"
+          showStatus
+          onFormChange={onFormChange}
+          onSubmit={onSubmit}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -234,10 +88,12 @@ export function EditBusinessDialog({
 
 export function DeleteBusinessDialog({
   target,
+  loading,
   onOpenChange,
   onConfirm,
 }: {
-  target: Business | null;
+  target: BusinessPartner | null;
+  loading?: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }) {
@@ -246,18 +102,120 @@ export function DeleteBusinessDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Xóa doanh nghiệp</DialogTitle>
-          <DialogDescription>Bạn có chắc muốn xóa {target?.name} không?</DialogDescription>
+          <DialogDescription>Bạn có chắc muốn xóa {target?.brandName} không?</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button type="button" variant="danger" onClick={onConfirm}>
+          <Button type="button" variant="danger" loading={loading} onClick={onConfirm}>
             Xóa
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function BusinessPartnerFormFields({
+  form,
+  loading,
+  submitLabel,
+  showStatus,
+  onFormChange,
+  onSubmit,
+  onCancel,
+}: {
+  form: BusinessPartnerForm;
+  loading?: boolean;
+  submitLabel: string;
+  showStatus?: boolean;
+  onFormChange: (form: BusinessPartnerForm) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <BusinessField label="Tên thương hiệu" htmlFor="business_brand_name" required>
+        <Input
+          id="business_brand_name"
+          value={form.brandName}
+          placeholder="SAR Coffee"
+          onChange={(event) => onFormChange({ ...form, brandName: event.target.value })}
+          required
+        />
+      </BusinessField>
+      <BusinessField label="Logo URL" htmlFor="business_logo_url">
+        <Input
+          id="business_logo_url"
+          value={form.logoUrl}
+          placeholder="https://cdn.example.com/logo.png"
+          onChange={(event) => onFormChange({ ...form, logoUrl: event.target.value })}
+        />
+      </BusinessField>
+      <BusinessField label="Email chủ DN" htmlFor="business_email" required>
+        <Input
+          id="business_email"
+          type="email"
+          value={form.email}
+          placeholder="owner@sarcoffee.vn"
+          onChange={(event) => onFormChange({ ...form, email: event.target.value })}
+          required
+        />
+      </BusinessField>
+      <BusinessField label="Số điện thoại" htmlFor="business_phone" required>
+        <Input
+          id="business_phone"
+          value={form.phone}
+          placeholder="0900000000"
+          onChange={(event) => onFormChange({ ...form, phone: event.target.value })}
+          required
+        />
+      </BusinessField>
+      <BusinessField label="Người đại diện" htmlFor="representative_name" required>
+        <Input
+          id="representative_name"
+          value={form.representativeName}
+          placeholder="Nguyễn Văn A"
+          onChange={(event) => onFormChange({ ...form, representativeName: event.target.value })}
+          required
+        />
+      </BusinessField>
+      <BusinessField label="Email đại diện" htmlFor="representative_email" required>
+        <Input
+          id="representative_email"
+          type="email"
+          value={form.representativeEmail}
+          placeholder="rep@sarcoffee.vn"
+          onChange={(event) => onFormChange({ ...form, representativeEmail: event.target.value })}
+          required
+        />
+      </BusinessField>
+      {showStatus && (
+        <BusinessField label="Trạng thái" htmlFor="business_status">
+          <Select
+            value={String(form.isActive)}
+            onValueChange={(value) => onFormChange({ ...form, isActive: value === "true" })}
+          >
+            <SelectTrigger id="business_status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Hoạt động</SelectItem>
+              <SelectItem value="false">Không hoạt động</SelectItem>
+            </SelectContent>
+          </Select>
+        </BusinessField>
+      )}
+      <DialogFooter className="mt-3">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Hủy
+        </Button>
+        <Button type="submit" loading={loading}>
+          {submitLabel}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }
 

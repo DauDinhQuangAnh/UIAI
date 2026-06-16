@@ -1,15 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
-import { Buildings, Plus } from "@phosphor-icons/react";
+import { type FormEvent, useMemo, useState } from "react";
+import { Buildings, MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BusinessPageShell } from "@/components/business/business-page-shell";
+import { EmptyState } from "@/components/common/empty-state";
 import {
   EMPTY_BUSINESS_FORM,
-  INITIAL_BUSINESSES,
-  NEW_OWNER_VALUE,
-  OWNER_OPTIONS,
-  type Business,
-  type BusinessForm,
+  createPayloadFromForm,
+  formFromBusinessPartner,
+  updatePayloadFromForm,
+  type BusinessPartner,
+  type BusinessPartnerForm,
 } from "@/components/business/information/business-information-data";
 import {
   AddBusinessDialog,
@@ -17,105 +21,213 @@ import {
   EditBusinessDialog,
 } from "@/components/business/information/business-information-dialogs";
 import { BusinessInformationTable } from "@/components/business/information/business-information-table";
+import {
+  useBusinessPartners,
+  useCreateBusinessPartner,
+  useDeleteBusinessPartner,
+  useUpdateBusinessPartner,
+} from "@/api/hooks/business-partners";
+import { ApiRequestError, errorMessage } from "@/api/errors";
+
+const PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/_app/business/information")({
   component: BusinessInformationScreen,
 });
 
 function BusinessInformationScreen() {
-  const [businesses, setBusinesses] = useState<Business[]>(INITIAL_BUSINESSES);
-  const [deleteTarget, setDeleteTarget] = useState<Business | null>(null);
-  const [editTarget, setEditTarget] = useState<Business | null>(null);
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [pageNumber, setPageNumber] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<BusinessPartner | null>(null);
+  const [editTarget, setEditTarget] = useState<BusinessPartner | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState<BusinessForm>(EMPTY_BUSINESS_FORM);
-  const [editForm, setEditForm] = useState<BusinessForm>(EMPTY_BUSINESS_FORM);
-  const ownerOptions = Array.from(new Set([...OWNER_OPTIONS, ...businesses.map((business) => business.owner)]));
+  const [form, setForm] = useState<BusinessPartnerForm>(EMPTY_BUSINESS_FORM);
+  const [editForm, setEditForm] = useState<BusinessPartnerForm>(EMPTY_BUSINESS_FORM);
 
-  const openEdit = (business: Business) => {
+  const params = useMemo(
+    () => ({
+      keyword: keyword.trim() || undefined,
+      isActive: statusFilter === "all" ? undefined : statusFilter === "active",
+      pageNumber,
+      pageSize: PAGE_SIZE,
+    }),
+    [keyword, pageNumber, statusFilter],
+  );
+
+  const businessPartners = useBusinessPartners(params);
+  const createBusiness = useCreateBusinessPartner();
+  const updateBusiness = useUpdateBusinessPartner();
+  const deleteBusiness = useDeleteBusinessPartner();
+
+  const businesses = businessPartners.data?.items ?? [];
+  const totalCount = businessPartners.data?.totalCount ?? 0;
+  const currentPage = businessPartners.data?.pageNumber ?? pageNumber;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const openEdit = (business: BusinessPartner) => {
     setEditTarget(business);
-    setEditForm({
-      name: business.name,
-      address: business.address,
-      phone: business.phone,
-      email: business.email,
-      status: business.status,
-      owner: business.owner,
-      representativeName: "",
-      representativeEmail: "",
-    });
+    setEditForm(formFromBusinessPartner(business));
   };
 
   const onConfirmDelete = () => {
     if (!deleteTarget) return;
-    setBusinesses((current) => current.filter((business) => business.id !== deleteTarget.id));
-    setDeleteTarget(null);
+    deleteBusiness.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        toast.success("Đã xóa doanh nghiệp.");
+        setDeleteTarget(null);
+      },
+      onError: (error) => toast.error(apiErrorMessage(error, "Không thể xóa doanh nghiệp.")),
+    });
   };
 
   const onSubmitAdd = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const owner = form.owner === NEW_OWNER_VALUE ? form.representativeName : form.owner;
-    const nextBusiness: Business = {
-      name: form.name,
-      address: form.address,
-      phone: form.phone,
-      email: form.email,
-      status: form.status,
-      owner,
-      id: `${form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
-    };
-    setBusinesses((current) => [nextBusiness, ...current]);
-    setAddOpen(false);
-    setForm(EMPTY_BUSINESS_FORM);
+    createBusiness.mutate(createPayloadFromForm(form), {
+      onSuccess: (partner) => {
+        toast.success(createSuccessMessage(partner));
+        setAddOpen(false);
+        setForm(EMPTY_BUSINESS_FORM);
+      },
+      onError: (error) => {
+        if (error instanceof ApiRequestError && error.status === 409) setStatusFilter("all");
+        toast.error(apiErrorMessage(error, "Không thể tạo doanh nghiệp."));
+      },
+    });
   };
 
   const onSubmitEdit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editTarget) return;
-    setBusinesses((current) =>
-      current.map((business) =>
-        business.id === editTarget.id
-          ? {
-              ...business,
-              name: editForm.name,
-              address: editForm.address,
-              phone: editForm.phone,
-              email: editForm.email,
-              status: editForm.status,
-              owner: editForm.owner,
-            }
-          : business,
-      ),
+    updateBusiness.mutate(
+      { id: editTarget.id, body: updatePayloadFromForm(editForm) },
+      {
+        onSuccess: () => {
+          toast.success("Đã cập nhật doanh nghiệp.");
+          setEditTarget(null);
+          setEditForm(EMPTY_BUSINESS_FORM);
+        },
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thể cập nhật doanh nghiệp.")),
+      },
     );
-    setEditTarget(null);
-    setEditForm(EMPTY_BUSINESS_FORM);
+  };
+
+  const onKeywordChange = (value: string) => {
+    setKeyword(value);
+    setPageNumber(1);
+  };
+
+  const onStatusFilterChange = (value: "all" | "active" | "inactive") => {
+    setStatusFilter(value);
+    setPageNumber(1);
   };
 
   return (
     <BusinessPageShell
       title="Thông tin doanh nghiệp"
-      description="Quản lý hồ sơ công khai và thông tin liên hệ dùng cho các kênh tương tác với khách hàng."
+      description="Quản lý business partners, tài khoản đại diện và thông tin liên hệ theo SAR Platform API."
       icon={Buildings}
       className="max-w-7xl"
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold text-text-primary">Danh sách doanh nghiệp</h2>
-          <p className="text-sm text-text-secondary">
-            {businesses.length} hồ sơ doanh nghiệp đang sẵn sàng để kết nối với agent và các kênh.
-          </p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-semibold text-text-primary">Danh sách doanh nghiệp</h2>
+            <p className="text-sm text-text-secondary">
+              {totalCount} business partner phù hợp với bộ lọc hiện tại.
+            </p>
+          </div>
+          <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="size-4" aria-hidden />
+            Thêm doanh nghiệp
+          </Button>
         </div>
-        <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="size-4" aria-hidden />
-          Thêm doanh nghiệp
-        </Button>
-      </div>
 
-      <BusinessInformationTable businesses={businesses} onEdit={openEdit} onDelete={setDeleteTarget} />
+        <div className="grid gap-3 rounded-md border border-border bg-surface p-3 md:grid-cols-[1fr_14rem]">
+          <label className="relative flex min-w-0 items-center">
+            <MagnifyingGlass className="pointer-events-none absolute left-3 size-4 text-text-dim" aria-hidden />
+            <Input
+              value={keyword}
+              placeholder="Tìm theo tên, email, số điện thoại..."
+              className="pl-9"
+              onChange={(event) => onKeywordChange(event.target.value)}
+            />
+          </label>
+          <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as typeof statusFilter)}>
+            <SelectTrigger aria-label="Lọc trạng thái">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="active">Hoạt động</SelectItem>
+              <SelectItem value="inactive">Không hoạt động</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {businessPartners.isLoading ? (
+          <div className="rounded-md border border-border bg-surface p-8 text-center text-sm text-text-secondary">
+            Đang tải danh sách doanh nghiệp...
+          </div>
+        ) : businessPartners.isError ? (
+          <EmptyState
+            icon={Buildings}
+            title="Không tải được danh sách doanh nghiệp"
+            description={apiErrorMessage(businessPartners.error, "Vui lòng thử lại sau.")}
+            action={
+              <Button type="button" variant="secondary" onClick={() => businessPartners.refetch()}>
+                Tải lại
+              </Button>
+            }
+          />
+        ) : businesses.length === 0 ? (
+          <EmptyState
+            icon={Buildings}
+            title="Chưa có doanh nghiệp"
+            description="Tạo business partner đầu tiên để cấu hình đại diện và các kênh social."
+            action={
+              <Button type="button" onClick={() => setAddOpen(true)}>
+                <Plus className="size-4" aria-hidden />
+                Thêm doanh nghiệp
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            <BusinessInformationTable businesses={businesses} onEdit={openEdit} onDelete={setDeleteTarget} />
+            <div className="flex items-center justify-between gap-3 text-sm text-text-secondary">
+              <span>
+                Trang {currentPage} / {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
+                >
+                  Trước
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPageNumber((page) => page + 1)}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       <AddBusinessDialog
         open={addOpen}
         form={form}
-        ownerOptions={ownerOptions}
+        loading={createBusiness.isPending}
         onOpenChange={(open) => {
           setAddOpen(open);
           if (!open) setForm(EMPTY_BUSINESS_FORM);
@@ -127,7 +239,7 @@ function BusinessInformationScreen() {
       <EditBusinessDialog
         target={editTarget}
         form={editForm}
-        ownerOptions={ownerOptions}
+        loading={updateBusiness.isPending}
         onOpenChange={(open) => {
           if (!open) {
             setEditTarget(null);
@@ -140,9 +252,31 @@ function BusinessInformationScreen() {
 
       <DeleteBusinessDialog
         target={deleteTarget}
+        loading={deleteBusiness.isPending}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={onConfirmDelete}
       />
     </BusinessPageShell>
   );
+}
+
+function createSuccessMessage(partner: BusinessPartner): string {
+  const notes = [
+    partner.accountCreated === true ? "đã tạo account đại diện" : null,
+    partner.representativeEmailSent === true ? "đã gửi email đại diện" : null,
+    partner.businessOwnerEmailSent === true ? "đã gửi email chủ doanh nghiệp" : null,
+  ].filter(Boolean);
+  return notes.length > 0 ? `Đã tạo doanh nghiệp, ${notes.join(", ")}.` : "Đã tạo doanh nghiệp.";
+}
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiRequestError) {
+    return errorMessage(
+      error.body,
+      error.status === 409
+        ? "Email doanh nghiệp hoặc email đại diện đã được sử dụng."
+        : fallback,
+    );
+  }
+  return fallback;
 }

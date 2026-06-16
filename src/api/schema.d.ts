@@ -244,6 +244,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/business-partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List business partners */
+        get: {
+            parameters: {
+                query?: {
+                    keyword?: string;
+                    isActive?: boolean;
+                    pageNumber?: number;
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Business partners */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BusinessPartnerList"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create business partner */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BusinessPartnerCreate"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BusinessPartner"];
+                    };
+                };
+                400: components["responses"]["Validation"];
+                409: components["responses"]["Conflict"];
+                500: components["responses"]["Internal"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/business-partners/{businessPartnerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                businessPartnerId: string;
+            };
+            cookie?: never;
+        };
+        /** Get business partner */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    businessPartnerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Business partner */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BusinessPartner"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        /** Update business partner */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    businessPartnerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BusinessPartnerUpdate"];
+                };
+            };
+            responses: {
+                /** @description Business partner */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BusinessPartner"];
+                    };
+                };
+                400: components["responses"]["Validation"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+                500: components["responses"]["Internal"];
+            };
+        };
+        post?: never;
+        /** Delete business partner */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    businessPartnerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+                500: components["responses"]["Internal"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agents": {
         parameters: {
             query?: never;
@@ -967,6 +1128,10 @@ export interface components {
                 code?: string;
                 message?: string;
             };
+            statusCode?: number;
+            message?: string;
+            traceId?: string;
+            errors?: string[];
         };
         LoginRequest: {
             usernameOrEmail: string;
@@ -1015,6 +1180,49 @@ export interface components {
             email?: string;
             firstTimeLogin?: boolean;
             role?: components["schemas"]["AuthRole"];
+        };
+        BusinessPartner: {
+            /** Format: uuid */
+            id?: string;
+            brandName?: string;
+            logoUrl?: string | null;
+            email?: string;
+            phone?: string;
+            representativeName?: string;
+            representativeEmail?: string;
+            isActive?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            accountCreated?: boolean | null;
+            representativeEmailSent?: boolean | null;
+            businessOwnerEmailSent?: boolean | null;
+            usersCount?: number;
+            integrationsCount?: number;
+        };
+        BusinessPartnerList: {
+            items?: components["schemas"]["BusinessPartner"][];
+            pageNumber?: number;
+            pageSize?: number;
+            totalCount?: number;
+        };
+        BusinessPartnerCreate: {
+            brandName: string;
+            logoUrl?: string | null;
+            email: string;
+            phone: string;
+            representativeName: string;
+            representativeEmail: string;
+        };
+        BusinessPartnerUpdate: {
+            brandName: string;
+            logoUrl?: string | null;
+            email: string;
+            phone: string;
+            representativeName: string;
+            representativeEmail: string;
+            isActive: boolean;
         };
         MePermissions: {
             user?: components["schemas"]["AuthUser"];
@@ -1260,6 +1468,15 @@ export interface components {
         };
         /** @description Service unavailable */
         Unavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Internal server error */
+        Internal: {
             headers: {
                 [name: string]: unknown;
             };

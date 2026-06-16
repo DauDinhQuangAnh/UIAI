@@ -2,8 +2,15 @@ import type { components } from "./schema";
 
 export type ApiError = components["schemas"]["Error"];
 
-// The API error body is flat: { error: { code, message } } — there is NO field
-// array. Forms map by error.code to a form-level message (not field-level).
+interface SarErrorBody {
+  statusCode?: number;
+  message?: string;
+  traceId?: string;
+  errors?: string[];
+}
+
+// Supports both the legacy generated schema shape ({ error: { code, message } })
+// and the SAR Platform error shape ({ statusCode, message, traceId, errors }).
 export function errorCode(error: unknown): string | undefined {
   if (error && typeof error === "object" && "error" in error) {
     const inner = (error as ApiError).error;
@@ -13,11 +20,24 @@ export function errorCode(error: unknown): string | undefined {
 }
 
 export function errorMessage(error: unknown, fallback = "Đã xảy ra lỗi"): string {
+  if (isSarError(error)) {
+    const detail =
+      Array.isArray(error.errors) && error.errors.length > 0
+        ? error.errors.join(", ")
+        : error.message;
+    if (detail && error.traceId) return `${detail} (traceId: ${error.traceId})`;
+    if (detail) return detail;
+    if (error.traceId) return `${fallback} (traceId: ${error.traceId})`;
+  }
   if (error && typeof error === "object" && "error" in error) {
     const inner = (error as ApiError).error;
     if (inner?.message) return inner.message;
   }
   return fallback;
+}
+
+function isSarError(error: unknown): error is SarErrorBody {
+  return !!error && typeof error === "object" && ("statusCode" in error || "traceId" in error || "errors" in error);
 }
 
 // Carries HTTP status + parsed body so resource hooks can branch on status
