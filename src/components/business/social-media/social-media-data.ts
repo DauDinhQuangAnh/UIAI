@@ -1,0 +1,186 @@
+import type { BadgeProps } from "@/components/ui/badge";
+
+export type Platform = "facebook" | "tiktok";
+export type LinkStatus = "Full time" | "Part time" | "Paused";
+export type AddStep = "credentials" | "pages" | "schedule";
+export type ScheduleMode = "full" | "partial";
+export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export interface SocialLink {
+  id: string;
+  platform: Platform;
+  business: string;
+  appId: string;
+  appSecret: string;
+  page: string;
+  pageId: string;
+  status: LinkStatus;
+}
+
+export interface AddLinkForm {
+  business: string;
+  appId: string;
+  appSecret: string;
+}
+
+export interface ManagedPage {
+  id: string;
+  name: string;
+  handle: string;
+  initials: string;
+  accent: string;
+}
+
+export interface DaySchedule {
+  enabled: boolean;
+  start: string;
+  end: string;
+}
+
+export interface PageSchedule {
+  mode: ScheduleMode;
+  days: Record<DayKey, DaySchedule>;
+}
+
+export interface EditLinkForm {
+  business: string;
+  appId: string;
+  appSecret: string;
+  page: string;
+  pageId: string;
+  status: LinkStatus;
+  schedule: PageSchedule;
+}
+
+export type ScheduleState = Record<string, PageSchedule>;
+
+export const SOCIAL_LINKS: SocialLink[] = [
+  {
+    id: "fb-lupita",
+    platform: "facebook",
+    business: "Phong kham y duoc co truyen Lupita",
+    appId: "htoa-uyan-1899-ajkp",
+    appSecret: "connected-secret",
+    page: "Phong kham y duoc co truyen Lupita",
+    pageId: "lupia8190",
+    status: "Full time",
+  },
+  {
+    id: "fb-ds-tien",
+    platform: "facebook",
+    business: "My pham cao cap Duoc si Tien",
+    appId: "dst-app-4482",
+    appSecret: "connected-secret",
+    page: "My pham cao cap Duoc si Tien",
+    pageId: "DSThathayqua",
+    status: "Part time",
+  },
+  {
+    id: "fb-lam-dep",
+    platform: "facebook",
+    business: "My pham cao cap Duoc si Tien",
+    appId: "beauty-app-8719",
+    appSecret: "connected-secret",
+    page: "Lam dep moi ngay",
+    pageId: "8719-8afb-9189",
+    status: "Paused",
+  },
+  {
+    id: "fb-minamoto",
+    platform: "facebook",
+    business: "Shop quan ao thoi trang Minamoto",
+    appId: "minamoto-fb-2026",
+    appSecret: "connected-secret",
+    page: "Shop quan ao thoi trang Minamoto",
+    pageId: "minamoto-clothes",
+    status: "Full time",
+  },
+  {
+    id: "tt-lily",
+    platform: "tiktok",
+    business: "Shop hoa Lily",
+    appId: "lily-tt-2026",
+    appSecret: "connected-secret",
+    page: "Lily Flowers",
+    pageId: "@lilyflowers",
+    status: "Full time",
+  },
+  {
+    id: "tt-minamoto",
+    platform: "tiktok",
+    business: "Shop quan ao thoi trang Minamoto",
+    appId: "minamoto-tt-2026",
+    appSecret: "connected-secret",
+    page: "Minamoto Daily",
+    pageId: "@minamotodaily",
+    status: "Part time",
+  },
+];
+
+export const STATUS_TONE: Record<LinkStatus, BadgeProps["tone"]> = {
+  "Full time": "success",
+  "Part time": "info",
+  Paused: "neutral",
+};
+
+export const BUSINESS_OPTIONS = Array.from(new Set(SOCIAL_LINKS.map((link) => link.business)));
+
+export const EMPTY_ADD_FORM: AddLinkForm = {
+  business: BUSINESS_OPTIONS[0] ?? "",
+  appId: "",
+  appSecret: "",
+};
+
+export const DAYS: Array<{ key: DayKey; label: string }> = [
+  { key: "mon", label: "Mon" },
+  { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" },
+  { key: "fri", label: "Fri" },
+  { key: "sat", label: "Sat" },
+  { key: "sun", label: "Sun" },
+];
+
+export const MANAGED_PAGES: ManagedPage[] = [
+  {
+    id: "sinh-ton-sir",
+    name: "Sinh ton duong Sir",
+    handle: "61560960993910",
+    initials: "ST",
+    accent: "bg-info-bg text-info-fg",
+  },
+  {
+    id: "cau-lac-bo-ly-luan",
+    name: "Cau lac bo Ly luan tre UIT",
+    handle: "lyluantreuit",
+    initials: "UIT",
+    accent: "bg-danger-bg text-danger-fg",
+  },
+  {
+    id: "ndk-binh-duong",
+    name: "NDK Binh Duong",
+    handle: "ndkbinhduong",
+    initials: "NDK",
+    accent: "bg-warning-bg text-warning-fg",
+  },
+  {
+    id: "xa-kho",
+    name: "Xa Kho Quan Ao Me & Be",
+    handle: "XaKhoQuanAoMeBe",
+    initials: "XB",
+    accent: "bg-brand-50 text-brand-800",
+  },
+];
+
+export function createDefaultSchedule(): PageSchedule {
+  return {
+    mode: "full",
+    days: DAYS.reduce(
+      (days, day) => ({
+        ...days,
+        [day.key]: { enabled: false, start: "09:00", end: "18:00" },
+      }),
+      {} as Record<DayKey, DaySchedule>,
+    ),
+  };
+}

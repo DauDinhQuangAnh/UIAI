@@ -1,14 +1,17 @@
 import { Link, useParams } from "@tanstack/react-router";
 import {
+  Buildings,
   Robot,
   FileText,
   Graph,
+  LinkSimple,
   ShareNetwork,
   ChatsCircle,
   ChatTeardropDots,
   ChartBar,
   SlidersHorizontal,
   Sparkle,
+  type Icon,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 
@@ -31,21 +34,34 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         social-ai
       </Link>
 
-      <Link
-        to="/agents"
-        onClick={onNavigate}
-        activeOptions={{ exact: true }}
-        className={cn(linkBase, idle)}
-        activeProps={{ className: cn(linkBase, active) }}
-      >
-        <Robot className="size-5" aria-hidden />
-        Agents
-      </Link>
+      <NavSection label="Business Management">
+        <NavItem
+          to="/business/information"
+          icon={Buildings}
+          label="Business Information"
+          onNavigate={onNavigate}
+        />
+        <NavItem
+          to="/business/social-media"
+          icon={LinkSimple}
+          label="Social Media Links"
+          onNavigate={onNavigate}
+        />
+      </NavSection>
 
       {agentId && (
         <div className="mt-3 flex flex-col gap-1">
           <span className="px-3 py-1 font-mono text-xs uppercase tracking-wide text-text-dim">Agent</span>
-
+          <Link
+            to="/agents"
+            onClick={onNavigate}
+            activeOptions={{ exact: true }}
+            className={cn(linkBase, idle)}
+            activeProps={{ className: cn(linkBase, active) }}
+          >
+            <Robot className="size-5" aria-hidden />
+            Agents
+          </Link>
           <Link
             to="/agents/$agentId"
             params={{ agentId }}
@@ -126,5 +142,38 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       )}
     </nav>
+  );
+}
+
+function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-3 flex flex-col gap-1">
+      <span className="px-3 py-1 font-mono text-xs uppercase tracking-wide text-text-dim">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function NavItem({
+  to,
+  icon: IconCmp,
+  label,
+  onNavigate,
+}: {
+  to: string;
+  icon: Icon;
+  label: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      to={to}
+      onClick={onNavigate}
+      className={cn(linkBase, idle)}
+      activeProps={{ className: cn(linkBase, active) }}
+    >
+      <IconCmp className="size-5" aria-hidden />
+      {label}
+    </Link>
   );
 }

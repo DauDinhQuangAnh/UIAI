@@ -15,6 +15,8 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
+import { Route as AppBusinessSocialMediaRouteImport } from './routes/_app/business/social-media'
+import { Route as AppBusinessInformationRouteImport } from './routes/_app/business/information'
 import { Route as AppAgentsNewRouteImport } from './routes/_app/agents/new'
 import { Route as AppAgentsAgentIdIndexRouteImport } from './routes/_app/agents/$agentId/index'
 import { Route as AppAgentsAgentIdKnowledgeIndexRouteImport } from './routes/_app/agents/$agentId/knowledge/index'
@@ -52,6 +54,16 @@ const AppAccountRoute = AppAccountRouteImport.update({
 const AppAgentsIndexRoute = AppAgentsIndexRouteImport.update({
   id: '/agents/',
   path: '/agents/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBusinessSocialMediaRoute = AppBusinessSocialMediaRouteImport.update({
+  id: '/business/social-media',
+  path: '/business/social-media',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBusinessInformationRoute = AppBusinessInformationRouteImport.update({
+  id: '/business/information',
+  path: '/business/information',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAgentsNewRoute = AppAgentsNewRouteImport.update({
@@ -113,6 +125,8 @@ export interface FileRoutesByFullPath {
   '/styleguide': typeof StyleguideRoute
   '/account': typeof AppAccountRoute
   '/agents/new': typeof AppAgentsNewRoute
+  '/business/information': typeof AppBusinessInformationRoute
+  '/business/social-media': typeof AppBusinessSocialMediaRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
   '/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
@@ -129,6 +143,8 @@ export interface FileRoutesByTo {
   '/styleguide': typeof StyleguideRoute
   '/account': typeof AppAccountRoute
   '/agents/new': typeof AppAgentsNewRoute
+  '/business/information': typeof AppBusinessInformationRoute
+  '/business/social-media': typeof AppBusinessSocialMediaRoute
   '/agents': typeof AppAgentsIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdIndexRoute
   '/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
@@ -147,6 +163,8 @@ export interface FileRoutesById {
   '/styleguide': typeof StyleguideRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/agents/new': typeof AppAgentsNewRoute
+  '/_app/business/information': typeof AppBusinessInformationRoute
+  '/_app/business/social-media': typeof AppBusinessSocialMediaRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
   '/_app/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
@@ -165,6 +183,8 @@ export interface FileRouteTypes {
     | '/styleguide'
     | '/account'
     | '/agents/new'
+    | '/business/information'
+    | '/business/social-media'
     | '/agents/'
     | '/agents/$agentId/'
     | '/agents/$agentId/conversations/$conversationId'
@@ -181,6 +201,8 @@ export interface FileRouteTypes {
     | '/styleguide'
     | '/account'
     | '/agents/new'
+    | '/business/information'
+    | '/business/social-media'
     | '/agents'
     | '/agents/$agentId'
     | '/agents/$agentId/conversations/$conversationId'
@@ -198,6 +220,8 @@ export interface FileRouteTypes {
     | '/styleguide'
     | '/_app/account'
     | '/_app/agents/new'
+    | '/_app/business/information'
+    | '/_app/business/social-media'
     | '/_app/agents/'
     | '/_app/agents/$agentId/'
     | '/_app/agents/$agentId/conversations/$conversationId'
@@ -258,6 +282,20 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents/'
       preLoaderRoute: typeof AppAgentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/business/social-media': {
+      id: '/_app/business/social-media'
+      path: '/business/social-media'
+      fullPath: '/business/social-media'
+      preLoaderRoute: typeof AppBusinessSocialMediaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/business/information': {
+      id: '/_app/business/information'
+      path: '/business/information'
+      fullPath: '/business/information'
+      preLoaderRoute: typeof AppBusinessInformationRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/agents/new': {
@@ -329,6 +367,8 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppAgentsNewRoute: typeof AppAgentsNewRoute
+  AppBusinessInformationRoute: typeof AppBusinessInformationRoute
+  AppBusinessSocialMediaRoute: typeof AppBusinessSocialMediaRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
   AppAgentsAgentIdIndexRoute: typeof AppAgentsAgentIdIndexRoute
   AppAgentsAgentIdConversationsConversationIdRoute: typeof AppAgentsAgentIdConversationsConversationIdRoute
@@ -343,6 +383,8 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppAgentsNewRoute: AppAgentsNewRoute,
+  AppBusinessInformationRoute: AppBusinessInformationRoute,
+  AppBusinessSocialMediaRoute: AppBusinessSocialMediaRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,
   AppAgentsAgentIdIndexRoute: AppAgentsAgentIdIndexRoute,
   AppAgentsAgentIdConversationsConversationIdRoute:

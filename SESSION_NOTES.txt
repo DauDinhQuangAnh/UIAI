@@ -31,6 +31,391 @@ Findings:
 
 Verification:
 - npm.cmd run typecheck passed.
+
+2026-06-16 - Split large Business route files
+---------------------------------------------
+Goal:
+- Reduce the size of Business Information and Social Media Links route files without changing behavior.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- src/routes/_app/business/social-media.tsx
+- src/components/business/information/business-information-data.ts
+- src/components/business/information/business-information-table.tsx
+- src/components/business/information/business-information-dialogs.tsx
+- src/components/business/social-media/social-media-data.ts
+- src/components/business/social-media/social-links-table.tsx
+- src/components/business/social-media/add-social-link-dialog.tsx
+- src/components/business/social-media/edit-social-link-dialog.tsx
+- src/components/business/social-media/delete-social-link-dialog.tsx
+- src/components/business/social-media/social-schedule-controls.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Business Information route now keeps only state, handlers, and page shell.
+- Social Media Links route now keeps only state, handlers, tabs shell, and dialog/table wiring.
+- Mock data, tables, dialogs, add-link flow, edit/delete dialogs, and schedule controls were moved into focused component files.
+- Existing UI text, layout, colors, and local mock behavior were kept intact.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Add Social Media edit/delete actions
+-------------------------------------------------
+Goal:
+- Make Social Media Links table action buttons functional.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Social links now live in local state so edit/delete can update the UI.
+- Delete action opens a confirmation dialog and removes the selected link from local state.
+- Edit action opens a Social Media Link Information dialog with business, app credentials, page details, chatbot status, refresh-token action, and save action.
+- Chatbot status supports Paused, Full-time operation, and Part-time operation.
+- Part-time schedule controls were extracted into a reusable PartTimeScheduleGrid for add-flow schedule and edit dialog.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Connect edit/delete/refresh-token actions to real API endpoints once available.
+
+2026-06-16 - Add part-time schedule helper text
+-----------------------------------------------
+Goal:
+- Add a small usage hint for part-time operating schedules.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Part-time mode now shows helper text explaining that users should enable days and set start/end time for each enabled day.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Add chatbot operating schedule step
+------------------------------------------------
+Goal:
+- Add the operating-time configuration step after selecting one or more managed pages.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Add Link flow now has three local steps: credentials, page selection, schedule configuration.
+- Each selected page gets its own schedule card.
+- Full-time operation is selected by default and uses a green circular check indicator.
+- Part-time operation can be selected per page.
+- Part-time mode reveals Monday-Sunday controls, with each day toggleable and each enabled day having start/end time inputs.
+- Back returns to page selection; Confirm closes and resets the mock flow.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Persist schedule selections when the social-link creation API exists.
+- Replace the mock flow transition with the real Facebook login/permission API response.
+
+2026-06-16 - Widen schedule configuration controls
+--------------------------------------------------
+Goal:
+- Prevent time values from crowding or overlapping in the operating schedule grid.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Schedule dialog now uses max-w-5xl.
+- Part-time day grid has a wider min-width and horizontal scrolling.
+- Time inputs are wider and use a slightly larger text size.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Add Social Media Link popup
+----------------------------------------
+Goal:
+- Make the Add Link button on Social Media Links open a popup form based on the provided template.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Added Add Social Media Link dialog.
+- Form includes Business select, App ID, and App Secret fields.
+- App ID and App Secret are marked required.
+- Continue currently closes and resets the popup because there is no API/next step yet.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Wire Continue to the real OAuth/app credential flow once the backend contract is available.
+
+2026-06-16 - Mock Facebook managed page selection step
+-----------------------------------------------------
+Goal:
+- Show the expected page-selection step after entering social app credentials, while API is not available yet.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Add Link dialog now has a two-step local flow: credentials, then managed page selection.
+- Continue from credentials simulates the API/OAuth step and shows hardcoded managed Facebook pages.
+- Page cards can be selected and show a highlighted selected state with a check icon.
+- Back returns to the credentials form; Continue on the page step closes and resets the mock flow.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Replace MANAGED_PAGES with API response data after the real Facebook login/permission flow is connected.
+- Continue from the page-selection step should create the social link once the API contract exists.
+
+2026-06-16 - Allow selecting multiple managed pages
+---------------------------------------------------
+Goal:
+- Let users choose more than one Facebook page during the mock social-link flow.
+
+Files touched:
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Replaced single selectedPageId state with selectedPageIds.
+- Page cards now toggle selected/unselected.
+- Each card has a checkbox-style selected indicator.
+- Continue is disabled until at least one page is selected.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Keep restored sidebar and add only Business Management
+-------------------------------------------------------------------
+Goal:
+- Respect the user's restored sidebar structure and add only the Business Management menu.
+
+Files touched:
+- src/components/shell/sidebar.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Kept the existing Agent link/submenu logic unchanged.
+- Added Business Management section with Business Information and Social Media Links.
+- Added only the small NavSection/NavItem helpers needed by the new Business Management block.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Revert two recent Agent sidebar changes
+----------------------------------------------------
+Goal:
+- Undo the two latest Agent sidebar edits on request.
+
+Files touched:
+- src/components/shell/sidebar.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Restored DEV_AUTH_BYPASS demo agent fallback in Sidebar.
+- Restored Agent section layout from before the recent "original submenu visibility" and "Agent Management" edits.
+- Removed the now-stale note about restoring original Agent submenu visibility.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Build Social Media Links table with shared business components
+---------------------------------------------------------------------------
+Goal:
+- Replace the placeholder Social Media Links form with a themed management table based on the provided template.
+
+Files touched:
+- src/components/business/business-management-table.tsx
+- src/routes/_app/business/information.tsx
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Added shared BusinessDataTable, BusinessHeadCell, and BusinessActionButtons components.
+- Refactored Business Information to reuse the shared table/action components.
+- Rebuilt Social Media Links with Facebook/TikTok tabs, hardcoded rows, Add Link button, status badges, and shared edit/delete buttons.
+- Social Media Links uses the same brand table header and action hover effects as Business Information.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Add create/edit/delete dialogs for social links when the desired flow is defined.
+- Replace SOCIAL_LINKS with API data once backend endpoints are available.
+
+2026-06-16 - Increase action button contrast
+--------------------------------------------
+Goal:
+- Make Business Information action buttons visibly distinct before and during hover.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Edit and Delete actions now use compact bordered icon buttons.
+- Hover states now change border, background, and icon color with stronger contrast.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Add delete confirmation dialog for businesses
+----------------------------------------------------------
+Goal:
+- Show a popup confirmation before deleting a business from the hardcoded Business Information table.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Added deleteTarget state.
+- Delete icon button now opens a confirmation dialog.
+- Dialog message includes the selected business name.
+- Cancel and Delete both close the dialog for now because table data is hardcoded.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- When the API is connected, make Delete call the backend and remove/invalidate the selected row on success.
+
+2026-06-16 - Add Business popup form
+------------------------------------
+Goal:
+- Make the Add Business button open a popup form based on the provided template.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Converted the hardcoded business list into local state initialized from INITIAL_BUSINESSES.
+- Add Business opens a Dialog with fields for Business, Address, Phone, Email, Status, and Owner.
+- Status and Owner use the existing Select component.
+- Save prepends the new business to the table in local UI state.
+- Delete now removes the selected business from local UI state after confirmation.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Replace local state writes with API mutations once BE endpoints are available.
+- Add validation/error handling when the API contract is known.
+
+2026-06-16 - Add new owner fields in Add Business form
+------------------------------------------------------
+Goal:
+- Support selecting a missing owner from the Owner dropdown and collecting representative details.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Added a highlighted "Not existing" option at the top of the Owner dropdown.
+- When "Not existing" is selected, the form reveals required Representative and Representative Email fields.
+- Saving a business with "Not existing" uses the representative name as the table Owner value.
+- Closing the Add Business dialog resets the form.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- When connecting API, send representativeName/representativeEmail as owner creation payload if the backend supports creating a new owner inline.
+
+2026-06-16 - Add edit business popup
+------------------------------------
+Goal:
+- Make the edit icon open a popup for updating business information.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Added editTarget and editForm state.
+- Edit icon now opens an Edit Business Information dialog prefilled from the selected row.
+- Save updates the selected row in local UI state.
+- Edit labels intentionally do not show required asterisks and inputs are not marked required.
+- Owner dropdown in edit uses existing owners from the table plus the base owner options.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Replace local edit state updates with an API mutation once endpoints are available.
+
+2026-06-16 - Improve action icon hover states
+---------------------------------------------
+Goal:
+- Make edit/delete actions easier to distinguish when hovering in the Business Information table.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Edit icon now uses brand text and brand-tinted hover background.
+- Delete icon now uses danger text and danger-tinted hover background.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+2026-06-16 - Redesign Business Information as hardcoded management table
+------------------------------------------------------------------------
+Goal:
+- Replace the placeholder company profile form with a business-management table based on the provided template.
+
+Files touched:
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Added hardcoded business records.
+- Added a themed table with Business, Address, Phone, Email, Status, Owner, and Actions columns.
+- Added an Add Business button and edit/delete icon actions.
+- Used ASCII-only demo data to avoid current mojibake encoding issues in the repo.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- Replace BUSINESSES with API data once backend endpoints are ready.
+- Wire Add/Edit/Delete actions to dialogs or routes when the desired flow is defined.
+
+2026-06-16 - Widen Business Information table layout
+----------------------------------------------------
+Goal:
+- Give the business table more horizontal room so content does not feel cramped.
+
+Files touched:
+- src/components/business/business-page-shell.tsx
+- src/routes/_app/business/information.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- BusinessPageShell now accepts an optional className.
+- Business Information uses max-w-7xl instead of the default max-w-4xl.
+- Business table now has a desktop min-width and explicit column width hints.
+- Phone, email, and owner cells stay on one line while smaller screens can scroll horizontally.
+
+Verification:
+- npm.cmd run typecheck passed.
 - npm.cmd test passed: 9 test files, 40 tests.
 
 Follow-ups:
@@ -56,3 +441,62 @@ Changes:
 Important follow-up:
 - Before restoring real auth, set DEV_AUTH_BYPASS back to false and restore the normal empty initial session behavior.
 - This only bypasses FE auth gates. It does not mock real dashboard data APIs, so pages can still show API errors if no backend or mock API is available.
+
+2026-06-16 - Show agent submenu during FE auth bypass
+-----------------------------------------------------
+Goal:
+- Keep dashboard navigation visible while there is no backend agent list to select from.
+
+Files touched:
+- src/components/shell/sidebar.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Sidebar now falls back to demo agent id "agent-1" when DEV_AUTH_BYPASS is true and the current URL has no agentId.
+- This makes Configuration, Documents, Knowledge, Graph, Chat, Conversations, and Analytics visible from /agents during FE-only work.
+
+Important follow-up:
+- When real backend/auth is restored, DEV_AUTH_BYPASS should be false, so this demo agent fallback stops being used automatically.
+
+2026-06-16 - Add Business Management navigation
+-----------------------------------------------
+Goal:
+- Add a new sidebar section above Agents for business management UI.
+
+Files touched:
+- src/components/shell/sidebar.tsx
+- src/components/business/business-page-shell.tsx
+- src/routes/_app/business/information.tsx
+- src/routes/_app/business/social-media.tsx
+- src/routeTree.gen.ts
+- SESSION_NOTES.txt
+
+Changes:
+- Added Business Management section above Agents in the sidebar.
+- Added submenu links: Business Information and Social Media Links.
+- Refactored sidebar navigation markup into NavSection and NavItem helpers.
+- Added reusable BusinessPageShell and BusinessSection components for business pages.
+- Added static FE-only forms for business profile details and social media links.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Follow-ups:
+- These business pages are UI-only for now and do not submit to an API.
+- Wire the forms to backend endpoints once the BE contract is available.
+
+2026-06-16 - Fix sidebar grouping after Business Management addition
+--------------------------------------------------------------------
+Goal:
+- Keep Agents visually under its own Agent section instead of appearing inside Business Management.
+
+Files touched:
+- src/components/shell/sidebar.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Moved the Agents nav item into the Agent section.
+- Business Management now contains only Business Information and Social Media Links.
+
+Verification:
+- npm.cmd run typecheck passed.
