@@ -21,11 +21,11 @@ export function BusinessInformationTable({
       <TableHeader className="bg-brand-700">
         <TableRow className="hover:bg-brand-700">
           <BusinessHeadCell className="w-[24%]">Doanh nghiệp</BusinessHeadCell>
-          <BusinessHeadCell className="w-[32%]">Địa chỉ</BusinessHeadCell>
+          <BusinessHeadCell className="w-[30%]">Địa chỉ</BusinessHeadCell>
           <BusinessHeadCell className="w-[12%]">SĐT</BusinessHeadCell>
-          <BusinessHeadCell className="w-[16%]">Email</BusinessHeadCell>
-          <BusinessHeadCell className="w-[8%]">Trạng thái</BusinessHeadCell>
-          <BusinessHeadCell className="w-[10%]">Chủ doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[14%]">Email</BusinessHeadCell>
+          <BusinessHeadCell className="w-[10%]">Trạng thái</BusinessHeadCell>
+          <BusinessHeadCell className="w-[14%]">Chủ doanh nghiệp</BusinessHeadCell>
           <BusinessHeadCell className="w-24 text-right">Thao tác</BusinessHeadCell>
         </TableRow>
       </TableHeader>
@@ -39,7 +39,7 @@ export function BusinessInformationTable({
             <TableCell>
               <Badge tone={business.status === "Hoạt động" ? "success" : "neutral"}>{business.status}</Badge>
             </TableCell>
-            <TableCell className="whitespace-nowrap">{business.owner}</TableCell>
+            <TableCell className="whitespace-nowrap min-w-[120px]">{business.owner}</TableCell>
             <TableCell>
               <BusinessActionButtons
                 editLabel={`Chỉnh sửa ${business.name}`}

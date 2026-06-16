@@ -31,7 +31,7 @@ export function EditSocialLinkDialog({
   return (
     <Dialog open={!!target && !!form} onOpenChange={onOpenChange}>
       {form && target && (
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="w-full max-w-6xl">
           <DialogHeader className="items-center text-center">
             <div className="mb-1 flex size-16 items-center justify-center rounded-2xl bg-brand-50 text-lg font-semibold text-brand-800">
               {target.page.slice(0, 2).toUpperCase()}
@@ -120,7 +120,11 @@ export function EditSocialLinkDialog({
             </div>
 
             <DialogFooter className="mt-2 sm:justify-between">
-              <Button type="button" variant="secondary">
+              <Button
+                type="button"
+                variant="secondary"
+                className="border-brand-300 bg-brand-50 text-brand-800 shadow-sm hover:bg-brand-100"
+              >
                 Làm mới token liên kết
               </Button>
               <Button type="submit">Lưu</Button>
