@@ -20,13 +20,13 @@ export function BusinessInformationTable({
     <BusinessDataTable>
       <TableHeader className="bg-brand-700">
         <TableRow className="hover:bg-brand-700">
-          <BusinessHeadCell className="w-[24%]">Business</BusinessHeadCell>
-          <BusinessHeadCell className="w-[32%]">Address</BusinessHeadCell>
-          <BusinessHeadCell className="w-[12%]">Phone</BusinessHeadCell>
+          <BusinessHeadCell className="w-[24%]">Doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[32%]">Địa chỉ</BusinessHeadCell>
+          <BusinessHeadCell className="w-[12%]">SĐT</BusinessHeadCell>
           <BusinessHeadCell className="w-[16%]">Email</BusinessHeadCell>
-          <BusinessHeadCell className="w-[8%]">Status</BusinessHeadCell>
-          <BusinessHeadCell className="w-[10%]">Owner</BusinessHeadCell>
-          <BusinessHeadCell className="w-24 text-right">Actions</BusinessHeadCell>
+          <BusinessHeadCell className="w-[8%]">Trạng thái</BusinessHeadCell>
+          <BusinessHeadCell className="w-[10%]">Người phụ trách</BusinessHeadCell>
+          <BusinessHeadCell className="w-24 text-right">Thao tác</BusinessHeadCell>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -42,8 +42,8 @@ export function BusinessInformationTable({
             <TableCell className="whitespace-nowrap">{business.owner}</TableCell>
             <TableCell>
               <BusinessActionButtons
-                editLabel={`Edit ${business.name}`}
-                deleteLabel={`Delete ${business.name}`}
+                editLabel={`Chỉnh sửa ${business.name}`}
+                deleteLabel={`Xóa ${business.name}`}
                 onEdit={() => onEdit(business)}
                 onDelete={() => onDelete(business)}
               />

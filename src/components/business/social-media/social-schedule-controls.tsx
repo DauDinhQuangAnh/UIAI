@@ -57,7 +57,7 @@ export function PartTimeScheduleGrid({
   return (
     <div className="mt-3 rounded-lg bg-surface-2 p-3">
       <p className="mb-3 text-xs text-text-secondary">
-        Turn on the days this chatbot should run, then set the start and end time for each enabled day.
+        Bật các ngày chatbot hoạt động và thiết lập giờ bắt đầu, kết thúc cho từng ngày đã kích hoạt.
       </p>
       <div className="overflow-x-auto">
         <div className="grid min-w-[840px] grid-cols-7 gap-3">

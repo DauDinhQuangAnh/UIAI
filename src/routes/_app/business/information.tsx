@@ -92,21 +92,21 @@ function BusinessInformationScreen() {
 
   return (
     <BusinessPageShell
-      title="Business Information"
-      description="Manage the public profile and contact details used across customer-facing channels."
+      title="Thông tin doanh nghiệp"
+      description="Quản lý hồ sơ công khai và thông tin liên hệ dùng cho các kênh tương tác với khách hàng."
       icon={Buildings}
       className="max-w-7xl"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold text-text-primary">Businesses</h2>
+          <h2 className="text-xl font-semibold text-text-primary">Danh sách doanh nghiệp</h2>
           <p className="text-sm text-text-secondary">
-            {businesses.length} active business profiles are ready to connect with agents and channels.
+            {businesses.length} hồ sơ doanh nghiệp đang sẵn sàng để kết nối với agent và các kênh.
           </p>
         </div>
         <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
           <Plus className="size-4" aria-hidden />
-          Add Business
+          Thêm doanh nghiệp
         </Button>
       </div>
 

@@ -32,11 +32,11 @@ export function AddBusinessDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">Add Business Information</DialogTitle>
-          <DialogDescription>Enter the business details that will appear in the management list.</DialogDescription>
+          <DialogTitle className="text-brand-800">Thêm thông tin doanh nghiệp</DialogTitle>
+          <DialogDescription>Nhập thông tin doanh nghiệp để hiển thị trong danh sách quản lý.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4">
-          <BusinessField label="Business" htmlFor="business_name" required>
+          <BusinessField label="Doanh nghiệp" htmlFor="business_name" required>
             <Input
               id="business_name"
               value={form.name}
@@ -45,7 +45,7 @@ export function AddBusinessDialog({
               required
             />
           </BusinessField>
-          <BusinessField label="Address" htmlFor="business_address">
+          <BusinessField label="Địa chỉ" htmlFor="business_address">
             <Input
               id="business_address"
               value={form.address}
@@ -53,7 +53,7 @@ export function AddBusinessDialog({
               onChange={(event) => onFormChange({ ...form, address: event.target.value })}
             />
           </BusinessField>
-          <BusinessField label="Phone" htmlFor="business_phone" required>
+          <BusinessField label="Số điện thoại" htmlFor="business_phone" required>
             <Input
               id="business_phone"
               value={form.phone}
@@ -71,7 +71,7 @@ export function AddBusinessDialog({
               onChange={(event) => onFormChange({ ...form, email: event.target.value })}
             />
           </BusinessField>
-          <BusinessField label="Status" htmlFor="business_status">
+          <BusinessField label="Trạng thái" htmlFor="business_status">
             <Select
               value={form.status}
               onValueChange={(status) => onFormChange({ ...form, status: status as Business["status"] })}
@@ -80,12 +80,12 @@ export function AddBusinessDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Active">Hoạt động</SelectItem>
+                <SelectItem value="Inactive">Không hoạt động</SelectItem>
               </SelectContent>
             </Select>
           </BusinessField>
-          <BusinessField label="Owner" htmlFor="business_owner">
+          <BusinessField label="Người phụ trách" htmlFor="business_owner">
             <Select value={form.owner} onValueChange={(owner) => onFormChange({ ...form, owner })}>
               <SelectTrigger id="business_owner">
                 <SelectValue />
@@ -95,7 +95,7 @@ export function AddBusinessDialog({
                   value={NEW_OWNER_VALUE}
                   className="bg-brand-50 font-semibold text-brand-800 focus:bg-brand-100"
                 >
-                  Not existing
+                  Chưa có trong danh sách
                 </SelectItem>
                 {ownerOptions.map((owner) => (
                   <SelectItem key={owner} value={owner}>
@@ -107,7 +107,7 @@ export function AddBusinessDialog({
           </BusinessField>
           {form.owner === NEW_OWNER_VALUE && (
             <>
-              <BusinessField label="Representative" htmlFor="representative_name" required>
+              <BusinessField label="Người đại diện" htmlFor="representative_name" required>
                 <Input
                   id="representative_name"
                   value={form.representativeName}
@@ -116,7 +116,7 @@ export function AddBusinessDialog({
                   required
                 />
               </BusinessField>
-              <BusinessField label="Representative Email" htmlFor="representative_email" required>
+              <BusinessField label="Email người đại diện" htmlFor="representative_email" required>
                 <Input
                   id="representative_email"
                   type="email"
@@ -130,9 +130,9 @@ export function AddBusinessDialog({
           )}
           <DialogFooter className="mt-3">
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Cancel
+              Hủy
             </Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit">Lưu</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -159,25 +159,25 @@ export function EditBusinessDialog({
     <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">Edit Business Information</DialogTitle>
-          <DialogDescription>Update the details for {target?.name}.</DialogDescription>
+          <DialogTitle className="text-brand-800">Chỉnh sửa thông tin doanh nghiệp</DialogTitle>
+          <DialogDescription>Cập nhật thông tin cho {target?.name}.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4">
-          <BusinessField label="Business" htmlFor="edit_business_name">
+          <BusinessField label="Doanh nghiệp" htmlFor="edit_business_name">
             <Input
               id="edit_business_name"
               value={form.name}
               onChange={(event) => onFormChange({ ...form, name: event.target.value })}
             />
           </BusinessField>
-          <BusinessField label="Address" htmlFor="edit_business_address">
+          <BusinessField label="Địa chỉ" htmlFor="edit_business_address">
             <Input
               id="edit_business_address"
               value={form.address}
               onChange={(event) => onFormChange({ ...form, address: event.target.value })}
             />
           </BusinessField>
-          <BusinessField label="Phone" htmlFor="edit_business_phone">
+          <BusinessField label="Số điện thoại" htmlFor="edit_business_phone">
             <Input
               id="edit_business_phone"
               value={form.phone}
@@ -192,7 +192,7 @@ export function EditBusinessDialog({
               onChange={(event) => onFormChange({ ...form, email: event.target.value })}
             />
           </BusinessField>
-          <BusinessField label="Status" htmlFor="edit_business_status">
+          <BusinessField label="Trạng thái" htmlFor="edit_business_status">
             <Select
               value={form.status}
               onValueChange={(status) => onFormChange({ ...form, status: status as Business["status"] })}
@@ -201,12 +201,12 @@ export function EditBusinessDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Active">Hoạt động</SelectItem>
+                <SelectItem value="Inactive">Không hoạt động</SelectItem>
               </SelectContent>
             </Select>
           </BusinessField>
-          <BusinessField label="Owner" htmlFor="edit_business_owner">
+          <BusinessField label="Người phụ trách" htmlFor="edit_business_owner">
             <Select value={form.owner} onValueChange={(owner) => onFormChange({ ...form, owner })}>
               <SelectTrigger id="edit_business_owner">
                 <SelectValue />
@@ -222,9 +222,9 @@ export function EditBusinessDialog({
           </BusinessField>
           <DialogFooter className="mt-3">
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Cancel
+              Hủy
             </Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit">Lưu</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -245,15 +245,15 @@ export function DeleteBusinessDialog({
     <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete business</DialogTitle>
-          <DialogDescription>Are you sure you want to delete {target?.name}?</DialogDescription>
+          <DialogTitle>Xóa doanh nghiệp</DialogTitle>
+          <DialogDescription>Bạn có chắc chắn muốn xóa {target?.name}?</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
+            Hủy
           </Button>
           <Button type="button" variant="danger" onClick={onConfirm}>
-            Delete
+            Xóa
           </Button>
         </DialogFooter>
       </DialogContent>

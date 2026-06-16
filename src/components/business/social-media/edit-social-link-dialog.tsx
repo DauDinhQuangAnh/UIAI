@@ -36,11 +36,11 @@ export function EditSocialLinkDialog({
             <div className="mb-1 flex size-16 items-center justify-center rounded-2xl bg-brand-50 text-lg font-semibold text-brand-800">
               {target.page.slice(0, 2).toUpperCase()}
             </div>
-            <DialogTitle className="text-brand-800">Social Media Link Information</DialogTitle>
-            <DialogDescription>Review app credentials, page details, and chatbot operating status.</DialogDescription>
+            <DialogTitle className="text-brand-800">Thông tin liên kết mạng xã hội</DialogTitle>
+            <DialogDescription>Xem lại thông tin ứng dụng, chi tiết trang và trạng thái hoạt động của chatbot.</DialogDescription>
           </DialogHeader>
           <form onSubmit={onSubmit} className="grid gap-4">
-            <SocialField label="Business" htmlFor="edit_social_business">
+            <SocialField label="Doanh nghiệp" htmlFor="edit_social_business">
               <Select
                 value={form.business}
                 onValueChange={(business) => onFormChange({ ...form, business })}
@@ -57,10 +57,10 @@ export function EditSocialLinkDialog({
                 </SelectContent>
               </Select>
             </SocialField>
-            <SocialField label="App ID" htmlFor="edit_social_app_id" required>
+            <SocialField label="Mã ứng dụng" htmlFor="edit_social_app_id" required>
               <Input id="edit_social_app_id" value={form.appId} disabled />
             </SocialField>
-            <SocialField label="App Secret" htmlFor="edit_social_app_secret" required>
+            <SocialField label="Khóa bí mật" htmlFor="edit_social_app_secret" required>
               <Input
                 id="edit_social_app_secret"
                 type="password"
@@ -68,17 +68,17 @@ export function EditSocialLinkDialog({
                 onChange={(event) => onFormChange({ ...form, appSecret: event.target.value })}
               />
             </SocialField>
-            <SocialField label="Page" htmlFor="edit_social_page">
+            <SocialField label="Trang" htmlFor="edit_social_page">
               <Input id="edit_social_page" value={form.page} disabled />
             </SocialField>
-            <SocialField label="Page ID" htmlFor="edit_social_page_id">
+            <SocialField label="Mã trang" htmlFor="edit_social_page_id">
               <Input id="edit_social_page_id" value={form.pageId} disabled />
             </SocialField>
 
             <div className="grid gap-2">
-              <Label className="text-brand-800">Chatbot operating status</Label>
+              <Label className="text-brand-800">Trạng thái hoạt động của chatbot</Label>
               <ScheduleChoice
-                title="Paused"
+                title="Tạm dừng"
                 selected={form.status === "Paused"}
                 onSelect={() =>
                   onFormChange({
@@ -89,7 +89,7 @@ export function EditSocialLinkDialog({
                 }
               />
               <ScheduleChoice
-                title="Full-time operation"
+                title="Hoạt động toàn thời gian"
                 selected={form.status === "Full time"}
                 onSelect={() =>
                   onFormChange({
@@ -100,7 +100,7 @@ export function EditSocialLinkDialog({
                 }
               />
               <ScheduleChoice
-                title="Part-time operation"
+                title="Hoạt động bán thời gian"
                 selected={form.status === "Part time"}
                 onSelect={() =>
                   onFormChange({
@@ -121,9 +121,9 @@ export function EditSocialLinkDialog({
 
             <DialogFooter className="mt-2 sm:justify-between">
               <Button type="button" variant="secondary">
-                Refresh Link Token
+                Làm mới token liên kết
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit">Lưu</Button>
             </DialogFooter>
           </form>
         </DialogContent>

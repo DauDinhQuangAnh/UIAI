@@ -22,15 +22,15 @@ export function DeleteSocialLinkDialog({
     <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete social media link</DialogTitle>
-          <DialogDescription>Are you sure you want to delete {target?.page}?</DialogDescription>
+          <DialogTitle>Xóa liên kết mạng xã hội</DialogTitle>
+          <DialogDescription>Bạn có chắc chắn muốn xóa {target?.page}?</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-            Cancel
+            Hủy
           </Button>
           <Button type="button" variant="danger" onClick={onConfirm}>
-            Delete
+            Xóa
           </Button>
         </DialogFooter>
       </DialogContent>

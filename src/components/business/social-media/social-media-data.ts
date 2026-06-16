@@ -123,6 +123,17 @@ export const STATUS_TONE: Record<LinkStatus, BadgeProps["tone"]> = {
   Paused: "neutral",
 };
 
+export const LINK_STATUS_LABELS: Record<LinkStatus, string> = {
+  "Full time": "Toàn thời gian",
+  "Part time": "Bán thời gian",
+  Paused: "Tạm dừng",
+};
+
+export const BUSINESS_STATUS_LABELS: Record<"Active" | "Inactive", string> = {
+  Active: "Hoạt động",
+  Inactive: "Không hoạt động",
+};
+
 export const BUSINESS_OPTIONS = Array.from(new Set(SOCIAL_LINKS.map((link) => link.business)));
 
 export const EMPTY_ADD_FORM: AddLinkForm = {
@@ -132,13 +143,13 @@ export const EMPTY_ADD_FORM: AddLinkForm = {
 };
 
 export const DAYS: Array<{ key: DayKey; label: string }> = [
-  { key: "mon", label: "Mon" },
-  { key: "tue", label: "Tue" },
-  { key: "wed", label: "Wed" },
-  { key: "thu", label: "Thu" },
-  { key: "fri", label: "Fri" },
-  { key: "sat", label: "Sat" },
-  { key: "sun", label: "Sun" },
+  { key: "mon", label: "T2" },
+  { key: "tue", label: "T3" },
+  { key: "wed", label: "T4" },
+  { key: "thu", label: "T5" },
+  { key: "fri", label: "T6" },
+  { key: "sat", label: "T7" },
+  { key: "sun", label: "CN" },
 ];
 
 export const MANAGED_PAGES: ManagedPage[] = [

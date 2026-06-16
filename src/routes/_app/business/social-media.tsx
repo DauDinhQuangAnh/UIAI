@@ -85,8 +85,8 @@ function SocialMediaLinksScreen() {
 
   return (
     <BusinessPageShell
-      title="Social Media Links"
-      description="Manage social pages connected to each business profile."
+      title="Liên kết mạng xã hội"
+      description="Quản lý các trang mạng xã hội được kết nối với từng hồ sơ doanh nghiệp."
       icon={LinkSimple}
       className="max-w-7xl"
     >
@@ -108,7 +108,7 @@ function SocialMediaLinksScreen() {
           </TabsList>
           <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
             <Plus className="size-4" aria-hidden />
-            Add Link
+            Thêm liên kết
           </Button>
         </div>
 

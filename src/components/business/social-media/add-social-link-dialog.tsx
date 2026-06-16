@@ -109,13 +109,13 @@ function CredentialsStep({
   return (
     <>
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-brand-800">Add Social Media Link</DialogTitle>
+        <DialogTitle className="text-brand-800">Thêm liên kết mạng xã hội</DialogTitle>
         <DialogDescription>
-          Enter the app credentials for the selected business connection.
+          Nhập thông tin ứng dụng cho kết nối doanh nghiệp đã chọn.
         </DialogDescription>
       </DialogHeader>
       <form onSubmit={onContinue} className="grid gap-4">
-        <SocialField label="Business" htmlFor="social_business">
+        <SocialField label="Doanh nghiệp" htmlFor="social_business">
           <Select
             value={form.business}
             onValueChange={(business) => setForm((current) => ({ ...current, business }))}
@@ -132,7 +132,7 @@ function CredentialsStep({
             </SelectContent>
           </Select>
         </SocialField>
-        <SocialField label="App ID" htmlFor="social_app_id" required>
+        <SocialField label="Mã ứng dụng" htmlFor="social_app_id" required>
           <Input
             id="social_app_id"
             value={form.appId}
@@ -141,7 +141,7 @@ function CredentialsStep({
             required
           />
         </SocialField>
-        <SocialField label="App Secret" htmlFor="social_app_secret" required>
+        <SocialField label="Khóa bí mật" htmlFor="social_app_secret" required>
           <Input
             id="social_app_secret"
             type="password"
@@ -152,7 +152,7 @@ function CredentialsStep({
           />
         </SocialField>
         <DialogFooter className="mt-3 sm:justify-center">
-          <Button type="submit">Continue</Button>
+          <Button type="submit">Tiếp tục</Button>
         </DialogFooter>
       </form>
     </>
@@ -173,8 +173,8 @@ function PageSelectStep({
   return (
     <>
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-brand-800">Choose Page To Link</DialogTitle>
-        <DialogDescription>Select one or more managed Facebook pages to connect.</DialogDescription>
+        <DialogTitle className="text-brand-800">Chọn trang cần liên kết</DialogTitle>
+        <DialogDescription>Chọn một hoặc nhiều trang Facebook quản lý để kết nối.</DialogDescription>
       </DialogHeader>
       <div className="mx-auto flex w-full max-w-md flex-col gap-3">
         {MANAGED_PAGES.map((page) => {
@@ -215,10 +215,10 @@ function PageSelectStep({
       </div>
       <DialogFooter className="mt-3 sm:justify-between">
         <Button type="button" variant="secondary" onClick={onBack}>
-          Back
+          Quay lại
         </Button>
         <Button type="button" onClick={onContinue} disabled={selectedPageIds.length === 0}>
-          Continue
+          Tiếp tục
         </Button>
       </DialogFooter>
     </>
@@ -248,8 +248,8 @@ function ScheduleStep({
   return (
     <>
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-brand-800">Configure Operating Time</DialogTitle>
-        <DialogDescription>Set when the chatbot should run for each selected page.</DialogDescription>
+        <DialogTitle className="text-brand-800">Cài đặt thời gian hoạt động</DialogTitle>
+        <DialogDescription>Thiết lập thời gian chatbot chạy cho từng trang đã chọn.</DialogDescription>
       </DialogHeader>
 
       <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
@@ -269,12 +269,12 @@ function ScheduleStep({
 
               <div className="grid gap-3">
                 <ScheduleChoice
-                  title="Full-time operation"
+                  title="Hoạt động toàn thời gian"
                   selected={schedule.mode === "full"}
                   onSelect={() => updateSchedule(page.id, (current) => ({ ...current, mode: "full" }))}
                 />
                 <ScheduleChoice
-                  title="Part-time operation"
+                  title="Hoạt động bán thời gian"
                   selected={schedule.mode === "partial"}
                   onSelect={() => updateSchedule(page.id, (current) => ({ ...current, mode: "partial" }))}
                 >
@@ -293,10 +293,10 @@ function ScheduleStep({
 
       <DialogFooter className="mt-3 sm:justify-between">
         <Button type="button" variant="secondary" onClick={onBack}>
-          Back
+          Quay lại
         </Button>
         <Button type="button" onClick={onConfirm}>
-          Confirm
+          Xác nhận
         </Button>
       </DialogFooter>
     </>
