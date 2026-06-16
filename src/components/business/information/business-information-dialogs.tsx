@@ -141,6 +141,7 @@ function BusinessPartnerFormFields({
           id="business_brand_name"
           value={form.brandName}
           placeholder="SAR Coffee"
+          disabled={loading}
           onChange={(event) => onFormChange({ ...form, brandName: event.target.value })}
           required
         />
@@ -150,6 +151,7 @@ function BusinessPartnerFormFields({
           id="business_logo_url"
           value={form.logoUrl}
           placeholder="https://cdn.example.com/logo.png"
+          disabled={loading}
           onChange={(event) => onFormChange({ ...form, logoUrl: event.target.value })}
         />
       </BusinessField>
@@ -159,6 +161,7 @@ function BusinessPartnerFormFields({
           type="email"
           value={form.email}
           placeholder="owner@sarcoffee.vn"
+          disabled={loading}
           onChange={(event) => onFormChange({ ...form, email: event.target.value })}
           required
         />
@@ -168,6 +171,7 @@ function BusinessPartnerFormFields({
           id="business_phone"
           value={form.phone}
           placeholder="0900000000"
+          disabled={loading}
           onChange={(event) => onFormChange({ ...form, phone: event.target.value })}
           required
         />
@@ -177,6 +181,7 @@ function BusinessPartnerFormFields({
           id="representative_name"
           value={form.representativeName}
           placeholder="Nguyễn Văn A"
+          disabled={loading}
           onChange={(event) => onFormChange({ ...form, representativeName: event.target.value })}
           required
         />
@@ -187,6 +192,7 @@ function BusinessPartnerFormFields({
           type="email"
           value={form.representativeEmail}
           placeholder="rep@sarcoffee.vn"
+          disabled={loading}
           onChange={(event) => onFormChange({ ...form, representativeEmail: event.target.value })}
           required
         />
@@ -195,6 +201,7 @@ function BusinessPartnerFormFields({
         <BusinessField label="Trạng thái" htmlFor="business_status">
           <Select
             value={String(form.isActive)}
+            disabled={loading}
             onValueChange={(value) => onFormChange({ ...form, isActive: value === "true" })}
           >
             <SelectTrigger id="business_status">

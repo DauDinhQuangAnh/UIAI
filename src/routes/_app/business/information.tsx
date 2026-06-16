@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Buildings, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
 import { BusinessInformationTable } from "@/components/business/information/business-information-table";
 import {
   useBusinessPartners,
+  useBusinessPartner,
   useCreateBusinessPartner,
   useDeleteBusinessPartner,
   useUpdateBusinessPartner,
@@ -40,6 +41,7 @@ function BusinessInformationScreen() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [pageNumber, setPageNumber] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<BusinessPartner | null>(null);
+  const [editTargetId, setEditTargetId] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<BusinessPartner | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState<BusinessPartnerForm>(EMPTY_BUSINESS_FORM);
@@ -56,6 +58,7 @@ function BusinessInformationScreen() {
   );
 
   const businessPartners = useBusinessPartners(params);
+  const editBusinessDetail = useBusinessPartner(editTargetId ?? undefined);
   const createBusiness = useCreateBusinessPartner();
   const updateBusiness = useUpdateBusinessPartner();
   const deleteBusiness = useDeleteBusinessPartner();
@@ -66,9 +69,24 @@ function BusinessInformationScreen() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const openEdit = (business: BusinessPartner) => {
+    setEditTargetId(business.id);
     setEditTarget(business);
     setEditForm(formFromBusinessPartner(business));
   };
+
+  useEffect(() => {
+    if (!editBusinessDetail.data) return;
+    setEditTarget(editBusinessDetail.data);
+    setEditForm(formFromBusinessPartner(editBusinessDetail.data));
+  }, [editBusinessDetail.data]);
+
+  useEffect(() => {
+    if (!editTargetId || !editBusinessDetail.error) return;
+    toast.error(apiErrorMessage(editBusinessDetail.error, "Không thể tải chi tiết doanh nghiệp."));
+    setEditTargetId(null);
+    setEditTarget(null);
+    setEditForm(EMPTY_BUSINESS_FORM);
+  }, [editBusinessDetail.error, editTargetId]);
 
   const onConfirmDelete = () => {
     if (!deleteTarget) return;
@@ -239,15 +257,16 @@ function BusinessInformationScreen() {
       <EditBusinessDialog
         target={editTarget}
         form={editForm}
-        loading={updateBusiness.isPending}
         onOpenChange={(open) => {
           if (!open) {
+            setEditTargetId(null);
             setEditTarget(null);
             setEditForm(EMPTY_BUSINESS_FORM);
           }
         }}
         onFormChange={setEditForm}
         onSubmit={onSubmitEdit}
+        loading={updateBusiness.isPending || editBusinessDetail.isFetching}
       />
 
       <DeleteBusinessDialog
