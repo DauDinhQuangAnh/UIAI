@@ -80,7 +80,7 @@ export function CandidateCard({
           <div className="flex items-center gap-2">
             <StatusChip status={candidate.status} />
             <span className="text-sm text-text-secondary tabular">
-              {Math.round((candidate.similarity ?? 0) * 100)}% similar
+              Tương đồng {Math.round((candidate.similarity ?? 0) * 100)}%
             </span>
           </div>
           {pending && <StatusChip status="extracting" className="capitalize" />}

@@ -25,7 +25,7 @@ export function BusinessInformationTable({
           <BusinessHeadCell className="w-[12%]">SĐT</BusinessHeadCell>
           <BusinessHeadCell className="w-[16%]">Email</BusinessHeadCell>
           <BusinessHeadCell className="w-[8%]">Trạng thái</BusinessHeadCell>
-          <BusinessHeadCell className="w-[10%]">Người phụ trách</BusinessHeadCell>
+          <BusinessHeadCell className="w-[10%]">Chủ doanh nghiệp</BusinessHeadCell>
           <BusinessHeadCell className="w-24 text-right">Thao tác</BusinessHeadCell>
         </TableRow>
       </TableHeader>

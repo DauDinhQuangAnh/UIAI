@@ -110,9 +110,7 @@ function CredentialsStep({
     <>
       <DialogHeader className="items-center text-center">
         <DialogTitle className="text-brand-800">Thêm liên kết mạng xã hội</DialogTitle>
-        <DialogDescription>
-          Nhập thông tin ứng dụng cho kết nối doanh nghiệp đã chọn.
-        </DialogDescription>
+        <DialogDescription>Nhập thông tin ứng dụng cho kết nối doanh nghiệp đã chọn.</DialogDescription>
       </DialogHeader>
       <form onSubmit={onContinue} className="grid gap-4">
         <SocialField label="Doanh nghiệp" htmlFor="social_business">
@@ -132,7 +130,7 @@ function CredentialsStep({
             </SelectContent>
           </Select>
         </SocialField>
-        <SocialField label="Mã ứng dụng" htmlFor="social_app_id" required>
+        <SocialField label="App ID" htmlFor="social_app_id" required>
           <Input
             id="social_app_id"
             value={form.appId}
@@ -141,7 +139,7 @@ function CredentialsStep({
             required
           />
         </SocialField>
-        <SocialField label="Khóa bí mật" htmlFor="social_app_secret" required>
+        <SocialField label="App Secret" htmlFor="social_app_secret" required>
           <Input
             id="social_app_secret"
             type="password"
@@ -173,8 +171,8 @@ function PageSelectStep({
   return (
     <>
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-brand-800">Chọn trang cần liên kết</DialogTitle>
-        <DialogDescription>Chọn một hoặc nhiều trang Facebook quản lý để kết nối.</DialogDescription>
+        <DialogTitle className="text-brand-800">Chọn trang muốn liên kết</DialogTitle>
+        <DialogDescription>Chọn một hoặc nhiều trang Facebook bạn quản lý để kết nối.</DialogDescription>
       </DialogHeader>
       <div className="mx-auto flex w-full max-w-md flex-col gap-3">
         {MANAGED_PAGES.map((page) => {
@@ -248,8 +246,8 @@ function ScheduleStep({
   return (
     <>
       <DialogHeader className="items-center text-center">
-        <DialogTitle className="text-brand-800">Cài đặt thời gian hoạt động</DialogTitle>
-        <DialogDescription>Thiết lập thời gian chatbot chạy cho từng trang đã chọn.</DialogDescription>
+        <DialogTitle className="text-brand-800">Cấu hình thời gian hoạt động</DialogTitle>
+        <DialogDescription>Thiết lập thời gian chatbot hoạt động cho từng trang đã chọn.</DialogDescription>
       </DialogHeader>
 
       <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">

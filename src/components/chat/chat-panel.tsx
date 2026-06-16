@@ -103,12 +103,14 @@ export function ChatPanel({ agentId }: { agentId: string }) {
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800">
             <Flask weight="fill" className="size-3.5" aria-hidden />
-            Playground
+            Khu thử nghiệm
           </span>
-          <span className="text-xs text-text-dim">Uses the agent's saved config · not shown in Conversations</span>
+          <span className="text-xs text-text-dim">
+            Dùng cấu hình đã lưu của tác nhân · không hiển thị trong Cuộc hội thoại
+          </span>
         </div>
         <Button variant="secondary" size="sm" onClick={handleReset} loading={reset.isPending} disabled={pending}>
-          <ArrowClockwise className="size-4" aria-hidden /> Reset
+          <ArrowClockwise className="size-4" aria-hidden /> Làm mới
         </Button>
       </header>
 
@@ -116,7 +118,7 @@ export function ChatPanel({ agentId }: { agentId: string }) {
         {!showThread ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-text-secondary">
             <Flask className="size-8 text-text-dim" aria-hidden />
-            <p className="text-sm">Send a message to try this agent with its current configuration.</p>
+            <p className="text-sm">Gửi một tin nhắn để thử tác nhân với cấu hình hiện tại.</p>
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-3xl flex-col">
@@ -140,7 +142,7 @@ export function ChatPanel({ agentId }: { agentId: string }) {
             <Warning weight="fill" className="size-4" aria-hidden /> {error.message}
           </span>
           <Button variant="ghost" size="sm" onClick={retry} disabled={pending}>
-            Retry
+            Thử lại
           </Button>
         </div>
       )}
@@ -148,7 +150,7 @@ export function ChatPanel({ agentId }: { agentId: string }) {
       {providerUnavailable ? (
         <div className="flex items-center gap-2 border-t border-border bg-surface-2 px-4 py-4 text-sm text-text-secondary">
           <Warning weight="fill" className="size-4 text-warning-fg" aria-hidden />
-          Chat needs a configured Gemini key. Set one to use the playground.
+          Chat cần cấu hình khóa Gemini. Hãy thiết lập khóa để dùng khu thử nghiệm.
         </div>
       ) : (
         <ChatComposer onSend={send} disabled={pending || session.isLoading} />

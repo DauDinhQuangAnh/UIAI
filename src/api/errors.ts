@@ -12,7 +12,7 @@ export function errorCode(error: unknown): string | undefined {
   return undefined;
 }
 
-export function errorMessage(error: unknown, fallback = "Something went wrong"): string {
+export function errorMessage(error: unknown, fallback = "Đã xảy ra lỗi"): string {
   if (error && typeof error === "object" && "error" in error) {
     const inner = (error as ApiError).error;
     if (inner?.message) return inner.message;

@@ -16,6 +16,11 @@ export const Route = createFileRoute("/_app/agents/$agentId/knowledge/")({
 });
 
 const STATUS_OPTIONS = ["pending", "merged", "dismissed"] as const;
+const STATUS_LABEL: Record<(typeof STATUS_OPTIONS)[number], string> = {
+  pending: "Chờ xử lý",
+  merged: "Đã hợp nhất",
+  dismissed: "Đã bỏ qua",
+};
 
 function KnowledgeScreen() {
   const { agentId } = Route.useParams();
@@ -56,7 +61,7 @@ function KnowledgeScreen() {
           <SelectContent>
             {STATUS_OPTIONS.map((s) => (
               <SelectItem key={s} value={s} className="capitalize">
-                {s}
+                {STATUS_LABEL[s]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -80,7 +85,11 @@ function KnowledgeScreen() {
         empty={
           <EmptyState
             icon={Graph}
-            title={status === "pending" ? "Không có ứng viên nào cần xem xét" : `Không có ứng viên ${status} nào`}
+            title={
+              status === "pending"
+                ? "Không có ứng viên nào cần xem xét"
+                : `Không có ứng viên ${STATUS_LABEL[status as keyof typeof STATUS_LABEL] ?? status} nào`
+            }
             description={
               status === "pending"
                 ? "Đồ thị chưa chỉ ra bất kỳ thực thể trùng lặp nào cần xem xét."

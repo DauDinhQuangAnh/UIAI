@@ -32,6 +32,57 @@ Findings:
 Verification:
 - npm.cmd run typecheck passed.
 
+2026-06-16 - Normalize Vietnamese UI text across dashboard
+----------------------------------------------------------
+Goal:
+- Continue converting user-facing UI text to Vietnamese and clean up mojibake/English leftovers for a Vietnamese-first interface.
+
+Files touched:
+- src/api/errors.ts
+- src/components/business/information/business-information-data.ts
+- src/components/business/information/business-information-dialogs.tsx
+- src/components/business/information/business-information-table.tsx
+- src/components/business/social-media/add-social-link-dialog.tsx
+- src/components/business/social-media/delete-social-link-dialog.tsx
+- src/components/business/social-media/social-media-data.ts
+- src/components/chat/chat-composer.tsx
+- src/components/chat/chat-panel.tsx
+- src/components/chat/typing-dots.tsx
+- src/components/common/error-fallback.tsx
+- src/components/common/keyset-list.tsx
+- src/components/common/status-chip.tsx
+- src/components/conversations/summary-callout.tsx
+- src/components/documents/document-row.tsx
+- src/components/knowledge/candidate-card.tsx
+- src/components/knowledge/kg-graph.tsx
+- src/components/shell/agent-switcher.tsx
+- src/components/shell/app-shell.tsx
+- src/components/shell/sidebar.tsx
+- src/components/shell/topbar.tsx
+- src/components/ui/dialog.tsx
+- src/routes/login.tsx
+- src/routes/_app/agents/index.tsx
+- src/routes/_app/agents/$agentId/index.tsx
+- src/routes/_app/agents/$agentId/conversations/$conversationId.tsx
+- src/routes/_app/agents/$agentId/graph/index.tsx
+- src/routes/_app/agents/$agentId/knowledge/index.tsx
+- src/routes/_app/business/information.tsx
+- src/routes/_app/business/social-media.tsx
+- SESSION_NOTES.txt
+
+Changes:
+- Cleaned Business Information and Social Media Links text so page titles, dialogs, labels, statuses, and mock data read naturally in Vietnamese.
+- Replaced remaining English UX strings in chat/playground, error fallback, graph, conversations, login, switcher, topbar, and shared dialogs.
+- Localized shared status rendering so backend values such as queued/extracting/ready/pending/merged/dismissed are shown in Vietnamese.
+- Added UI-level label maps for agent status and knowledge filters so backend enums stay unchanged while the UI is translated.
+- Normalized accessibility text such as aria labels and sr-only close labels into Vietnamese.
+
+Verification:
+- npm.cmd run typecheck passed.
+
+Notes:
+- Technical/product terms intentionally kept where useful: Agent, KG, App ID, App Secret.
+
 2026-06-16 - Split large Business route files
 ---------------------------------------------
 Goal:

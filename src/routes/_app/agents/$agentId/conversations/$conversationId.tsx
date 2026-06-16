@@ -24,7 +24,7 @@ function TranscriptScreen() {
         params={{ agentId }}
         className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
       >
-        <ArrowLeft className="size-4" aria-hidden /> Conversations
+        <ArrowLeft className="size-4" aria-hidden /> Cuộc hội thoại
       </Link>
 
       {thread.isLoading ? (
@@ -36,7 +36,7 @@ function TranscriptScreen() {
       ) : thread.isError ? (
         <TranscriptError onRetry={thread.refetch} />
       ) : thread.messages.length === 0 ? (
-        <EmptyState icon={ChatText} title="Không có tin nhắn" description="Cuộc trò chuyện này chưa có tin nhắn nào." />
+        <EmptyState icon={ChatText} title="Không có tin nhắn" description="Cuộc hội thoại này chưa có tin nhắn nào." />
       ) : (
         <>
           <SummaryCallout summary={thread.summary} />
@@ -57,7 +57,7 @@ function TranscriptError({ onRetry }: { onRetry: () => void }) {
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-danger-border bg-danger-bg px-6 py-12 text-center">
       <p className="text-sm text-danger-fg">Không thể tải cuộc trò chuyện này.</p>
       <Button variant="secondary" size="sm" onClick={onRetry}>
-        Retry
+        Thử lại
       </Button>
     </div>
   );

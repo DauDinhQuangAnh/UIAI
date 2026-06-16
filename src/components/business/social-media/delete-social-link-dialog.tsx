@@ -23,7 +23,7 @@ export function DeleteSocialLinkDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Xóa liên kết mạng xã hội</DialogTitle>
-          <DialogDescription>Bạn có chắc chắn muốn xóa {target?.page}?</DialogDescription>
+          <DialogDescription>Bạn có chắc muốn xóa {target?.page} không?</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>

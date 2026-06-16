@@ -56,7 +56,7 @@ function laidOut(data: KGGraph): { nodes: Node[]; edges: Edge[] } {
     return {
       id: n.id!,
       position: { x: (pos?.x ?? 0) - NODE_W / 2, y: (pos?.y ?? 0) - NODE_H / 2 },
-      data: { label: n.name ?? "(unnamed)" },
+      data: { label: n.name ?? "(chua dat ten)" },
       style: {
         width: NODE_W,
         background: c.bg,
@@ -113,7 +113,7 @@ export function KgGraph({ agentId }: { agentId: string }) {
       <EmptyState
         icon={GraphIcon}
         title="Chưa có đồ thị nào"
-        description="Bật grounding KG cho tác nhân này và nhập tài liệu để tạo đồ thị. Việc bật chỉ ảnh hưởng đến tài liệu mới được ingest."
+        description="Bật KG grounding cho tác nhân này và nhập tài liệu để tạo đồ thị. Việc bật chỉ ảnh hưởng đến các tài liệu mới được nạp vào hệ thống."
       />
     );
   }
@@ -122,7 +122,7 @@ export function KgGraph({ agentId }: { agentId: string }) {
     <div className="relative h-[calc(100dvh-7rem)] w-full overflow-hidden rounded-2xl border border-border bg-surface">
       {data?.truncated && (
         <div className="absolute left-3 top-3 z-10 rounded-pill border border-warning-border bg-warning-bg px-3 py-1 text-xs font-medium text-warning-fg">
-          Showing top {nodes.length} of {data.total_entities} entities (by confidence)
+          Đang hiển thị {nodes.length}/{data.total_entities} thực thể có độ tin cậy cao nhất
         </div>
       )}
       <ReactFlowProvider>
@@ -144,7 +144,7 @@ export function KgGraph({ agentId }: { agentId: string }) {
         <aside className="absolute right-3 top-3 z-10 flex w-72 flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-md">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-display text-base font-semibold text-text-primary">{selected.name}</h3>
-            <button aria-label="Close" onClick={() => setSelectedId(null)} className="text-text-dim hover:text-text-primary">
+            <button aria-label="Đóng" onClick={() => setSelectedId(null)} className="text-text-dim hover:text-text-primary">
               <X className="size-4" aria-hidden />
             </button>
           </div>

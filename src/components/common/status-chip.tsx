@@ -15,14 +15,14 @@ interface StatusMeta {
 // ingest states and KG candidate states. In-progress states pulse.
 const STATUS_META: Record<string, StatusMeta> = {
   // Document ingest pipeline (success = "ready", verified server-side).
-  queued: { tone: "warning", pulse: true },
-  extracting: { tone: "info", pulse: true },
-  ready: { tone: "success", icon: CheckCircle },
-  failed: { tone: "danger", icon: XCircle },
+  queued: { tone: "warning", pulse: true, label: "Đang chờ" },
+  extracting: { tone: "info", pulse: true, label: "Đang trích xuất" },
+  ready: { tone: "success", icon: CheckCircle, label: "Sẵn sàng" },
+  failed: { tone: "danger", icon: XCircle, label: "Thất bại" },
   // KG candidate states.
-  pending: { tone: "warning", icon: WarningCircle },
-  merged: { tone: "success", icon: CheckCircle },
-  dismissed: { tone: "neutral" },
+  pending: { tone: "warning", icon: WarningCircle, label: "Chờ xử lý" },
+  merged: { tone: "success", icon: CheckCircle, label: "Đã hợp nhất" },
+  dismissed: { tone: "neutral", label: "Đã bỏ qua" },
 };
 
 export function StatusChip({ status, className }: { status: string | undefined; className?: string }) {
@@ -36,7 +36,7 @@ export function StatusChip({ status, className }: { status: string | undefined; 
       ) : Ico ? (
         <Ico className="size-3.5" aria-hidden />
       ) : null}
-      {meta.label ?? status ?? "unknown"}
+      {meta.label ?? status ?? "không xác định"}
     </Badge>
   );
 }

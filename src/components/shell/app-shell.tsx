@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Close navigation"
+          aria-label="Đóng điều hướng"
               className="absolute right-2 top-3 rounded-md p-1.5 text-text-secondary hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus"
             >
               <X className="size-5" aria-hidden />

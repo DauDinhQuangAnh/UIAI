@@ -15,9 +15,9 @@ function GraphScreen() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-6 sm:p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-text-primary">Graph</h1>
+        <h1 className="font-display text-3xl font-semibold text-text-primary">Đồ thị</h1>
         <p className="text-sm text-text-secondary">
-          The agent's knowledge graph — entities and the relations extracted from its documents.
+          Đồ thị tri thức của tác nhân, gồm các thực thể và quan hệ được trích xuất từ tài liệu.
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-[calc(100dvh-7rem)] w-full rounded-2xl" />}>

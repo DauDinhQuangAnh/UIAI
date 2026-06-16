@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 export function ChatComposer({
   onSend,
   disabled = false,
-  placeholder = "Message this agent…",
+  placeholder = "Nhắn tin với tác nhân này…",
 }: {
   onSend: (text: string) => void;
   disabled?: boolean;
@@ -28,7 +28,7 @@ export function ChatComposer({
   return (
     <div className="flex items-end gap-2 border-t border-border bg-surface p-3">
       <label htmlFor="chat-input" className="sr-only">
-        Message
+        Tin nhắn
       </label>
       <textarea
         id="chat-input"
@@ -60,7 +60,7 @@ export function ChatComposer({
         size="md"
         onClick={submit}
         disabled={disabled || text.trim() === ""}
-        aria-label="Send message"
+        aria-label="Gửi tin nhắn"
       >
         <PaperPlaneRight weight="fill" className="size-4" aria-hidden />
       </Button>

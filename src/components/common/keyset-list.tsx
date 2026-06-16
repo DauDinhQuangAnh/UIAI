@@ -59,7 +59,7 @@ export function KeysetList<TItem>({
             onClick={() => fetchNextPage()}
             loading={isFetchingNextPage}
           >
-            Tải thêm
+            Xem thêm
           </Button>
         </div>
       )}

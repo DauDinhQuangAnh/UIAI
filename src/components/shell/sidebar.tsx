@@ -24,7 +24,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const agentId = params.agentId;
 
   return (
-    <nav className="flex h-full w-64 flex-col gap-1 border-r border-border bg-surface p-3" aria-label="Main">
+    <nav className="flex h-full w-64 flex-col gap-1 border-r border-border bg-surface p-3" aria-label="Điều hướng chính">
       <Link
         to="/agents"
         onClick={onNavigate}
@@ -34,7 +34,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         social-ai
       </Link>
 
-      <NavSection label="Quản lý kinh doanh">
+      <NavSection label="Quản lý doanh nghiệp">
         <NavItem
           to="/business/information"
           icon={Buildings}

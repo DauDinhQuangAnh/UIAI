@@ -11,7 +11,7 @@ import { useLogin, AuthRequestError } from "@/api/hooks/auth";
 import { useSession } from "@/auth/session-store";
 
 const loginSchema = z.object({
-  tenant_slug: z.string().min(1, "Vui lòng nhập workspace"),
+  tenant_slug: z.string().min(1, "Vui lòng nhập không gian làm việc"),
   email: z.string().min(1, "Vui lòng nhập email").email("Email không hợp lệ"),
   password: z.string().min(1, "Vui lòng nhập mật khẩu"),
 });
@@ -49,7 +49,7 @@ function LoginScreen() {
         if (err instanceof AuthRequestError && err.status === 400) {
           setFormError("Vui lòng kiểm tra thông tin và thử lại.");
         } else {
-          setFormError("Tenant, email hoặc mật khẩu không hợp lệ.");
+          setFormError("Không gian làm việc, email hoặc mật khẩu không hợp lệ.");
         }
       },
     });
@@ -79,7 +79,7 @@ function LoginScreen() {
         <div className="flex w-full max-w-sm flex-col gap-6">
           <div className="flex flex-col gap-1.5">
             <h2 className="font-display text-2xl font-semibold text-text-primary">Đăng nhập</h2>
-            <p className="text-sm text-text-secondary">Nhập thông tin workspace của bạn.</p>
+            <p className="text-sm text-text-secondary">Nhập thông tin không gian làm việc của bạn.</p>
           </div>
 
           {formError && (
@@ -93,7 +93,7 @@ function LoginScreen() {
           )}
 
           <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-            <Field label="Workspace" htmlFor="tenant_slug" error={errors.tenant_slug?.message}>
+            <Field label="Không gian làm việc" htmlFor="tenant_slug" error={errors.tenant_slug?.message}>
               <Input
                 id="tenant_slug"
                 autoComplete="organization"

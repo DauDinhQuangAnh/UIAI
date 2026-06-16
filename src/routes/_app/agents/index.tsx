@@ -14,6 +14,15 @@ export const Route = createFileRoute("/_app/agents/")({
   component: AgentsList,
 });
 
+const AGENT_STATUS_LABEL: Record<string, string> = {
+  active: "Đang hoạt động",
+  live: "Đang hoạt động",
+  enabled: "Đang hoạt động",
+  inactive: "Không hoạt động",
+  disabled: "Đã tắt",
+  draft: "Nháp",
+};
+
 function AgentsList() {
   const navigate = useNavigate();
   const role = useSession((s) => s.user?.role);
@@ -102,7 +111,7 @@ function AgentStatus({ status }: { status: Agent["status"] }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-sm text-text-secondary">
       <span className={live ? "size-2 rounded-pill bg-success-base" : "size-2 rounded-pill bg-text-dim"} />
-      {status || "không xác định"}
+      {(status && AGENT_STATUS_LABEL[status]) || status || "không xác định"}
     </span>
   );
 }

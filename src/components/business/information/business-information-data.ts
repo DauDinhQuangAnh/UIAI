@@ -22,8 +22,8 @@ export interface BusinessForm {
 export const INITIAL_BUSINESSES: Business[] = [
   {
     id: "clinic-physio",
-    name: "Phong kham y duoc co truyen Lupita",
-    address: "189 Nguyen Thi Minh Khai, Quan 3, TP.HCM",
+    name: "Phòng khám y dược cổ truyền Lupita",
+    address: "189 Nguyễn Thị Minh Khai, Quận 3, TP.HCM",
     phone: "0368456329",
     email: "lupita@gmail.com",
     status: "Hoạt động",
@@ -31,8 +31,8 @@ export const INITIAL_BUSINESSES: Business[] = [
   },
   {
     id: "my-pham",
-    name: "My pham cao cap Duoc si Tien",
-    address: "189 Duong Quang Ham, Go Vap, TP.HCM",
+    name: "Mỹ phẩm cao cấp Dược sĩ Tiến",
+    address: "189 Dương Quảng Hàm, Gò Vấp, TP.HCM",
     phone: "0986912354",
     email: "dst@gmail.com",
     status: "Hoạt động",
@@ -41,7 +41,7 @@ export const INITIAL_BUSINESSES: Business[] = [
   {
     id: "shop-hoa",
     name: "Shop hoa Lily",
-    address: "88 Bach Dang, Binh Thanh, TP.HCM",
+    address: "88 Bạch Đằng, Bình Thạnh, TP.HCM",
     phone: "0125478963",
     email: "lily@gmail.com",
     status: "Hoạt động",
@@ -49,8 +49,8 @@ export const INITIAL_BUSINESSES: Business[] = [
   },
   {
     id: "salon-minamoto",
-    name: "Shop quan ao thoi trang Minamoto",
-    address: "960 Au Co, Tan Phu, TP.HCM",
+    name: "Shop quần áo thời trang Minamoto",
+    address: "960 Âu Cơ, Tân Phú, TP.HCM",
     phone: "0789654185",
     email: "minamoto@gmail.com",
     status: "Hoạt động",

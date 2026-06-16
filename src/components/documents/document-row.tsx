@@ -53,7 +53,7 @@ export function DocumentRow({
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{doc.title || "Untitled"}</TableCell>
+      <TableCell className="font-medium">{doc.title || "Chưa có tiêu đề"}</TableCell>
       <TableCell className="font-mono text-text-secondary">{doc.format || "—"}</TableCell>
       <TableCell>
         <StatusChip status={liveStatus} />
@@ -67,7 +67,7 @@ export function DocumentRow({
           <Button
             variant="ghost"
             size="icon"
-            aria-label={`Delete ${doc.title || "document"}`}
+            aria-label={`Xóa ${doc.title || "tài liệu"}`}
             onClick={() => onRequestDelete(doc)}
           >
             <Trash className="size-4 text-danger-base" aria-hidden />
