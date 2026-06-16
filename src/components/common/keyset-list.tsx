@@ -36,10 +36,10 @@ export function KeysetList<TItem>({
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-danger-border bg-danger-bg px-6 py-12 text-center">
-        <p className="text-sm text-danger-fg">Couldn't load this list.</p>
+        <p className="text-sm text-danger-fg">Không thể tải danh sách này.</p>
         {onRetry && (
           <Button variant="secondary" size="sm" onClick={onRetry}>
-            Retry
+            Thử lại
           </Button>
         )}
       </div>
@@ -59,7 +59,7 @@ export function KeysetList<TItem>({
             onClick={() => fetchNextPage()}
             loading={isFetchingNextPage}
           >
-            Load more
+            Tải thêm
           </Button>
         </div>
       )}

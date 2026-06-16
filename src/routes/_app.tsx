@@ -25,7 +25,7 @@ function BootPending() {
         className="size-8 animate-spin rounded-full border-2 border-border border-t-brand-500"
         aria-hidden
       />
-      <span className="sr-only">Loading your workspace…</span>
+      <span className="sr-only">Đang tải không gian làm việc của bạn…</span>
     </div>
   );
 }

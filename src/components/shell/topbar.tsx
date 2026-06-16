@@ -27,7 +27,7 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
       <button
         type="button"
         onClick={onOpenNav}
-        aria-label="Open navigation"
+        aria-label="Mở điều hướng"
         className="rounded-md p-1.5 text-text-secondary hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus lg:hidden"
       >
         <List className="size-5" aria-hidden />
@@ -40,7 +40,7 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-pill px-2 py-1 text-sm text-text-secondary hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus">
             <UserCircle className="size-6 text-text-dim" aria-hidden />
             <span className="hidden max-w-[10rem] truncate sm:inline">
-              {user?.display_name || user?.email || "Account"}
+              {user?.display_name || user?.email || "Tài khoản"}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -57,11 +57,11 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/account">
-                <Gear className="size-4" aria-hidden /> Account
+                <Gear className="size-4" aria-hidden /> Tài khoản
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onLogout}>
-              <SignOut className="size-4" aria-hidden /> Sign out
+              <SignOut className="size-4" aria-hidden /> Đăng xuất
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

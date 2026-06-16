@@ -48,9 +48,9 @@ export function UploadDropzone({
           <UploadSimple className="size-5" aria-hidden />
         </span>
         <span className="text-sm font-medium text-text-primary">
-          {isUploading ? "Uploading…" : "Click or drop a file to upload"}
+          {isUploading ? "Đang tải lên…" : "Nhấp hoặc kéo tệp vào đây để tải lên"}
         </span>
-        <span className="text-xs text-text-dim">Re-ingest = delete + re-upload (no server retention).</span>
+        <span className="text-xs text-text-dim">Tải lại = xóa + tải lên lại (không giữ trên máy chủ).</span>
       </button>
       <input
         ref={inputRef}

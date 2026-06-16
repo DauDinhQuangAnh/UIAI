@@ -1,7 +1,7 @@
 import type { BadgeProps } from "@/components/ui/badge";
 
 export type Platform = "facebook" | "tiktok";
-export type LinkStatus = "Full time" | "Part time" | "Paused";
+export type LinkStatus = "Toàn thời gian" | "Bán thời gian" | "Tạm dừng";
 export type AddStep = "credentials" | "pages" | "schedule";
 export type ScheduleMode = "full" | "partial";
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
@@ -63,7 +63,7 @@ export const SOCIAL_LINKS: SocialLink[] = [
     appSecret: "connected-secret",
     page: "Phong kham y duoc co truyen Lupita",
     pageId: "lupia8190",
-    status: "Full time",
+    status: "Toàn thời gian",
   },
   {
     id: "fb-ds-tien",
@@ -73,7 +73,7 @@ export const SOCIAL_LINKS: SocialLink[] = [
     appSecret: "connected-secret",
     page: "My pham cao cap Duoc si Tien",
     pageId: "DSThathayqua",
-    status: "Part time",
+    status: "Bán thời gian",
   },
   {
     id: "fb-lam-dep",
@@ -83,7 +83,7 @@ export const SOCIAL_LINKS: SocialLink[] = [
     appSecret: "connected-secret",
     page: "Lam dep moi ngay",
     pageId: "8719-8afb-9189",
-    status: "Paused",
+    status: "Tạm dừng",
   },
   {
     id: "fb-minamoto",
@@ -93,7 +93,7 @@ export const SOCIAL_LINKS: SocialLink[] = [
     appSecret: "connected-secret",
     page: "Shop quan ao thoi trang Minamoto",
     pageId: "minamoto-clothes",
-    status: "Full time",
+    status: "Toàn thời gian",
   },
   {
     id: "tt-lily",
@@ -103,7 +103,7 @@ export const SOCIAL_LINKS: SocialLink[] = [
     appSecret: "connected-secret",
     page: "Lily Flowers",
     pageId: "@lilyflowers",
-    status: "Full time",
+    status: "Toàn thời gian",
   },
   {
     id: "tt-minamoto",
@@ -113,25 +113,14 @@ export const SOCIAL_LINKS: SocialLink[] = [
     appSecret: "connected-secret",
     page: "Minamoto Daily",
     pageId: "@minamotodaily",
-    status: "Part time",
+    status: "Bán thời gian",
   },
 ];
 
 export const STATUS_TONE: Record<LinkStatus, BadgeProps["tone"]> = {
-  "Full time": "success",
-  "Part time": "info",
-  Paused: "neutral",
-};
-
-export const LINK_STATUS_LABELS: Record<LinkStatus, string> = {
-  "Full time": "Toàn thời gian",
-  "Part time": "Bán thời gian",
-  Paused: "Tạm dừng",
-};
-
-export const BUSINESS_STATUS_LABELS: Record<"Active" | "Inactive", string> = {
-  Active: "Hoạt động",
-  Inactive: "Không hoạt động",
+  "Toàn thời gian": "success",
+  "Bán thời gian": "info",
+  "Tạm dừng": "neutral",
 };
 
 export const BUSINESS_OPTIONS = Array.from(new Set(SOCIAL_LINKS.map((link) => link.business)));

@@ -34,24 +34,24 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         social-ai
       </Link>
 
-      <NavSection label="Business Management">
+      <NavSection label="Quản lý kinh doanh">
         <NavItem
           to="/business/information"
           icon={Buildings}
-          label="Business Information"
+          label="Thông tin doanh nghiệp"
           onNavigate={onNavigate}
         />
         <NavItem
           to="/business/social-media"
           icon={LinkSimple}
-          label="Social Media Links"
+          label="Liên kết mạng xã hội"
           onNavigate={onNavigate}
         />
       </NavSection>
 
       {agentId && (
         <div className="mt-3 flex flex-col gap-1">
-          <span className="px-3 py-1 font-mono text-xs uppercase tracking-wide text-text-dim">Agent</span>
+          <span className="px-3 py-1 font-mono text-xs uppercase tracking-wide text-text-dim">Tác nhân</span>
           <Link
             to="/agents"
             onClick={onNavigate}
@@ -60,7 +60,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <Robot className="size-5" aria-hidden />
-            Agents
+            Tác nhân
           </Link>
           <Link
             to="/agents/$agentId"
@@ -71,7 +71,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <SlidersHorizontal className="size-5" aria-hidden />
-            Configuration
+            Cấu hình
           </Link>
 
           <Link
@@ -82,7 +82,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <FileText className="size-5" aria-hidden />
-            Documents
+            Tài liệu
           </Link>
 
           <Link
@@ -93,7 +93,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <Graph className="size-5" aria-hidden />
-            Knowledge
+            Tri thức
           </Link>
 
           <Link
@@ -104,7 +104,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <ShareNetwork className="size-5" aria-hidden />
-            Graph
+            Đồ thị
           </Link>
 
           <Link
@@ -115,7 +115,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <ChatTeardropDots className="size-5" aria-hidden />
-            Chat
+            Trò chuyện
           </Link>
 
           <Link
@@ -126,7 +126,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <ChatsCircle className="size-5" aria-hidden />
-            Conversations
+            Cuộc hội thoại
           </Link>
 
           <Link
@@ -137,7 +137,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             activeProps={{ className: cn(linkBase, active) }}
           >
             <ChartBar className="size-5" aria-hidden />
-            Analytics
+            Phân tích
           </Link>
         </div>
       )}

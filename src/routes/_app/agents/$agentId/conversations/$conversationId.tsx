@@ -36,7 +36,7 @@ function TranscriptScreen() {
       ) : thread.isError ? (
         <TranscriptError onRetry={thread.refetch} />
       ) : thread.messages.length === 0 ? (
-        <EmptyState icon={ChatText} title="No messages" description="This conversation has no messages yet." />
+        <EmptyState icon={ChatText} title="Không có tin nhắn" description="Cuộc trò chuyện này chưa có tin nhắn nào." />
       ) : (
         <>
           <SummaryCallout summary={thread.summary} />
@@ -55,7 +55,7 @@ function TranscriptScreen() {
 function TranscriptError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-danger-border bg-danger-bg px-6 py-12 text-center">
-      <p className="text-sm text-danger-fg">Couldn't load this conversation.</p>
+      <p className="text-sm text-danger-fg">Không thể tải cuộc trò chuyện này.</p>
       <Button variant="secondary" size="sm" onClick={onRetry}>
         Retry
       </Button>

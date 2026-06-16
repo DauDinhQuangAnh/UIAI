@@ -11,9 +11,9 @@ import { useLogin, AuthRequestError } from "@/api/hooks/auth";
 import { useSession } from "@/auth/session-store";
 
 const loginSchema = z.object({
-  tenant_slug: z.string().min(1, "Required"),
-  email: z.string().min(1, "Required").email("Enter a valid email"),
-  password: z.string().min(1, "Required"),
+  tenant_slug: z.string().min(1, "Vui lòng nhập workspace"),
+  email: z.string().min(1, "Vui lòng nhập email").email("Email không hợp lệ"),
+  password: z.string().min(1, "Vui lòng nhập mật khẩu"),
 });
 type LoginForm = z.infer<typeof loginSchema>;
 
@@ -47,9 +47,9 @@ function LoginScreen() {
         // 401 must be ONE generic message (never field-attributed) to preserve the
         // server's anti-enumeration design; 400 = malformed input.
         if (err instanceof AuthRequestError && err.status === 400) {
-          setFormError("Please check your input and try again.");
+          setFormError("Vui lòng kiểm tra thông tin và thử lại.");
         } else {
-          setFormError("Invalid tenant, email, or password.");
+          setFormError("Tenant, email hoặc mật khẩu không hợp lệ.");
         }
       },
     });
@@ -65,10 +65,10 @@ function LoginScreen() {
         </div>
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-4xl font-bold leading-tight">
-            Your customer assistant, grounded in your own knowledge.
+            Trợ lý khách hàng của bạn, dựa trên tri thức riêng của bạn.
           </h1>
           <p className="max-w-md text-white/80">
-            Manage agents, documents, and the knowledge graph that powers grounded replies.
+            Quản lý tác nhân, tài liệu và đồ thị tri thức để tạo phản hồi có nền tảng.
           </p>
         </div>
         <p className="text-sm text-white/60">Trợ lý hỗ trợ khách hàng</p>
@@ -78,8 +78,8 @@ function LoginScreen() {
       <main className="flex items-center justify-center p-6 sm:p-12">
         <div className="flex w-full max-w-sm flex-col gap-6">
           <div className="flex flex-col gap-1.5">
-            <h2 className="font-display text-2xl font-semibold text-text-primary">Sign in</h2>
-            <p className="text-sm text-text-secondary">Enter your workspace credentials.</p>
+            <h2 className="font-display text-2xl font-semibold text-text-primary">Đăng nhập</h2>
+            <p className="text-sm text-text-secondary">Nhập thông tin workspace của bạn.</p>
           </div>
 
           {formError && (
@@ -111,7 +111,7 @@ function LoginScreen() {
                 {...register("email")}
               />
             </Field>
-            <Field label="Password" htmlFor="password" error={errors.password?.message}>
+            <Field label="Mật khẩu" htmlFor="password" error={errors.password?.message}>
               <Input
                 id="password"
                 type="password"
@@ -121,7 +121,7 @@ function LoginScreen() {
               />
             </Field>
             <Button type="submit" className="mt-2 w-full" loading={login.isPending}>
-              Sign in
+              Đăng nhập
             </Button>
           </form>
         </div>

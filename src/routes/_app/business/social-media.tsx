@@ -44,7 +44,7 @@ function SocialMediaLinksScreen() {
 
   const openEdit = (link: SocialLink) => {
     const schedule = createDefaultSchedule();
-    schedule.mode = link.status === "Part time" ? "partial" : "full";
+    schedule.mode = link.status === "Bán thời gian" ? "partial" : "full";
     setEditTarget(link);
     setEditForm({
       business: link.business,

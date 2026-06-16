@@ -80,8 +80,8 @@ export function AddBusinessDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Hoạt động</SelectItem>
-                <SelectItem value="Inactive">Không hoạt động</SelectItem>
+                <SelectItem value="Hoạt động">Hoạt động</SelectItem>
+                <SelectItem value="Không hoạt động">Không hoạt động</SelectItem>
               </SelectContent>
             </Select>
           </BusinessField>
@@ -201,8 +201,8 @@ export function EditBusinessDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Hoạt động</SelectItem>
-                <SelectItem value="Inactive">Không hoạt động</SelectItem>
+                <SelectItem value="Hoạt động">Hoạt động</SelectItem>
+                <SelectItem value="Không hoạt động">Không hoạt động</SelectItem>
               </SelectContent>
             </Select>
           </BusinessField>

@@ -4,7 +4,7 @@ export interface Business {
   address: string;
   phone: string;
   email: string;
-  status: "Active" | "Inactive";
+  status: "Hoạt động" | "Không hoạt động";
   owner: string;
 }
 
@@ -26,7 +26,7 @@ export const INITIAL_BUSINESSES: Business[] = [
     address: "189 Nguyen Thi Minh Khai, Quan 3, TP.HCM",
     phone: "0368456329",
     email: "lupita@gmail.com",
-    status: "Active",
+    status: "Hoạt động",
     owner: "Lupita",
   },
   {
@@ -35,7 +35,7 @@ export const INITIAL_BUSINESSES: Business[] = [
     address: "189 Duong Quang Ham, Go Vap, TP.HCM",
     phone: "0986912354",
     email: "dst@gmail.com",
-    status: "Active",
+    status: "Hoạt động",
     owner: "Duocsitien",
   },
   {
@@ -44,7 +44,7 @@ export const INITIAL_BUSINESSES: Business[] = [
     address: "88 Bach Dang, Binh Thanh, TP.HCM",
     phone: "0125478963",
     email: "lily@gmail.com",
-    status: "Active",
+    status: "Hoạt động",
     owner: "Lily",
   },
   {
@@ -53,7 +53,7 @@ export const INITIAL_BUSINESSES: Business[] = [
     address: "960 Au Co, Tan Phu, TP.HCM",
     phone: "0789654185",
     email: "minamoto@gmail.com",
-    status: "Active",
+    status: "Hoạt động",
     owner: "Minamoto",
   },
 ];
@@ -63,7 +63,7 @@ export const EMPTY_BUSINESS_FORM: BusinessForm = {
   address: "",
   phone: "",
   email: "",
-  status: "Active",
+  status: "Hoạt động",
   owner: "Lily",
   representativeName: "",
   representativeEmail: "",

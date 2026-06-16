@@ -63,11 +63,11 @@ function DocumentsScreen() {
         ]);
       },
       onError: (err) => {
-        if (!(err instanceof ApiRequestError)) return setUploadError("Upload failed. Please try again.");
-        if (err.status === 400) setUploadError("Unsupported file type or size. Check the file and retry.");
-        else if (err.status === 409) setUploadError("This document was already uploaded (duplicate).");
+        if (!(err instanceof ApiRequestError)) return setUploadError("Tải lên thất bại. Vui lòng thử lại.");
+        if (err.status === 400) setUploadError("Loại hoặc kích thước tệp không được hỗ trợ. Vui lòng kiểm tra và thử lại.");
+        else if (err.status === 409) setUploadError("Tài liệu này đã được tải lên trước đó.");
         else if (err.status === 503) setUnavailable(true);
-        else setUploadError("Upload failed. Please try again.");
+        else setUploadError("Tải lên thất bại. Vui lòng thử lại.");
       },
     });
   };
@@ -79,23 +79,23 @@ function DocumentsScreen() {
       onSuccess: () => {
         removeOptimistic(id); // stops that doc's poller (row unmounts)
         setDeleteTarget(null);
-        toast.success("Document deleted.");
+        toast.success("Tài liệu đã bị xóa.");
       },
       onError: () => {
         setDeleteTarget(null);
-        toast.error("Couldn't delete the document.");
+        toast.error("Không thể xóa tài liệu.");
       },
     });
   };
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
-      <h1 className="font-display text-3xl font-semibold text-text-primary">Documents</h1>
+      <h1 className="font-display text-3xl font-semibold text-text-primary">Tài liệu</h1>
 
       {unavailable && (
         <div className="flex items-center gap-2 rounded-md border border-warning-border bg-warning-bg px-3 py-2 text-sm text-warning-fg" role="alert">
           <Warning className="size-4" aria-hidden />
-          Ingest is temporarily unavailable. Please try again shortly.
+          Hệ thống đang tạm thời không khả dụng. Vui lòng thử lại sau.
         </div>
       )}
 
@@ -113,8 +113,8 @@ function DocumentsScreen() {
         empty={
           <EmptyState
             icon={FileText}
-            title="No documents yet"
-            description={admin ? "Upload a file to ground this agent's replies." : "No documents have been uploaded."}
+            title="Chưa có tài liệu nào"
+            description={admin ? "Tải lên một tệp để làm nền cho phản hồi của tác nhân." : "Chưa có tài liệu nào được tải lên."}
           />
         }
       >
@@ -122,11 +122,11 @@ function DocumentsScreen() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Format</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Uploaded</TableHead>
-                <TableHead className="w-12" aria-label="Actions" />
+                <TableHead>Tiêu đề</TableHead>
+                <TableHead>Định dạng</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Tải lên lúc</TableHead>
+                <TableHead className="w-12" aria-label="Hành động" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -148,18 +148,17 @@ function DocumentsScreen() {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete document</DialogTitle>
-            <DialogDescription>
-              Delete “{deleteTarget?.title || "this document"}”? This can't be undone; re-ingest means
-              re-uploading the file.
+          <DialogTitle>Xóa tài liệu</DialogTitle>
+          <DialogDescription>
+              Xóa “{deleteTarget?.title || "tài liệu này"}”? Hành động này không thể hoàn tác; để xử lý lại, bạn cần tải tệp lên lại.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              Hủy
             </Button>
             <Button variant="danger" loading={del.isPending} onClick={onConfirmDelete}>
-              Delete
+              Xóa
             </Button>
           </DialogFooter>
         </DialogContent>

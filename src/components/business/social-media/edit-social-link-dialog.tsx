@@ -79,38 +79,38 @@ export function EditSocialLinkDialog({
               <Label className="text-brand-800">Trạng thái hoạt động của chatbot</Label>
               <ScheduleChoice
                 title="Tạm dừng"
-                selected={form.status === "Paused"}
+                selected={form.status === "Tạm dừng"}
                 onSelect={() =>
                   onFormChange({
                     ...form,
-                    status: "Paused",
+                    status: "Tạm dừng",
                     schedule: { ...form.schedule, mode: "full" },
                   })
                 }
               />
               <ScheduleChoice
                 title="Hoạt động toàn thời gian"
-                selected={form.status === "Full time"}
+                selected={form.status === "Toàn thời gian"}
                 onSelect={() =>
                   onFormChange({
                     ...form,
-                    status: "Full time",
+                    status: "Toàn thời gian",
                     schedule: { ...form.schedule, mode: "full" },
                   })
                 }
               />
               <ScheduleChoice
                 title="Hoạt động bán thời gian"
-                selected={form.status === "Part time"}
+                selected={form.status === "Bán thời gian"}
                 onSelect={() =>
                   onFormChange({
                     ...form,
-                    status: "Part time",
+                    status: "Bán thời gian",
                     schedule: { ...form.schedule, mode: "partial" },
                   })
                 }
               >
-                {form.status === "Part time" && (
+                {form.status === "Bán thời gian" && (
                   <PartTimeScheduleGrid
                     schedule={form.schedule}
                     onChange={(schedule) => onFormChange({ ...form, schedule })}

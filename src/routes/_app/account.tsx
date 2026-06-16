@@ -15,13 +15,13 @@ import { isAdmin } from "@/auth/guards";
 
 const passwordSchema = z
   .object({
-    current_password: z.string().min(1, "Required"),
-    new_password: z.string().min(8, "At least 8 characters"),
-    confirm: z.string().min(1, "Required"),
+    current_password: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại"),
+    new_password: z.string().min(8, "Mật khẩu mới phải có ít nhất 8 ký tự"),
+    confirm: z.string().min(1, "Vui lòng xác nhận mật khẩu mới"),
   })
   .refine((v) => v.new_password === v.confirm, {
     path: ["confirm"],
-    message: "Passwords do not match",
+    message: "Mật khẩu xác nhận không khớp",
   });
 type PasswordForm = z.infer<typeof passwordSchema>;
 
@@ -49,14 +49,14 @@ function AccountScreen() {
       {
         onSuccess: () => {
           reset();
-          toast.success("Password changed. Sign in again to continue.");
+          toast.success("Đã đổi mật khẩu. Vui lòng đăng nhập lại để tiếp tục.");
           navigate({ to: "/login" });
         },
         onError: (err) => {
           if (err instanceof AuthRequestError && err.status === 401) {
-            setError("current_password", { message: "Current password is incorrect" });
+            setError("current_password", { message: "Mật khẩu hiện tại không chính xác." });
           } else {
-            toast.error("Couldn't change password. Please try again.");
+            toast.error("Không thể đổi mật khẩu. Vui lòng thử lại.");
           }
         },
       },
@@ -68,22 +68,22 @@ function AccountScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6 sm:p-8">
-      <h1 className="font-display text-3xl font-semibold text-text-primary">Account</h1>
+      <h1 className="font-display text-3xl font-semibold text-text-primary">Tài khoản</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Your workspace identity.</CardDescription>
+          <CardTitle>Hồ sơ</CardTitle>
+          <CardDescription>Danh tính workspace của bạn.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {isLoading && !user ? (
-            <p className="text-sm text-text-dim">Loading…</p>
+            <p className="text-sm text-text-dim">Đang tải…</p>
           ) : (
             <>
-              <Row label="Name" value={user?.display_name || "—"} />
+              <Row label="Tên" value={user?.display_name || "—"} />
               <Row label="Email" value={user?.email ?? "—"} mono />
               <div className="flex items-center justify-between">
-                <span className="text-sm text-text-secondary">Role</span>
+                <span className="text-sm text-text-secondary">Vai trò</span>
                 <Badge tone={isAdmin(user?.role) ? "brand" : "neutral"}>{user?.role ?? "—"}</Badge>
               </div>
             </>
@@ -93,36 +93,36 @@ function AccountScreen() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Change password</CardTitle>
+          <CardTitle>Đổi mật khẩu</CardTitle>
           <CardDescription>
-            Signs you out everywhere — background sessions end within ~15 minutes.
+            Hệ thống sẽ đăng xuất bạn ở mọi nơi — các phiên nền kết thúc trong khoảng 15 phút.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onChangePassword} className="flex flex-col gap-4" noValidate>
             <PasswordField
               id="current_password"
-              label="Current password"
+              label="Mật khẩu hiện tại"
               autoComplete="current-password"
               error={errors.current_password?.message}
               register={register("current_password")}
             />
             <PasswordField
               id="new_password"
-              label="New password"
+              label="Mật khẩu mới"
               autoComplete="new-password"
               error={errors.new_password?.message}
               register={register("new_password")}
             />
             <PasswordField
               id="confirm"
-              label="Confirm new password"
+              label="Xác nhận mật khẩu mới"
               autoComplete="new-password"
               error={errors.confirm?.message}
               register={register("confirm")}
             />
             <Button type="submit" className="mt-1 w-fit" loading={changePassword.isPending}>
-              Update password
+              Cập nhật mật khẩu
             </Button>
           </form>
         </CardContent>
@@ -130,14 +130,14 @@ function AccountScreen() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sign out</CardTitle>
+          <CardTitle>Đăng xuất</CardTitle>
           <CardDescription>
-            Ends your current session; background access ends within ~15 minutes.
+            Kết thúc phiên hiện tại; quyền truy cập nền sẽ hết hiệu lực trong khoảng 15 phút.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="secondary" onClick={onLogout} loading={logout.isPending}>
-            <SignOut className="size-4" aria-hidden /> Sign out
+            <SignOut className="size-4" aria-hidden /> Đăng xuất
           </Button>
         </CardContent>
       </Card>

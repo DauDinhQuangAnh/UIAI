@@ -24,11 +24,11 @@ function AgentsList() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 sm:p-8">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl font-semibold text-text-primary">Agents</h1>
+        <h1 className="font-display text-3xl font-semibold text-text-primary">Tác nhân</h1>
         {admin && (
           <Button asChild>
             <Link to="/agents/new">
-              <Plus className="size-4" aria-hidden /> Create agent
+              <Plus className="size-4" aria-hidden /> Tạo tác nhân
             </Link>
           </Button>
         )}
@@ -46,17 +46,17 @@ function AgentsList() {
         empty={
           <EmptyState
             icon={Robot}
-            title="No agents yet"
+            title="Chưa có tác nhân nào"
             description={
               admin
-                ? "Create your first agent to start grounding replies in your knowledge."
-                : "An admin hasn't created any agents yet."
+                ? "Tạo tác nhân đầu tiên để bắt đầu xây dựng phản hồi dựa trên tri thức của bạn."
+                : "Quản trị viên chưa tạo tác nhân nào."
             }
             action={
               admin ? (
                 <Button asChild>
                   <Link to="/agents/new">
-                    <Plus className="size-4" aria-hidden /> Create your first agent
+                    <Plus className="size-4" aria-hidden /> Tạo tác nhân đầu tiên
                   </Link>
                 </Button>
               ) : undefined
@@ -68,10 +68,10 @@ function AgentsList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Agent</TableHead>
-                <TableHead>Ref</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Tác nhân</TableHead>
+                <TableHead>Mã tham chiếu</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Ngày tạo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,7 +102,7 @@ function AgentStatus({ status }: { status: Agent["status"] }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-sm text-text-secondary">
       <span className={live ? "size-2 rounded-pill bg-success-base" : "size-2 rounded-pill bg-text-dim"} />
-      {status || "unknown"}
+      {status || "không xác định"}
     </span>
   );
 }

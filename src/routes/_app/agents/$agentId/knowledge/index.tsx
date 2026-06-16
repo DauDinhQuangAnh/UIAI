@@ -38,16 +38,16 @@ function KnowledgeScreen() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-text-primary">Knowledge</h1>
+        <h1 className="font-display text-3xl font-semibold text-text-primary">Tri thức</h1>
         <p className="text-sm text-text-secondary">
-          Review entity pairs the graph flagged as possible duplicates.
+          Xem lại các cặp thực thể mà đồ thị đánh dấu là có thể trùng lặp.
         </p>
-        {!admin && <p className="text-sm text-text-dim">Read-only — admin role required to merge or dismiss.</p>}
+        {!admin && <p className="text-sm text-text-dim">Chỉ đọc — cần vai trò quản trị để hợp nhất hoặc bỏ qua.</p>}
       </div>
 
       <div className="flex items-center gap-3">
         <Label htmlFor="status-filter" className="text-sm text-text-secondary">
-          Status
+          Trạng thái
         </Label>
         <Select value={status} onValueChange={onStatusChange}>
           <SelectTrigger id="status-filter" className="w-44">
@@ -80,11 +80,11 @@ function KnowledgeScreen() {
         empty={
           <EmptyState
             icon={Graph}
-            title={status === "pending" ? "No candidates to review" : `No ${status} candidates`}
+            title={status === "pending" ? "Không có ứng viên nào cần xem xét" : `Không có ứng viên ${status} nào`}
             description={
               status === "pending"
-                ? "The graph hasn't flagged any duplicate entities to review."
-                : "Nothing here yet."
+                ? "Đồ thị chưa chỉ ra bất kỳ thực thể trùng lặp nào cần xem xét."
+                : "Chưa có nội dung nào ở đây."
             }
           />
         }

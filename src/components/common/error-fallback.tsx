@@ -11,19 +11,19 @@ export function ErrorFallback({ reset }: { reset?: () => void }) {
         <Warning className="size-7" aria-hidden />
       </span>
       <div className="flex flex-col gap-1">
-        <h1 className="font-display text-2xl font-semibold text-text-primary">Something went wrong</h1>
+        <h1 className="font-display text-2xl font-semibold text-text-primary">Đã xảy ra lỗi</h1>
         <p className="max-w-md text-sm text-text-secondary">
-          An unexpected error occurred. You can retry, or head back to your agents.
+          Đã xảy ra lỗi không mong muốn. Bạn có thể thử lại hoặc quay về danh sách tác nhân.
         </p>
       </div>
       <div className="flex gap-3">
         {reset && (
           <Button variant="secondary" onClick={reset}>
-            Try again
+            Thử lại
           </Button>
         )}
         <Button asChild>
-          <Link to="/agents">Back to agents</Link>
+          <Link to="/agents">Quay lại danh sách tác nhân</Link>
         </Button>
       </div>
     </div>
@@ -38,13 +38,13 @@ export function NotFound() {
         <MagnifyingGlass className="size-7" aria-hidden />
       </span>
       <div className="flex flex-col gap-1">
-        <h1 className="font-display text-2xl font-semibold text-text-primary">Page not found</h1>
+        <h1 className="font-display text-2xl font-semibold text-text-primary">Không tìm thấy trang</h1>
         <p className="max-w-md text-sm text-text-secondary">
-          The page you're looking for doesn't exist or may have moved.
+          Trang bạn đang tìm không tồn tại hoặc đã được di chuyển.
         </p>
       </div>
       <Button asChild>
-        <Link to="/agents">Back to agents</Link>
+        <Link to="/agents">Quay lại danh sách tác nhân</Link>
       </Button>
     </div>
   );

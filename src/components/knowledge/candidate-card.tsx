@@ -52,12 +52,12 @@ export function CandidateCard({
         onSuccess: () => {
           setConfirmOpen(false);
           onResolved(id);
-          toast.success("Entities merged.");
+          toast.success("Các thực thể đã được hợp nhất.");
         },
         onError: (err) => {
           setConfirmOpen(false);
           const code = err instanceof ApiRequestError ? err.code : undefined;
-          toast.error(code === "merge_not_applied" ? "Merge could not be applied." : "Couldn't merge entities.");
+          toast.error(code === "merge_not_applied" ? "Không thể áp dụng hợp nhất." : "Không thể hợp nhất các thực thể.");
         },
       },
     );
@@ -67,9 +67,9 @@ export function CandidateCard({
     dismiss.mutate(id, {
       onSuccess: () => {
         onResolved(id);
-        toast.success("Candidate dismissed.");
+        toast.success("Ứng viên đã bị bỏ qua.");
       },
-      onError: () => toast.error("Couldn't dismiss candidate."),
+      onError: () => toast.error("Không thể bỏ qua ứng viên."),
     });
   };
 
@@ -88,14 +88,14 @@ export function CandidateCard({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <EntityColumn
-            label="Entity A"
+            label="Thực thể A"
             entityId={a}
             selected={keepId === a}
             disabled={!admin || pending}
             onSelect={() => setKeepId(a)}
           />
           <EntityColumn
-            label="Entity B"
+            label="Thực thể B"
             entityId={b}
             selected={keepId === b}
             disabled={!admin || pending}
@@ -106,14 +106,14 @@ export function CandidateCard({
         {admin && (
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-text-dim">
-              {keepId ? "The other entity will be dropped — this can't be undone." : "Select the entity to keep."}
+              {keepId ? "Thực thể còn lại sẽ bị bỏ — hành động này không thể hoàn tác." : "Chọn thực thể cần giữ lại."}
             </p>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={onDismiss} loading={dismiss.isPending} disabled={pending}>
-                <X className="size-4" aria-hidden /> Dismiss
+                <X className="size-4" aria-hidden /> Bỏ qua
               </Button>
               <Button size="sm" onClick={() => setConfirmOpen(true)} disabled={!keepId || pending}>
-                <GitMerge className="size-4" aria-hidden /> Merge
+                <GitMerge className="size-4" aria-hidden /> Hợp nhất
               </Button>
             </div>
           </div>
@@ -123,18 +123,18 @@ export function CandidateCard({
       <Dialog open={confirmOpen} onOpenChange={(open) => !open && setConfirmOpen(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Merge entities</DialogTitle>
-            <DialogDescription>
-              Keep <span className="font-mono text-xs">{keepId}</span> and permanently drop{" "}
-              <span className="font-mono text-xs">{dropId}</span>. This can't be undone.
+          <DialogTitle>Hợp nhất thực thể</DialogTitle>
+          <DialogDescription>
+              Giữ <span className="font-mono text-xs">{keepId}</span> và xóa vĩnh viễn{" "}
+              <span className="font-mono text-xs">{dropId}</span>. Hành động này không thể hoàn tác.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button variant="danger" loading={merge.isPending} onClick={onConfirmMerge}>
-              Merge &amp; drop
+              Hợp nhất &amp; xóa
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -174,7 +174,7 @@ function EntityColumn({
       <span className="text-xs font-medium uppercase tracking-wide text-text-dim">{label}</span>
       <span className="break-all font-mono text-sm text-text-primary">{entityId || "—"}</span>
       <span className={cn("text-xs", selected ? "text-brand-700" : "text-text-dim")}>
-        {selected ? "Keep this one" : "Keep"}
+        {selected ? "Giữ thực thể này" : "Giữ"}
       </span>
     </button>
   );

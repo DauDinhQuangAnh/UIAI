@@ -37,7 +37,7 @@ export function BusinessInformationTable({
             <TableCell className="whitespace-nowrap font-mono text-xs text-text-secondary">{business.phone}</TableCell>
             <TableCell className="whitespace-nowrap font-mono text-xs text-text-secondary">{business.email}</TableCell>
             <TableCell>
-              <Badge tone={business.status === "Active" ? "success" : "neutral"}>{business.status}</Badge>
+              <Badge tone={business.status === "Hoạt động" ? "success" : "neutral"}>{business.status}</Badge>
             </TableCell>
             <TableCell className="whitespace-nowrap">{business.owner}</TableCell>
             <TableCell>

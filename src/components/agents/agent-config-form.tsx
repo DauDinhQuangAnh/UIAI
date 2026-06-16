@@ -78,14 +78,14 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
       retrieval_config: { top_k: v.top_k, vector_weight: v.vector_weight, fts_weight: v.fts_weight },
     };
     update.mutate(patch, {
-      onSuccess: () => toast.success("Configuration saved."),
+      onSuccess: () => toast.success("Cấu hình đã được lưu."),
       onError: (err) => {
         // Flat {code,message} body -> form-level message keyed by code. The KG
         // infra-off case is the canonical instance: attach to the toggle inline.
         if (err instanceof ApiRequestError && err.code === "kg_infra_unavailable") {
-          setKgError("Knowledge-graph grounding is unavailable on this workspace right now.");
+          setKgError("Không thể sử dụng grounding đồ thị tri thức trong workspace này lúc này.");
         } else {
-          toast.error(err instanceof ApiRequestError ? `Couldn't save (${err.code ?? "error"}).` : "Couldn't save.");
+          toast.error(err instanceof ApiRequestError ? `Không thể lưu (${err.code ?? "error"}).` : "Không thể lưu.");
         }
       },
     });
@@ -95,13 +95,13 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>General</CardTitle>
+          <CardTitle>Chung</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <TextField id="display_name" label="Display name" disabled={readOnly} error={errors.display_name?.message} {...register("display_name")} />
-          <TextField id="model" label="Model" disabled={readOnly} error={errors.model?.message} {...register("model")} />
+          <TextField id="display_name" label="Tên hiển thị" disabled={readOnly} error={errors.display_name?.message} {...register("display_name")} />
+          <TextField id="model" label="Mô hình" disabled={readOnly} error={errors.model?.message} {...register("model")} />
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="system_prompt">System prompt</Label>
+            <Label htmlFor="system_prompt">Prompt hệ thống</Label>
             <textarea
               id="system_prompt"
               rows={5}
@@ -115,31 +115,31 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
 
       <Card>
         <CardHeader>
-          <CardTitle>Runtime</CardTitle>
+          <CardTitle>Chạy thời gian</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
           <NumberField id="debounce_ms" label="Debounce (ms)" disabled={readOnly} error={errors.debounce_ms?.message} {...register("debounce_ms")} />
-          <NumberField id="history_turns" label="History turns" disabled={readOnly} error={errors.history_turns?.message} {...register("history_turns")} />
-          <NumberField id="max_output_tokens" label="Max output tokens" disabled={readOnly} error={errors.max_output_tokens?.message} {...register("max_output_tokens")} />
+          <NumberField id="history_turns" label="Số lượt lịch sử" disabled={readOnly} error={errors.history_turns?.message} {...register("history_turns")} />
+          <NumberField id="max_output_tokens" label="Số token đầu ra tối đa" disabled={readOnly} error={errors.max_output_tokens?.message} {...register("max_output_tokens")} />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Retrieval</CardTitle>
-          <CardDescription>Server clamps to its limits (top_k 1–20, weights 0–1).</CardDescription>
+          <CardTitle>Truy xuất</CardTitle>
+          <CardDescription>Máy chủ tự giới hạn theo ngưỡng (top_k 1–20, trọng số 0–1).</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
           <NumberField id="top_k" label="Top K (1–20)" step="1" disabled={readOnly} error={errors.top_k?.message} {...register("top_k")} />
-          <NumberField id="vector_weight" label="Vector weight (0–1)" step="0.05" disabled={readOnly} error={errors.vector_weight?.message} {...register("vector_weight")} />
-          <NumberField id="fts_weight" label="FTS weight (0–1)" step="0.05" disabled={readOnly} error={errors.fts_weight?.message} {...register("fts_weight")} />
+          <NumberField id="vector_weight" label="Trọng số vector (0–1)" step="0.05" disabled={readOnly} error={errors.vector_weight?.message} {...register("vector_weight")} />
+          <NumberField id="fts_weight" label="Trọng số FTS (0–1)" step="0.05" disabled={readOnly} error={errors.fts_weight?.message} {...register("fts_weight")} />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Knowledge graph</CardTitle>
-          <CardDescription>Ground replies in the derived entity graph.</CardDescription>
+          <CardTitle>Đồ thị tri thức</CardTitle>
+          <CardDescription>Dùng đồ thị thực thể để làm nền cho phản hồi.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <Controller
@@ -148,7 +148,7 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
             render={({ field }) => (
               <div className="flex items-center gap-3">
                 <Switch id="kg_enabled" checked={field.value} onCheckedChange={field.onChange} disabled={readOnly} />
-                <Label htmlFor="kg_enabled">KG grounding {field.value ? "on" : "off"}</Label>
+                <Label htmlFor="kg_enabled">Grounding KG {field.value ? "bật" : "tắt"}</Label>
               </div>
             )}
           />
@@ -163,7 +163,7 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
       {!readOnly && (
         <div className="flex justify-end">
           <Button type="submit" loading={update.isPending} disabled={!isDirty}>
-            Save changes
+            Lưu thay đổi
           </Button>
         </div>
       )}

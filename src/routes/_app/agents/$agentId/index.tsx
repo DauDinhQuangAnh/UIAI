@@ -33,11 +33,11 @@ function AgentDetail() {
     return (
       <div className="mx-auto w-full max-w-3xl p-6 sm:p-8">
         <EmptyState
-          title={notFound ? "Agent not found" : "Couldn't load agent"}
-          description={notFound ? "It may have been deleted, or you don't have access." : "Please try again."}
+          title={notFound ? "Tác nhân không tồn tại" : "Không thể tải thông tin tác nhân"}
+          description={notFound ? "Có thể tác nhân đã bị xóa hoặc bạn không có quyền truy cập." : "Vui lòng thử lại."}
           action={
             <Button asChild variant="secondary">
-              <Link to="/agents">Back to agents</Link>
+              <Link to="/agents">Quay lại danh sách tác nhân</Link>
             </Button>
           }
         />
@@ -57,7 +57,7 @@ function AgentDetail() {
           </h1>
           <span className="font-mono text-sm text-text-dim">{agent.agent_ref}</span>
         </div>
-        {!admin && <p className="text-sm text-text-dim">Read-only — admin role required to edit.</p>}
+        {!admin && <p className="text-sm text-text-dim">Chỉ đọc — cần vai trò quản trị để chỉnh sửa.</p>}
       </div>
 
       <AgentConfigForm agent={agent} readOnly={!admin} />

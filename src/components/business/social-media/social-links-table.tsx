@@ -6,7 +6,7 @@ import {
   BusinessDataTable,
   BusinessHeadCell,
 } from "@/components/business/business-management-table";
-import { LINK_STATUS_LABELS, STATUS_TONE, type Platform, type SocialLink } from "./social-media-data";
+import { STATUS_TONE, type Platform, type SocialLink } from "./social-media-data";
 
 export function SocialLinksTable({
   platform,
@@ -40,7 +40,7 @@ export function SocialLinksTable({
               <TableCell className="text-text-secondary">{link.page}</TableCell>
               <TableCell className="whitespace-nowrap font-mono text-xs text-text-secondary">{link.pageId}</TableCell>
               <TableCell>
-                <Badge tone={STATUS_TONE[link.status]}>{LINK_STATUS_LABELS[link.status]}</Badge>
+                <Badge tone={STATUS_TONE[link.status]}>{link.status}</Badge>
               </TableCell>
               <TableCell>
                 <BusinessActionButtons
