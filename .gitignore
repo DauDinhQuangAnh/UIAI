@@ -10,3 +10,8 @@ npm-debug.log*
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Local environment files
+.env
+.env.*
+!.env.example

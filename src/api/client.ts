@@ -1,6 +1,6 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./schema";
-import { API_BASE_URL, AUTH_LOGIN_PATH, AUTH_REFRESH_PATH } from "./config";
+import { API_BASE_URL, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_REFRESH_PATH } from "./config";
 import { useSession } from "@/auth/session-store";
 import { refreshOnce, RefreshFailedError, RefreshTransientError } from "@/auth/refresh-once";
 
@@ -9,7 +9,7 @@ import { refreshOnce, RefreshFailedError, RefreshTransientError } from "@/auth/r
 const RETRY_HEADER = "x-session-retry";
 
 function isAuthEndpoint(url: string): boolean {
-  return url.includes(AUTH_LOGIN_PATH) || url.includes(AUTH_REFRESH_PATH);
+  return url.includes(AUTH_LOGIN_PATH) || url.includes(AUTH_REFRESH_PATH) || url.includes(AUTH_LOGOUT_PATH);
 }
 
 const authMiddleware: Middleware = {
@@ -17,8 +17,8 @@ const authMiddleware: Middleware = {
     // Never attach a Bearer to login/refresh (spec sets security:[] there; a stale
     // token must not leak onto them).
     if (isAuthEndpoint(request.url)) return request;
-    const token = useSession.getState().accessToken;
-    if (token) request.headers.set("Authorization", `Bearer ${token}`);
+    const { accessToken, tokenType } = useSession.getState();
+    if (accessToken) request.headers.set("Authorization", `${tokenType || "Bearer"} ${accessToken}`);
     return request;
   },
 
@@ -42,7 +42,7 @@ const authMiddleware: Middleware = {
 
     // Replay the original request once with the rotated access token.
     const retried = new Request(request, {});
-    retried.headers.set("Authorization", `Bearer ${newToken}`);
+    retried.headers.set("Authorization", `${useSession.getState().tokenType || "Bearer"} ${newToken}`);
     retried.headers.set(RETRY_HEADER, "1");
     return fetch(retried);
   },
@@ -53,9 +53,9 @@ const authMiddleware: Middleware = {
 // swap the global fetch to drive the auth middleware deterministically.
 export const apiClient = createClient<paths>({
   baseUrl: API_BASE_URL,
-  // Send/store the first-party session cookie. Same-origin would include it by default;
-  // this is explicit so login Set-Cookie is honored and a non-proxied dev base still works.
-  credentials: "include",
+  // SAR auth uses Bearer tokens and refresh-token request bodies, so cross-origin calls
+  // should not require browser credentials/cookies.
+  credentials: "same-origin",
   fetch: (input) => globalThis.fetch(input),
 });
 apiClient.use(authMiddleware);

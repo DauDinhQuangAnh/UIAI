@@ -5,24 +5,32 @@ import { useSession } from "./session-store";
 function okResponse(body: unknown): Response {
   return { ok: true, status: 200, json: async () => body } as Response;
 }
+
 function failResponse(status: number): Response {
   return { ok: false, status, json: async () => ({}) } as Response;
 }
 
 beforeEach(() => {
-  useSession.setState({ accessToken: null, user: null, status: "idle" });
+  useSession.setState({
+    accessToken: null,
+    refreshToken: null,
+    user: null,
+    permissions: [],
+    status: "idle",
+  });
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("refreshOnce — cookie transport + single-flight + family-revoke safety", () => {
-  it("posts with credentials:include and NO body (token rides the HttpOnly cookie)", async () => {
+describe("refreshOnce - token-body transport + single-flight safety", () => {
+  it("posts the current access and refresh token in the JSON body", async () => {
+    useSession.setState({ accessToken: "oldA", refreshToken: "oldR", status: "authenticated" });
     let captured: RequestInit | undefined;
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       captured = init;
-      return okResponse({ access_token: "A1" });
+      return okResponse({ accessToken: "A1", refreshToken: "R1" });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -30,40 +38,41 @@ describe("refreshOnce — cookie transport + single-flight + family-revoke safet
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(captured?.method).toBe("POST");
-    expect(captured?.credentials).toBe("include");
-    expect(captured?.body).toBeUndefined(); // no refresh_token in the body
+    expect(captured?.headers).toEqual({ "Content-Type": "application/json" });
+    expect(JSON.parse(String(captured?.body))).toEqual({ accessToken: "oldA", refreshToken: "oldR" });
   });
 
-  it("collapses concurrent refreshes into ONE network call (family-revoke guard)", async () => {
+  it("collapses concurrent refreshes into ONE network call", async () => {
+    useSession.setState({ accessToken: "oldA", refreshToken: "oldR", status: "authenticated" });
     let resolveFetch!: (r: Response) => void;
     const fetchMock = vi.fn(() => new Promise<Response>((res) => (resolveFetch = res)));
     vi.stubGlobal("fetch", fetchMock);
 
-    // Three concurrent 401s would each refresh under naive handling -> the second
-    // double-refresh revokes the whole family. Single-flight must dedupe to one.
     const p1 = refreshOnce();
     const p2 = refreshOnce();
     const p3 = refreshOnce();
 
-    resolveFetch(okResponse({ access_token: "newA" }));
+    resolveFetch(okResponse({ accessToken: "newA", refreshToken: "newR" }));
     const [a, b, c] = await Promise.all([p1, p2, p3]);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect([a, b, c]).toEqual(["newA", "newA", "newA"]);
     expect(useSession.getState().accessToken).toBe("newA");
+    expect(useSession.getState().refreshToken).toBe("newR");
   });
 
-  it("wipes the session and rejects TERMINALLY when refresh returns 401 (reuse-detected)", async () => {
-    useSession.setState({ accessToken: "old", status: "authenticated" });
+  it("wipes the session and rejects TERMINALLY when refresh returns 401", async () => {
+    useSession.setState({ accessToken: "old", refreshToken: "refresh", status: "authenticated" });
     vi.stubGlobal("fetch", vi.fn(async () => failResponse(401)));
 
     await expect(refreshOnce()).rejects.toBeInstanceOf(RefreshFailedError);
     expect(useSession.getState().accessToken).toBeNull();
+    expect(useSession.getState().refreshToken).toBeNull();
     expect(useSession.getState().status).toBe("unauthenticated");
   });
 
-  it("does NOT wipe the session on a network error (transient — cookie not consumed)", async () => {
-    useSession.setState({ accessToken: "old", status: "authenticated" });
+  it("does NOT wipe the session on a network error", async () => {
+    useSession.setState({ accessToken: "old", refreshToken: "refresh", status: "authenticated" });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {
@@ -72,27 +81,26 @@ describe("refreshOnce — cookie transport + single-flight + family-revoke safet
     );
 
     await expect(refreshOnce()).rejects.toBeInstanceOf(RefreshTransientError);
-    // Session preserved: a flaky boot-refresh must not force a credential re-entry.
     expect(useSession.getState().accessToken).toBe("old");
+    expect(useSession.getState().refreshToken).toBe("refresh");
     expect(useSession.getState().status).toBe("authenticated");
   });
 
-  it("always hits the network — there is no JS token to short-circuit on", async () => {
-    // Post-migration there is no persisted token to check; every call must reach the server,
-    // which decides resumability from the cookie (a 401 means logged out).
-    const fetchMock = vi.fn(async () => failResponse(401));
+  it("fails before the network when either token is missing", async () => {
+    const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(refreshOnce()).rejects.toBeInstanceOf(RefreshFailedError);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("allows a fresh refresh after the previous one settled (inflight resets)", async () => {
-    const fetchMock = vi.fn(async () => okResponse({ access_token: "A1" }));
+  it("allows a fresh refresh after the previous one settled", async () => {
+    useSession.setState({ accessToken: "oldA", refreshToken: "oldR", status: "authenticated" });
+    const fetchMock = vi.fn(async () => okResponse({ accessToken: "A1", refreshToken: "R1" }));
     vi.stubGlobal("fetch", fetchMock);
 
     await refreshOnce();
     await refreshOnce();
-    expect(fetchMock).toHaveBeenCalledTimes(2); // not deduped — they were sequential
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,8 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// Entry redirect. The refresh token is an HttpOnly cookie JS cannot read, so there is no
-// session signal to test here — always route into the app. The `/_app` guard then performs
-// the cookie exchange (boot refresh) and bounces to /login on a 401.
+// Entry redirect. The `/_app` guard decides whether the persisted SAR session is usable
+// and bounces to /login when no access token is available.
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
     throw redirect({ to: "/agents" });

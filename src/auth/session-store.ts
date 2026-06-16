@@ -1,44 +1,128 @@
 import { create } from "zustand";
-import type { components } from "@/api/schema";
+import { createJSONStorage, persist } from "zustand/middleware";
 
-export type Me = components["schemas"]["Me"];
-export type Session = components["schemas"]["Session"];
+export interface AuthRole {
+  id?: string;
+  name?: string;
+  code?: string;
+}
+
+export interface Me {
+  id?: string;
+  username?: string;
+  email?: string;
+  firstTimeLogin?: boolean;
+  display_name?: string | null;
+  role?: string;
+  roleInfo?: AuthRole;
+}
+
+export interface AuthMenuPage {
+  pageId?: string;
+  pageName?: string;
+  pageCode?: string;
+  route?: string;
+  icon?: string | null;
+  displayOrder?: number;
+  requiredPermission?: string;
+}
+
+export interface AuthMenu {
+  featureId?: string;
+  featureName?: string;
+  featureCode?: string;
+  displayOrder?: number;
+  pages?: AuthMenuPage[];
+}
+
+export interface Session {
+  accessToken?: string;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresIn?: number;
+  permissions?: string[];
+  menus?: AuthMenu[];
+}
 
 export type SessionStatus = "idle" | "authenticated" | "unauthenticated";
 
-// Temporary FE-only bypass so the dashboard can be opened without a backend login.
-// Set this back to false and restore the empty initial session before wiring real auth.
-export const DEV_AUTH_BYPASS = true;
-
-const DEV_USER: Me = {
-  email: "fe-dev@local.test",
-  display_name: "FE Dev",
-  role: "admin",
-};
-
-// In-memory only. The access JWT lives here (never persisted — reduces XSS exfil), and
-// the rotating refresh token is no longer in JS at all: it rides an HttpOnly cookie the
-// browser manages, so there is nothing to persist or read here. On a cold load the store
-// starts at `idle` and the boot guard reconstructs the session by attempting a refresh
-// (the cookie is the only durable signal).
+// SAR auth returns access/refresh tokens in JSON. We persist the session so reloads keep
+// the user signed in, then rotate both tokens whenever refresh succeeds.
 interface SessionState {
   accessToken: string | null;
+  refreshToken: string | null;
+  tokenType: string;
+  expiresIn: number | null;
+  permissions: string[];
+  menus: AuthMenu[];
   user: Me | null;
   status: SessionStatus;
   setSession: (session: Session) => void;
   setUser: (user: Me) => void;
+  setPermissions: (permissions: string[], menus: AuthMenu[]) => void;
+  setAuth: (session: Session, user: Me | null) => void;
   clear: () => void;
 }
 
-export const useSession = create<SessionState>()((set) => ({
-  accessToken: null,
-  user: DEV_AUTH_BYPASS ? DEV_USER : null,
-  status: DEV_AUTH_BYPASS ? "authenticated" : "idle",
-  setSession: (session) =>
-    set({
-      accessToken: session.access_token ?? null,
-      status: session.access_token ? "authenticated" : "unauthenticated",
+export const useSession = create<SessionState>()(
+  persist(
+    (set) => ({
+      accessToken: null,
+      refreshToken: null,
+      tokenType: "Bearer",
+      expiresIn: null,
+      permissions: [],
+      menus: [],
+      user: null,
+      status: "idle",
+      setSession: (session) =>
+        set((state) => ({
+          accessToken: session.accessToken ?? null,
+          refreshToken: session.refreshToken ?? null,
+          tokenType: session.tokenType ?? "Bearer",
+          expiresIn: session.expiresIn ?? null,
+          permissions: session.permissions ?? state.permissions,
+          menus: session.menus ?? state.menus,
+          status: session.accessToken ? "authenticated" : "unauthenticated",
+        })),
+      setUser: (user) => set({ user, status: "authenticated" }),
+      setPermissions: (permissions, menus) => set({ permissions, menus }),
+      setAuth: (session, user) =>
+        set({
+          accessToken: session.accessToken ?? null,
+          refreshToken: session.refreshToken ?? null,
+          tokenType: session.tokenType ?? "Bearer",
+          expiresIn: session.expiresIn ?? null,
+          permissions: session.permissions ?? [],
+          menus: session.menus ?? [],
+          user,
+          status: session.accessToken ? "authenticated" : "unauthenticated",
+        }),
+      clear: () =>
+        set({
+          accessToken: null,
+          refreshToken: null,
+          tokenType: "Bearer",
+          expiresIn: null,
+          permissions: [],
+          menus: [],
+          user: null,
+          status: "unauthenticated",
+        }),
     }),
-  setUser: (user) => set({ user, status: "authenticated" }),
-  clear: () => set({ accessToken: null, user: null, status: "unauthenticated" }),
-}));
+    {
+      name: "sar-auth-session",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        tokenType: state.tokenType,
+        expiresIn: state.expiresIn,
+        permissions: state.permissions,
+        menus: state.menus,
+        user: state.user,
+        status: state.status,
+      }),
+    },
+  ),
+);

@@ -2,13 +2,11 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { requireAuth } from "@/auth/guards";
 import { useSession } from "@/auth/session-store";
-import { useMe } from "@/api/hooks/auth";
+import { useMe, useMePermissions } from "@/api/hooks/auth";
 import { AppShell } from "@/components/shell/app-shell";
 
-// Authed layout. The guard ensures a valid access token before any child route loads —
-// on a cold load it awaits a bootstrap refresh against the HttpOnly cookie. That network
-// round-trip is gated by BootPending (pendingMs:0 → shown immediately) so the user sees a
-// calm full-page spinner, never a blank screen or an auth flash, until the guard resolves.
+// Authed layout. The guard requires an access token before any child route loads; expired
+// tokens are refreshed reactively by the API client after a 401.
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }) => {
     await requireAuth(location.pathname);
@@ -35,8 +33,9 @@ function AppLayout() {
   const status = useSession((s) => s.status);
   // Populate the current user once a token exists.
   useMe();
+  useMePermissions();
 
-  // Reactive logout: if a refresh fails mid-session (status -> unauthenticated),
+  // Reactive logout: if refresh fails mid-session (status -> unauthenticated),
   // leave the authed area immediately. beforeLoad covers fresh loads.
   useEffect(() => {
     if (status === "unauthenticated") {

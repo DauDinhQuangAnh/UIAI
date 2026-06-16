@@ -13,7 +13,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Log in with {tenant_slug, email, password} */
+        /** Log in with {usernameOrEmail, password} */
         post: {
             parameters: {
                 query?: never;
@@ -45,7 +45,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/refresh": {
+    "/api/auth/refresh-token": {
         parameters: {
             query?: never;
             header?: never;
@@ -56,7 +56,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate the refresh token and mint a new access token
-         * @description The rotating refresh token is read from the HttpOnly session cookie (set at login) and a rotated cookie is returned — no request body. A missing, reused, or expired cookie returns a uniform 401.
+         * @description The previous access token and refresh token are sent in the JSON body. The response may rotate both tokens.
          */
         post: {
             parameters: {
@@ -65,7 +65,11 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RefreshRequest"];
+                };
+            };
             responses: {
                 /** @description Session */
                 200: {
@@ -85,7 +89,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/me": {
+    "/api/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -122,6 +126,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current user's permissions and menu tree */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Permissions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MePermissions"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/logout": {
         parameters: {
             query?: never;
@@ -139,14 +180,20 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LogoutRequest"];
+                };
+            };
             responses: {
                 /** @description Logged out */
-                204: {
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"];
+                    };
                 };
                 401: components["responses"]["Unauthorized"];
             };
@@ -922,27 +969,76 @@ export interface components {
             };
         };
         LoginRequest: {
-            tenant_slug: string;
-            email: string;
+            usernameOrEmail: string;
             password: string;
+        };
+        RefreshRequest: {
+            accessToken: string;
+            refreshToken: string;
+        };
+        LogoutRequest: {
+            refreshToken: string;
+        };
+        SuccessResponse: {
+            success?: boolean;
         };
         PasswordChangeRequest: {
             current_password: string;
             new_password: string;
         };
         Session: {
-            access_token?: string;
-            token_type?: string;
-            expires_in?: number;
+            accessToken?: string;
+            refreshToken?: string;
+            tokenType?: string;
+            expiresIn?: number;
+            user?: components["schemas"]["AuthUser"];
+            role?: components["schemas"]["AuthRole"];
+            permissions?: string[];
+        };
+        AuthUser: {
+            /** Format: uuid */
+            id?: string;
+            username?: string;
+            email?: string;
+            firstTimeLogin?: boolean;
+        };
+        AuthRole: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            code?: string;
         };
         Me: {
             /** Format: uuid */
             id?: string;
-            /** Format: uuid */
-            tenant_id?: string;
+            username?: string;
             email?: string;
-            display_name?: string | null;
-            role?: string;
+            firstTimeLogin?: boolean;
+            role?: components["schemas"]["AuthRole"];
+        };
+        MePermissions: {
+            user?: components["schemas"]["AuthUser"];
+            role?: components["schemas"]["AuthRole"];
+            permissions?: string[];
+            menus?: components["schemas"]["AuthMenu"][];
+        };
+        AuthMenu: {
+            /** Format: uuid */
+            featureId?: string;
+            featureName?: string;
+            featureCode?: string;
+            displayOrder?: number;
+            pages?: components["schemas"]["AuthMenuPage"][];
+        };
+        AuthMenuPage: {
+            /** Format: uuid */
+            pageId?: string;
+            pageName?: string;
+            pageCode?: string;
+            route?: string;
+            icon?: string | null;
+            displayOrder?: number;
+            requiredPermission?: string;
         };
         RetrievalConfig: {
             top_k?: number;

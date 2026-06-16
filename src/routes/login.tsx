@@ -11,8 +11,7 @@ import { useLogin, AuthRequestError } from "@/api/hooks/auth";
 import { useSession } from "@/auth/session-store";
 
 const loginSchema = z.object({
-  tenant_slug: z.string().min(1, "Vui lòng nhập không gian làm việc"),
-  email: z.string().min(1, "Vui lòng nhập email").email("Email không hợp lệ"),
+  usernameOrEmail: z.string().min(1, "Vui lòng nhập tài khoản hoặc email"),
   password: z.string().min(1, "Vui lòng nhập mật khẩu"),
 });
 type LoginForm = z.infer<typeof loginSchema>;
@@ -49,7 +48,7 @@ function LoginScreen() {
         if (err instanceof AuthRequestError && err.status === 400) {
           setFormError("Vui lòng kiểm tra thông tin và thử lại.");
         } else {
-          setFormError("Không gian làm việc, email hoặc mật khẩu không hợp lệ.");
+          setFormError("Tài khoản/email hoặc mật khẩu không hợp lệ.");
         }
       },
     });
@@ -79,7 +78,7 @@ function LoginScreen() {
         <div className="flex w-full max-w-sm flex-col gap-6">
           <div className="flex flex-col gap-1.5">
             <h2 className="font-display text-2xl font-semibold text-text-primary">Đăng nhập</h2>
-            <p className="text-sm text-text-secondary">Nhập thông tin không gian làm việc của bạn.</p>
+          <p className="text-sm text-text-secondary">Nhập tài khoản SAR Platform của bạn.</p>
           </div>
 
           {formError && (
@@ -93,22 +92,13 @@ function LoginScreen() {
           )}
 
           <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-            <Field label="Không gian làm việc" htmlFor="tenant_slug" error={errors.tenant_slug?.message}>
+            <Field label="Tài khoản hoặc email" htmlFor="usernameOrEmail" error={errors.usernameOrEmail?.message}>
               <Input
-                id="tenant_slug"
-                autoComplete="organization"
-                placeholder="acme-support"
-                invalid={!!errors.tenant_slug}
-                {...register("tenant_slug")}
-              />
-            </Field>
-            <Field label="Email" htmlFor="email" error={errors.email?.message}>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                invalid={!!errors.email}
-                {...register("email")}
+                id="usernameOrEmail"
+                autoComplete="username"
+                placeholder="admin"
+                invalid={!!errors.usernameOrEmail}
+                {...register("usernameOrEmail")}
               />
             </Field>
             <Field label="Mật khẩu" htmlFor="password" error={errors.password?.message}>

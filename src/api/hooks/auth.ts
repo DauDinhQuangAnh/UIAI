@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client";
-import { useSession, type Me } from "@/auth/session-store";
+import { useSession, type AuthMenu, type AuthRole, type Me, type Session } from "@/auth/session-store";
 
 // Thrown by auth mutations carrying the HTTP status + parsed error body so screens
 // can branch (e.g. login 401 -> ONE generic message; 400 -> "check your input").
@@ -16,25 +16,75 @@ export class AuthRequestError extends Error {
 }
 
 export interface LoginInput {
-  tenant_slug: string;
-  email: string;
+  usernameOrEmail: string;
   password: string;
+}
+
+interface LoginResponse extends Session {
+  user?: AuthUser;
+  role?: AuthRole;
+  permissions?: string[];
+}
+
+interface AuthUser {
+  id?: string;
+  username?: string;
+  email?: string;
+  firstTimeLogin?: boolean;
+}
+
+interface ProfileResponse extends AuthUser {
+  role?: AuthRole;
+}
+
+interface PermissionsResponse {
+  user?: AuthUser;
+  role?: AuthRole;
+  permissions?: string[];
+  menus?: AuthMenu[];
+}
+
+function isLoginResponse(profile: ProfileResponse | LoginResponse): profile is LoginResponse {
+  return "accessToken" in profile || "refreshToken" in profile || "permissions" in profile || "user" in profile;
+}
+
+function normalizeUser(profile: ProfileResponse | LoginResponse): Me {
+  const rawUser = isLoginResponse(profile) ? profile.user : profile;
+  const roleInfo = profile.role;
+  return {
+    id: rawUser?.id,
+    username: rawUser?.username,
+    email: rawUser?.email,
+    firstTimeLogin: rawUser?.firstTimeLogin,
+    display_name: rawUser?.username ?? rawUser?.email ?? null,
+    role: roleInfo?.code ?? roleInfo?.name,
+    roleInfo,
+  };
 }
 
 // login -> store session -> fetch /me. Login is excluded from the refresh
 // interceptor, so a 401 here is a real credential failure, never a refresh.
 export function useLogin() {
-  const setSession = useSession((s) => s.setSession);
+  const setAuth = useSession((s) => s.setAuth);
   const setUser = useSession((s) => s.setUser);
+  const setPermissions = useSession((s) => s.setPermissions);
   return useMutation({
     mutationFn: async (input: LoginInput): Promise<Me> => {
       const { data, error, response } = await apiClient.POST("/api/auth/login", { body: input });
       if (error || !data) throw new AuthRequestError(response.status, error);
-      setSession(data);
-      const me = await apiClient.GET("/api/auth/me");
+      const loginData = data as LoginResponse;
+      setAuth(loginData, normalizeUser(loginData));
+      const me = await apiClient.GET("/api/me");
       if (me.error || !me.data) throw new AuthRequestError(me.response.status, me.error);
-      setUser(me.data);
-      return me.data;
+      const user = normalizeUser(me.data as ProfileResponse);
+      setUser(user);
+      const permissions = await apiClient.GET("/api/me/permissions");
+      if (permissions.error || !permissions.data) {
+        throw new AuthRequestError(permissions.response.status, permissions.error);
+      }
+      const permissionsData = permissions.data as PermissionsResponse;
+      setPermissions(permissionsData.permissions ?? [], permissionsData.menus ?? []);
+      return user;
     },
   });
 }
@@ -47,10 +97,29 @@ export function useMe() {
     queryKey: ["auth", "me"],
     enabled: !!accessToken,
     queryFn: async (): Promise<Me> => {
-      const { data, error, response } = await apiClient.GET("/api/auth/me");
+      const { data, error, response } = await apiClient.GET("/api/me");
       if (error || !data) throw new AuthRequestError(response.status, error);
-      setUser(data);
-      return data;
+      const user = normalizeUser(data as ProfileResponse);
+      setUser(user);
+      return user;
+    },
+  });
+}
+
+// Permissions + backend-driven menu tree. This is fetched on app boot/reload and after
+// login so navigation/action visibility can follow the current user's role.
+export function useMePermissions() {
+  const accessToken = useSession((s) => s.accessToken);
+  const setPermissions = useSession((s) => s.setPermissions);
+  return useQuery({
+    queryKey: ["auth", "permissions"],
+    enabled: !!accessToken,
+    queryFn: async (): Promise<PermissionsResponse> => {
+      const { data, error, response } = await apiClient.GET("/api/me/permissions");
+      if (error || !data) throw new AuthRequestError(response.status, error);
+      const permissions = data as PermissionsResponse;
+      setPermissions(permissions.permissions ?? [], permissions.menus ?? []);
+      return permissions;
     },
   });
 }
@@ -59,10 +128,13 @@ export function useMe() {
 // (~15m), so the client also clears local state immediately and proactively.
 export function useLogout() {
   const clear = useSession((s) => s.clear);
+  const refreshToken = useSession((s) => s.refreshToken);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await apiClient.POST("/api/auth/logout"); // best-effort; clear regardless
+      if (refreshToken) {
+        await apiClient.POST("/api/auth/logout", { body: { refreshToken } }); // best-effort; clear regardless
+      }
     },
     onSettled: () => {
       clear();

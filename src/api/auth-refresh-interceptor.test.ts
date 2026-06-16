@@ -15,7 +15,7 @@ function json(status: number, body: unknown): Response {
 }
 
 beforeEach(() => {
-  useSession.setState({ accessToken: null, user: null, status: "idle" });
+  useSession.setState({ accessToken: null, refreshToken: null, user: null, status: "idle" });
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -31,17 +31,16 @@ describe("auth refresh interceptor (client middleware)", () => {
     );
 
     const res = await apiClient.POST("/api/auth/login", {
-      body: { tenant_slug: "t", email: "e@x.com", password: "bad" },
+      body: { usernameOrEmail: "admin", password: "bad" },
     });
 
     expect(res.response.status).toBe(401);
-    expect(calls.some((u) => u.includes("/api/auth/refresh"))).toBe(false); // never refreshed
+    expect(calls.some((u) => u.includes("/api/auth/refresh-token"))).toBe(false); // never refreshed
     expect(calls.filter((u) => u.includes("/api/auth/login"))).toHaveLength(1); // no replay loop
   });
 
   it("refreshes ONCE on a resource 401 then replays with the rotated token", async () => {
-    // The refresh token rides the HttpOnly cookie now — nothing to seed in JS.
-    useSession.setState({ accessToken: "old", status: "authenticated" });
+    useSession.setState({ accessToken: "old", refreshToken: "refresh", status: "authenticated" });
 
     const calls: Array<{ url: string; auth: string | null; retry: string | null }> = [];
     vi.stubGlobal(
@@ -49,8 +48,8 @@ describe("auth refresh interceptor (client middleware)", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const d = describeRequest(input);
         calls.push({ url: d.url, auth: d.header("authorization"), retry: d.header("x-session-retry") });
-        if (d.url.includes("/api/auth/refresh")) {
-          return json(200, { access_token: "fresh" });
+        if (d.url.includes("/api/auth/refresh-token")) {
+          return json(200, { accessToken: "fresh", refreshToken: "rotated" });
         }
         // First resource hit (old token) -> 401; the replayed hit (fresh token) -> 200.
         if (d.header("authorization") === "Bearer fresh") return json(200, { agents: [], next_cursor: {} });
@@ -61,10 +60,11 @@ describe("auth refresh interceptor (client middleware)", () => {
     const res = await apiClient.GET("/api/agents", { params: { query: { limit: 50 } } });
 
     expect(res.response.status).toBe(200);
-    const refreshCalls = calls.filter((c) => c.url.includes("/api/auth/refresh"));
+    const refreshCalls = calls.filter((c) => c.url.includes("/api/auth/refresh-token"));
     expect(refreshCalls).toHaveLength(1); // exactly one refresh
     const replay = calls.find((c) => c.retry === "1");
     expect(replay?.auth).toBe("Bearer fresh"); // replay carried the rotated token
     expect(useSession.getState().accessToken).toBe("fresh");
+    expect(useSession.getState().refreshToken).toBe("rotated");
   });
 });

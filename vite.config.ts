@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
@@ -7,7 +7,10 @@ import path from "node:path";
 // SPA build (no SSR): localStorage-token auth can't SSR authed content, and the
 // app is served same-origin via go:embed from the Go gateway. Dev proxies /api to
 // the local backend so the typed client hits real endpoints without CORS.
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return {
   plugins: [
     TanStackRouterVite({ target: "react", autoCodeSplitting: true }),
     react(),
@@ -24,7 +27,7 @@ export default defineConfig({
       // VITE_API_BASE_URL as its own base — reusing that name here would make
       // the browser call the Docker-internal host (e.g. app:8080) it can't reach.
       "/api": {
-        target: process.env.API_PROXY_TARGET || "http://localhost:8080",
+        target: env.API_PROXY_TARGET || "https://sar-be.onrender.com",
         changeOrigin: true,
       },
     },
@@ -37,4 +40,5 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
   },
+  };
 });
