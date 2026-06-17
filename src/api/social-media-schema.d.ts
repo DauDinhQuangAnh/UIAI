@@ -1,9 +1,12 @@
 import type {
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
+  FacebookPagesResponse,
   FacebookOAuthCallbackResponse,
   FacebookOAuthStartRequest,
   FacebookOAuthStartResponse,
+  SaveFacebookPagesRequest,
+  SaveFacebookPagesResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -71,6 +74,18 @@ type PostOnlyPathItem<TPost = never> = {
   trace?: never;
 };
 
+type GetPostPathItem<TGet = never, TPost = never> = {
+  parameters: NoParams;
+  get: TGet;
+  post: TPost;
+  put?: never;
+  delete?: never;
+  patch?: never;
+  options?: never;
+  head?: never;
+  trace?: never;
+};
+
 declare module "./schema" {
   interface paths {
     "/api/social-media/providers": PathItem<{
@@ -106,5 +121,16 @@ declare module "./schema" {
       parameters: QueryParams<{ code: string; state: string }>;
       responses: { 200: JsonResponse<FacebookOAuthCallbackResponse> };
     }>;
+    "/api/business-partners/{businessPartnerId}/social-media/facebook/pages": GetPostPathItem<
+      {
+        parameters: PathParams<{ businessPartnerId: string }>;
+        responses: { 200: JsonResponse<FacebookPagesResponse> };
+      },
+      {
+        parameters: PathParams<{ businessPartnerId: string }>;
+        requestBody: { content: { "application/json": SaveFacebookPagesRequest } };
+        responses: { 200: JsonResponse<SaveFacebookPagesResponse> };
+      }
+    >;
   }
 }

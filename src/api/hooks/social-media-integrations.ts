@@ -4,9 +4,13 @@ import { unwrap } from "../errors";
 import type {
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
+  FacebookManagedPage,
   FacebookOAuthCallbackResponse,
   FacebookOAuthStartRequest,
   FacebookOAuthStartResponse,
+  FacebookPagesResponse,
+  SaveFacebookPagesRequest,
+  SaveFacebookPagesResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -19,6 +23,8 @@ export const socialMediaKeys = {
     [...socialMediaKeys.all, "integrations", businessPartnerId ?? "missing"] as const,
   integrationDetail: (businessPartnerId: string | undefined, integrationId: string | undefined) =>
     [...socialMediaKeys.integrations(businessPartnerId), "detail", integrationId ?? "missing"] as const,
+  facebookPages: (businessPartnerId: string | undefined) =>
+    [...socialMediaKeys.all, "facebook-pages", businessPartnerId ?? "missing"] as const,
 };
 
 export function useSocialMediaProviders() {
@@ -130,6 +136,47 @@ export function useStartFacebookOAuth() {
   });
 }
 
+export function useFacebookPages(businessPartnerId: string | undefined, enabled = false) {
+  return useQuery({
+    queryKey: socialMediaKeys.facebookPages(businessPartnerId),
+    enabled: enabled && !!businessPartnerId,
+    gcTime: 0,
+    queryFn: async (): Promise<FacebookPagesResponse> =>
+      normalizeFacebookPagesResponse(
+        unwrap(
+          await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/facebook/pages", {
+            params: { path: { businessPartnerId: businessPartnerId! } },
+          }),
+        ),
+      ),
+  });
+}
+
+export function useSaveFacebookPages() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      businessPartnerId,
+      body,
+    }: {
+      businessPartnerId: string;
+      body: SaveFacebookPagesRequest;
+    }): Promise<SaveFacebookPagesResponse> =>
+      normalizeSaveFacebookPagesResponse(
+        unwrap(
+          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/facebook/pages", {
+            params: { path: { businessPartnerId } },
+            body,
+          }),
+        ),
+      ),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: socialMediaKeys.integrations(variables.businessPartnerId) });
+      queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(variables.businessPartnerId) });
+    },
+  });
+}
+
 export async function completeFacebookOAuthCallback({
   code,
   state,
@@ -200,6 +247,29 @@ function normalizeFacebookOAuthCallbackResponse(response: FacebookOAuthCallbackR
     integrationId: response.integrationId ?? null,
     status: response.status ?? null,
     message: response.message ?? null,
+  };
+}
+
+function normalizeFacebookPagesResponse(response: FacebookPagesResponse): FacebookPagesResponse {
+  return {
+    integrationId: response.integrationId ?? "",
+    pages: (response.pages ?? []).map(normalizeFacebookManagedPage),
+  };
+}
+
+function normalizeFacebookManagedPage(page: FacebookManagedPage): FacebookManagedPage {
+  return {
+    externalPageId: page.externalPageId ?? "",
+    pageName: page.pageName ?? "",
+    username: page.username ?? null,
+    avatarUrl: page.avatarUrl ?? null,
+    pageAccessToken: page.pageAccessToken ?? "",
+  };
+}
+
+function normalizeSaveFacebookPagesResponse(response: SaveFacebookPagesResponse): SaveFacebookPagesResponse {
+  return {
+    message: response.message ?? "Facebook pages saved.",
   };
 }
 

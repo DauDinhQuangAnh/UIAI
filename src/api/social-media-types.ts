@@ -50,3 +50,24 @@ export interface FacebookOAuthCallbackResponse {
   status?: string | null;
   message?: string | null;
 }
+
+export interface FacebookManagedPage {
+  externalPageId: string;
+  pageName: string;
+  username?: string | null;
+  avatarUrl?: string | null;
+  pageAccessToken: string;
+}
+
+export interface FacebookPagesResponse {
+  integrationId: string;
+  pages: FacebookManagedPage[];
+}
+
+export interface SaveFacebookPagesRequest {
+  pages: FacebookManagedPage[];
+}
+
+export interface SaveFacebookPagesResponse {
+  message: string;
+}

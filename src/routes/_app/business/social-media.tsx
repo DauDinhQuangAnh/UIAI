@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { LinkSimple, PencilSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
+import { CheckCircle, LinkSimple, PencilSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,11 +26,15 @@ import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
   useBusinessPartnerIntegrations,
   useCreateFacebookAppConfig,
+  useFacebookPages,
+  useSaveFacebookPages,
   useSocialMediaProviders,
   useStartFacebookOAuth,
   useUpdateFacebookAppConfig,
+  socialMediaKeys,
 } from "@/api/hooks/social-media-integrations";
 import type {
+  FacebookManagedPage,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
 } from "@/api/social-media-types";
@@ -99,9 +104,14 @@ function SocialMediaLinksContent({
   canReauthorize: boolean;
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const search = Route.useSearch();
   const [selectedBusinessId, setSelectedBusinessId] = useState(search.businessPartnerId ?? "");
   const [oauthPendingIntegrationId, setOauthPendingIntegrationId] = useState<string | null>(null);
+  const [pageDialogOpen, setPageDialogOpen] = useState(false);
+  const [pageTargetIntegration, setPageTargetIntegration] = useState<SocialMediaIntegrationSummary | null>(null);
+  const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
+  const [pageSelectionError, setPageSelectionError] = useState("");
   const [configOpen, setConfigOpen] = useState(false);
   const [configMode, setConfigMode] = useState<FacebookConfigMode>("create");
   const [configForm, setConfigForm] = useState<FacebookConfigForm>(EMPTY_FACEBOOK_CONFIG_FORM);
@@ -117,11 +127,14 @@ function SocialMediaLinksContent({
   const createFacebookConfig = useCreateFacebookAppConfig();
   const updateFacebookConfig = useUpdateFacebookAppConfig();
   const startFacebookOAuth = useStartFacebookOAuth();
+  const facebookPages = useFacebookPages(selectedBusinessId || undefined, pageDialogOpen && !!pageTargetIntegration);
+  const saveFacebookPages = useSaveFacebookPages();
 
   const businesses = businessPartners.data?.items ?? [];
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId) ?? null;
   const providerNameByCode = useMemo(() => buildProviderNameMap(providers.data ?? []), [providers.data]);
   const configSubmitting = createFacebookConfig.isPending || updateFacebookConfig.isPending;
+  const pageSelectionCount = selectedPageIds.size;
 
   useEffect(() => {
     if (businessPartners.isLoading || businessPartners.isError) return;
@@ -241,6 +254,57 @@ function SocialMediaLinksContent({
     );
   };
 
+  const clearPageSelection = () => {
+    setPageDialogOpen(false);
+    setPageTargetIntegration(null);
+    setSelectedPageIds(new Set());
+    setPageSelectionError("");
+    queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(selectedBusinessId || undefined) });
+  };
+
+  const openPageSelection = (integration: SocialMediaIntegrationSummary) => {
+    if (!selectedBusinessId) return;
+    setPageTargetIntegration(integration);
+    setSelectedPageIds(new Set());
+    setPageSelectionError("");
+    setPageDialogOpen(true);
+  };
+
+  const toggleManagedPage = (externalPageId: string) => {
+    setPageSelectionError("");
+    setSelectedPageIds((current) => {
+      const next = new Set(current);
+      if (next.has(externalPageId)) next.delete(externalPageId);
+      else next.add(externalPageId);
+      return next;
+    });
+  };
+
+  const submitSelectedPages = () => {
+    if (!selectedBusinessId) return;
+    const pages = facebookPages.data?.pages ?? [];
+    const selectedPages = pages.filter((page) => selectedPageIds.has(page.externalPageId));
+    if (selectedPages.length === 0) {
+      setPageSelectionError("Vui lòng chọn ít nhất một trang.");
+      return;
+    }
+
+    saveFacebookPages.mutate(
+      {
+        businessPartnerId: selectedBusinessId,
+        body: { pages: selectedPages },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Đã lưu các trang Facebook đã chọn.");
+          clearPageSelection();
+          integrations.refetch();
+        },
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu các trang Facebook đã chọn.")),
+      },
+    );
+  };
+
   return (
     <BusinessPageShell
       title="Liên kết mạng xã hội"
@@ -356,6 +420,7 @@ function SocialMediaLinksContent({
             oauthPendingIntegrationId={oauthPendingIntegrationId}
             onUpdateConfig={openUpdateConfig}
             onStartOAuth={startOAuth}
+            onSelectPages={openPageSelection}
           />
         )}
       </div>
@@ -375,6 +440,24 @@ function SocialMediaLinksContent({
           setConfigErrors({});
         }}
         onSubmit={submitConfig}
+      />
+      <FacebookPageSelectionDialog
+        open={pageDialogOpen}
+        pages={facebookPages.data?.pages ?? []}
+        selectedPageIds={selectedPageIds}
+        selectedCount={pageSelectionCount}
+        loading={facebookPages.isLoading || facebookPages.isFetching}
+        saving={saveFacebookPages.isPending}
+        error={facebookPages.error}
+        validationError={pageSelectionError}
+        canSave={canUpdate}
+        onOpenChange={(open) => {
+          if (!open) clearPageSelection();
+          else setPageDialogOpen(true);
+        }}
+        onRetry={() => facebookPages.refetch()}
+        onTogglePage={toggleManagedPage}
+        onSubmit={submitSelectedPages}
       />
     </BusinessPageShell>
   );
@@ -496,6 +579,156 @@ function SocialConfigField({
   );
 }
 
+function FacebookPageSelectionDialog({
+  open,
+  pages,
+  selectedPageIds,
+  selectedCount,
+  loading,
+  saving,
+  error,
+  validationError,
+  canSave,
+  onOpenChange,
+  onRetry,
+  onTogglePage,
+  onSubmit,
+}: {
+  open: boolean;
+  pages: FacebookManagedPage[];
+  selectedPageIds: Set<string>;
+  selectedCount: number;
+  loading: boolean;
+  saving: boolean;
+  error: unknown;
+  validationError?: string;
+  canSave: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRetry: () => void;
+  onTogglePage: (externalPageId: string) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader className="items-center text-center">
+          <DialogTitle className="text-brand-800">Chọn trang muốn liên kết</DialogTitle>
+          <DialogDescription>
+            Chọn một hoặc nhiều trang Facebook bạn quản lý để kết nối.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2">
+            <span className="text-sm font-medium text-text-primary">Đã chọn {selectedCount} trang</span>
+            {(validationError || (!loading && !error && pages.length > 0 && selectedCount === 0)) && (
+              <span className="text-sm font-medium text-danger-fg">
+                {validationError || "Vui lòng chọn ít nhất một trang."}
+              </span>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="grid gap-3">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : error ? (
+            <EmptyState
+              icon={LinkSimple}
+              title="Không tải được danh sách trang Facebook"
+              description={apiErrorMessage(error, "Vui lòng thử lại sau.")}
+              className="py-10"
+              action={
+                <Button type="button" variant="secondary" onClick={onRetry}>
+                  Tải lại
+                </Button>
+              }
+            />
+          ) : pages.length === 0 ? (
+            <EmptyState
+              icon={LinkSimple}
+              title="Không tìm thấy trang Facebook nào từ tài khoản đã ủy quyền."
+              description="Hãy kiểm tra lại quyền truy cập trang trên Facebook rồi thử lại."
+              className="py-10"
+            />
+          ) : (
+            <div className="grid max-h-[52vh] gap-2 overflow-y-auto pr-1">
+              {pages.map((page) => {
+                const selected = selectedPageIds.has(page.externalPageId);
+                return (
+                  <button
+                    key={page.externalPageId}
+                    type="button"
+                    className={[
+                      "grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border bg-surface p-3 text-left transition-colors",
+                      selected
+                        ? "border-brand-300 bg-brand-50 text-brand-900"
+                        : "border-border hover:border-brand-200 hover:bg-surface-2",
+                    ].join(" ")}
+                    onClick={() => onTogglePage(page.externalPageId)}
+                    aria-pressed={selected}
+                  >
+                    <PageAvatar page={page} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold text-text-primary">{page.pageName || "Facebook Page"}</span>
+                      <span className="block truncate text-sm text-text-secondary">{page.username || page.externalPageId}</span>
+                    </span>
+                    <span
+                      className={[
+                        "flex size-6 items-center justify-center rounded-pill border",
+                        selected ? "border-brand-600 bg-brand-600 text-white" : "border-border-strong text-transparent",
+                      ].join(" ")}
+                      aria-hidden
+                    >
+                      <CheckCircle className="size-5" weight="fill" />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="mt-3">
+          <Button type="button" variant="secondary" disabled={saving} onClick={() => onOpenChange(false)}>
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            loading={saving}
+            disabled={loading || !!error || selectedCount === 0 || !canSave}
+            title={!canSave ? "Bạn không có quyền lưu trang Facebook." : selectedCount === 0 ? "Vui lòng chọn ít nhất một trang." : undefined}
+            onClick={onSubmit}
+          >
+            Lưu trang đã chọn
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PageAvatar({ page }: { page: FacebookManagedPage }) {
+  if (page.avatarUrl) {
+    return (
+      <img
+        src={page.avatarUrl}
+        alt=""
+        className="size-11 rounded-pill border border-border object-cover"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <span className="flex size-11 items-center justify-center rounded-pill border border-brand-100 bg-brand-50 text-sm font-semibold text-brand-700">
+      {pageInitials(page.pageName)}
+    </span>
+  );
+}
+
 function ProviderStatus({
   providers,
   loading,
@@ -534,6 +767,7 @@ function SocialMediaIntegrationsTable({
   oauthPendingIntegrationId,
   onUpdateConfig,
   onStartOAuth,
+  onSelectPages,
 }: {
   business: BusinessPartner | null;
   integrations: SocialMediaIntegrationSummary[];
@@ -543,9 +777,10 @@ function SocialMediaIntegrationsTable({
   oauthPendingIntegrationId: string | null;
   onUpdateConfig: (integration: SocialMediaIntegrationSummary) => void;
   onStartOAuth: (integration: SocialMediaIntegrationSummary) => void;
+  onSelectPages: (integration: SocialMediaIntegrationSummary) => void;
 }) {
   return (
-    <BusinessDataTable className="min-w-[1320px]">
+    <BusinessDataTable className="min-w-[1460px]">
       <TableHeader>
         <TableRow>
           <BusinessHeadCell className="w-[18%] whitespace-nowrap">Doanh nghiệp</BusinessHeadCell>
@@ -555,7 +790,7 @@ function SocialMediaIntegrationsTable({
           <BusinessHeadCell className="w-[16%] whitespace-nowrap">Thời điểm ủy quyền</BusinessHeadCell>
           <BusinessHeadCell className="w-[10%] whitespace-nowrap text-right">Số page</BusinessHeadCell>
           <BusinessHeadCell className="w-[10%] whitespace-nowrap text-right">Bot bật</BusinessHeadCell>
-          <BusinessHeadCell className="w-72 whitespace-nowrap text-right">Thao tác</BusinessHeadCell>
+          <BusinessHeadCell className="w-[26rem] whitespace-nowrap text-right">Thao tác</BusinessHeadCell>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -597,6 +832,16 @@ function SocialMediaIntegrationsTable({
                       onClick={() => onStartOAuth(integration)}
                     >
                       {facebookOAuthActionLabel(integration.status)}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={!isAuthorizedIntegration(integration)}
+                      title={!isAuthorizedIntegration(integration) ? "Cần ủy quyền Facebook trước khi chọn trang." : undefined}
+                      onClick={() => onSelectPages(integration)}
+                    >
+                      Chọn trang
                     </Button>
                   </>
                 ) : (
@@ -653,8 +898,18 @@ function isFacebookIntegration(integration: SocialMediaIntegrationSummary): bool
   return integration.providerCode.trim().toUpperCase() === "FACEBOOK" || integration.providerName.trim().toLowerCase() === "facebook";
 }
 
+function isAuthorizedIntegration(integration: SocialMediaIntegrationSummary): boolean {
+  return integration.status.trim().toLowerCase() === "authorized";
+}
+
 function facebookOAuthActionLabel(status: string): string {
   return status.trim().toLowerCase() === "authorized" ? "Ủy quyền lại" : "Đăng nhập Facebook";
+}
+
+function pageInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "FB";
+  return words.slice(0, 2).map((word) => word[0]?.toUpperCase()).join("");
 }
 
 function facebookOAuthCallbackUrl(): string {
