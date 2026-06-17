@@ -20,3 +20,16 @@ export interface SocialMediaIntegrationDetail extends SocialMediaIntegrationSumm
   createdAt?: string | null;
   updatedAt?: string | null;
 }
+
+export interface FacebookAppConfigRequest {
+  appId: string;
+  appSecret: string;
+}
+
+export interface FacebookAppConfigResponse {
+  integrationId: string;
+  businessPartnerId: string;
+  providerCode: string;
+  appId: string;
+  status: string;
+}

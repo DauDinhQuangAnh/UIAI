@@ -1,4 +1,6 @@
 import type {
+  FacebookAppConfigRequest,
+  FacebookAppConfigResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -35,6 +37,18 @@ type PathItem<TGet = never> = {
   trace?: never;
 };
 
+type AppConfigPathItem<TPost = never, TPut = never> = {
+  parameters: NoParams;
+  get?: never;
+  post: TPost;
+  put: TPut;
+  delete?: never;
+  patch?: never;
+  options?: never;
+  head?: never;
+  trace?: never;
+};
+
 declare module "./schema" {
   interface paths {
     "/api/social-media/providers": PathItem<{
@@ -49,5 +63,17 @@ declare module "./schema" {
       parameters: PathParams<{ businessPartnerId: string; integrationId: string }>;
       responses: { 200: JsonResponse<SocialMediaIntegrationDetail> };
     }>;
+    "/api/business-partners/{businessPartnerId}/social-media/facebook/app-config": AppConfigPathItem<
+      {
+        parameters: PathParams<{ businessPartnerId: string }>;
+        requestBody: { content: { "application/json": FacebookAppConfigRequest } };
+        responses: { 200: JsonResponse<FacebookAppConfigResponse>; 201: JsonResponse<FacebookAppConfigResponse> };
+      },
+      {
+        parameters: PathParams<{ businessPartnerId: string }>;
+        requestBody: { content: { "application/json": FacebookAppConfigRequest } };
+        responses: { 200: JsonResponse<FacebookAppConfigResponse> };
+      }
+    >;
   }
 }

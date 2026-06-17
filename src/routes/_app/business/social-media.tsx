@@ -1,9 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { LinkSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { LinkSimple, PencilSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +24,9 @@ import type { BusinessPartner } from "@/components/business/information/business
 import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
   useBusinessPartnerIntegrations,
+  useCreateFacebookAppConfig,
   useSocialMediaProviders,
+  useUpdateFacebookAppConfig,
 } from "@/api/hooks/social-media-integrations";
 import type {
   SocialMediaIntegrationSummary,
@@ -25,6 +37,22 @@ import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
 
 const BUSINESS_PAGE_SIZE = 100;
 
+type FacebookConfigMode = "create" | "edit";
+
+interface FacebookConfigForm {
+  businessPartnerId: string;
+  appId: string;
+  appSecret: string;
+}
+
+type FacebookConfigErrors = Partial<Record<keyof FacebookConfigForm, string>>;
+
+const EMPTY_FACEBOOK_CONFIG_FORM: FacebookConfigForm = {
+  businessPartnerId: "",
+  appId: "",
+  appSecret: "",
+};
+
 export const Route = createFileRoute("/_app/business/social-media")({
   component: SocialMediaLinksScreen,
 });
@@ -33,6 +61,7 @@ function SocialMediaLinksScreen() {
   const hasPermission = usePermissionSet();
   const canView = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.view);
   const canCreate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.create);
+  const canUpdate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.update);
 
   if (!canView) {
     return (
@@ -51,11 +80,15 @@ function SocialMediaLinksScreen() {
     );
   }
 
-  return <SocialMediaLinksContent canCreate={canCreate} />;
+  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} />;
 }
 
-function SocialMediaLinksContent({ canCreate }: { canCreate: boolean }) {
+function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean; canUpdate: boolean }) {
   const [selectedBusinessId, setSelectedBusinessId] = useState("");
+  const [configOpen, setConfigOpen] = useState(false);
+  const [configMode, setConfigMode] = useState<FacebookConfigMode>("create");
+  const [configForm, setConfigForm] = useState<FacebookConfigForm>(EMPTY_FACEBOOK_CONFIG_FORM);
+  const [configErrors, setConfigErrors] = useState<FacebookConfigErrors>({});
 
   const businessPartners = useBusinessPartners({
     isActive: true,
@@ -64,10 +97,13 @@ function SocialMediaLinksContent({ canCreate }: { canCreate: boolean }) {
   });
   const providers = useSocialMediaProviders();
   const integrations = useBusinessPartnerIntegrations(selectedBusinessId || undefined);
+  const createFacebookConfig = useCreateFacebookAppConfig();
+  const updateFacebookConfig = useUpdateFacebookAppConfig();
 
   const businesses = businessPartners.data?.items ?? [];
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId) ?? null;
   const providerNameByCode = useMemo(() => buildProviderNameMap(providers.data ?? []), [providers.data]);
+  const configSubmitting = createFacebookConfig.isPending || updateFacebookConfig.isPending;
 
   useEffect(() => {
     if (businessPartners.isLoading || businessPartners.isError) return;
@@ -80,8 +116,68 @@ function SocialMediaLinksContent({ canCreate }: { canCreate: boolean }) {
     }
   }, [businessPartners.isError, businessPartners.isLoading, businesses, selectedBusinessId]);
 
-  const showPhaseTwoToast = () => {
-    toast.info("Phase 2 sẽ triển khai cấu hình Facebook App ID/App Secret.");
+  const closeConfigDialog = () => {
+    setConfigOpen(false);
+    setConfigMode("create");
+    setConfigForm(EMPTY_FACEBOOK_CONFIG_FORM);
+    setConfigErrors({});
+  };
+
+  const openCreateConfig = () => {
+    if (!selectedBusinessId) return;
+    setConfigMode("create");
+    setConfigForm({ businessPartnerId: selectedBusinessId, appId: "", appSecret: "" });
+    setConfigErrors({});
+    setConfigOpen(true);
+  };
+
+  const openUpdateConfig = (integration: SocialMediaIntegrationSummary) => {
+    setConfigMode("edit");
+    setConfigForm({
+      businessPartnerId: selectedBusinessId,
+      appId: integration.appId,
+      appSecret: "",
+    });
+    setConfigErrors({});
+    setConfigOpen(true);
+  };
+
+  const submitConfig = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextForm = {
+      businessPartnerId: configForm.businessPartnerId,
+      appId: configForm.appId.trim(),
+      appSecret: configForm.appSecret.trim(),
+    };
+    const nextErrors = validateFacebookConfig(nextForm);
+    setConfigErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    const mutation = configMode === "create" ? createFacebookConfig : updateFacebookConfig;
+    mutation.mutate(
+      {
+        businessPartnerId: nextForm.businessPartnerId,
+        body: {
+          appId: nextForm.appId,
+          appSecret: nextForm.appSecret,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            configMode === "create"
+              ? "Đã lưu cấu hình Facebook App."
+              : "Đã cập nhật cấu hình Facebook App.",
+          );
+          closeConfigDialog();
+          if (nextForm.businessPartnerId === selectedBusinessId) integrations.refetch();
+        },
+        onError: (error) => {
+          toast.error(apiErrorMessage(error, "Không thể lưu cấu hình Facebook App."));
+          setConfigForm((current) => ({ ...current, appSecret: "" }));
+        },
+      },
+    );
   };
 
   return (
@@ -100,7 +196,13 @@ function SocialMediaLinksContent({ canCreate }: { canCreate: boolean }) {
             </p>
           </div>
           {canCreate && (
-            <Button type="button" size="sm" onClick={showPhaseTwoToast}>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!selectedBusinessId}
+              title={!selectedBusinessId ? "Vui lòng chọn doanh nghiệp trước khi thêm liên kết." : undefined}
+              onClick={openCreateConfig}
+            >
               <Plus className="size-4" aria-hidden />
               Thêm liên kết
             </Button>
@@ -171,7 +273,12 @@ function SocialMediaLinksContent({ canCreate }: { canCreate: boolean }) {
             description="Các bước cấu hình App ID/App Secret, OAuth và chọn page sẽ được triển khai ở các phase tiếp theo."
             action={
               canCreate ? (
-                <Button type="button" onClick={showPhaseTwoToast}>
+                <Button
+                  type="button"
+                  disabled={!selectedBusinessId}
+                  title={!selectedBusinessId ? "Vui lòng chọn doanh nghiệp trước khi thêm liên kết." : undefined}
+                  onClick={openCreateConfig}
+                >
                   <Plus className="size-4" aria-hidden />
                   Thêm liên kết
                 </Button>
@@ -183,10 +290,145 @@ function SocialMediaLinksContent({ canCreate }: { canCreate: boolean }) {
             business={selectedBusiness}
             integrations={integrations.data ?? []}
             providerNameByCode={providerNameByCode}
+            canUpdate={canUpdate}
+            onUpdateConfig={openUpdateConfig}
           />
         )}
       </div>
+      <FacebookAppConfigDialog
+        open={configOpen}
+        mode={configMode}
+        form={configForm}
+        errors={configErrors}
+        businesses={businesses}
+        loading={configSubmitting}
+        onOpenChange={(open) => {
+          if (!open) closeConfigDialog();
+          else setConfigOpen(true);
+        }}
+        onFormChange={(nextForm) => {
+          setConfigForm(nextForm);
+          setConfigErrors({});
+        }}
+        onSubmit={submitConfig}
+      />
     </BusinessPageShell>
+  );
+}
+
+function FacebookAppConfigDialog({
+  open,
+  mode,
+  form,
+  errors,
+  businesses,
+  loading,
+  onOpenChange,
+  onFormChange,
+  onSubmit,
+}: {
+  open: boolean;
+  mode: FacebookConfigMode;
+  form: FacebookConfigForm;
+  errors: FacebookConfigErrors;
+  businesses: BusinessPartner[];
+  loading: boolean;
+  onOpenChange: (open: boolean) => void;
+  onFormChange: (form: FacebookConfigForm) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const title = mode === "create" ? "Thêm liên kết mạng xã hội" : "Cập nhật cấu hình Facebook App";
+  const submitLabel = mode === "create" ? "Lưu cấu hình" : "Lưu thay đổi";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader className="items-center text-center">
+          <DialogTitle className="text-brand-800">{title}</DialogTitle>
+          <DialogDescription>
+            Nhập App ID và App Secret của Facebook App. App Secret chỉ được dùng để gửi cấu hình và sẽ được xóa khỏi form sau khi đóng.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <SocialConfigField label="Doanh nghiệp" htmlFor="facebook_config_business" required error={errors.businessPartnerId}>
+            <Select
+              value={form.businessPartnerId}
+              disabled={loading}
+              onValueChange={(businessPartnerId) => onFormChange({ ...form, businessPartnerId })}
+            >
+              <SelectTrigger id="facebook_config_business" aria-label="Chọn doanh nghiệp">
+                <SelectValue placeholder="Chọn doanh nghiệp" />
+              </SelectTrigger>
+              <SelectContent>
+                {businesses.map((business) => (
+                  <SelectItem key={business.id} value={business.id}>
+                    {business.brandName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SocialConfigField>
+          <SocialConfigField label="App ID" htmlFor="facebook_config_app_id" required error={errors.appId}>
+            <Input
+              id="facebook_config_app_id"
+              value={form.appId}
+              disabled={loading}
+              invalid={!!errors.appId}
+              placeholder="123456789"
+              onChange={(event) => onFormChange({ ...form, appId: event.target.value })}
+              autoComplete="off"
+            />
+          </SocialConfigField>
+          <SocialConfigField label="App Secret" htmlFor="facebook_config_app_secret" required error={errors.appSecret}>
+            <Input
+              id="facebook_config_app_secret"
+              type="password"
+              value={form.appSecret}
+              disabled={loading}
+              invalid={!!errors.appSecret}
+              placeholder="meta-app-secret"
+              onChange={(event) => onFormChange({ ...form, appSecret: event.target.value })}
+              autoComplete="new-password"
+            />
+          </SocialConfigField>
+          <DialogFooter className="mt-3">
+            <Button type="button" variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
+              Hủy
+            </Button>
+            <Button type="submit" loading={loading}>
+              {submitLabel}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SocialConfigField({
+  label,
+  htmlFor,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-start">
+      <Label htmlFor={htmlFor} className="pt-2 text-brand-800">
+        {label}
+        {required && <span className="ml-1 text-danger-fg">*</span>}
+      </Label>
+      <div className="grid gap-1">
+        {children}
+        {error && <p className="text-xs font-medium text-danger-fg">{error}</p>}
+      </div>
+    </div>
   );
 }
 
@@ -223,13 +465,17 @@ function SocialMediaIntegrationsTable({
   business,
   integrations,
   providerNameByCode,
+  canUpdate,
+  onUpdateConfig,
 }: {
   business: BusinessPartner | null;
   integrations: SocialMediaIntegrationSummary[];
   providerNameByCode: Map<string, string>;
+  canUpdate: boolean;
+  onUpdateConfig: (integration: SocialMediaIntegrationSummary) => void;
 }) {
   return (
-    <BusinessDataTable className="min-w-[1180px]">
+    <BusinessDataTable className="min-w-[1320px]">
       <TableHeader>
         <TableRow>
           <BusinessHeadCell className="w-[18%] whitespace-nowrap">Doanh nghiệp</BusinessHeadCell>
@@ -239,7 +485,7 @@ function SocialMediaIntegrationsTable({
           <BusinessHeadCell className="w-[16%] whitespace-nowrap">Thời điểm ủy quyền</BusinessHeadCell>
           <BusinessHeadCell className="w-[10%] whitespace-nowrap text-right">Số page</BusinessHeadCell>
           <BusinessHeadCell className="w-[10%] whitespace-nowrap text-right">Bot bật</BusinessHeadCell>
-          <BusinessHeadCell className="w-28 whitespace-nowrap text-right">Thao tác</BusinessHeadCell>
+          <BusinessHeadCell className="w-72 whitespace-nowrap text-right">Thao tác</BusinessHeadCell>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -256,10 +502,31 @@ function SocialMediaIntegrationsTable({
             <TableCell>{formatDateTime(integration.authorizedAt)}</TableCell>
             <TableCell className="text-right tabular-nums">{integration.pagesCount}</TableCell>
             <TableCell className="text-right tabular-nums">{integration.activeBotPagesCount}</TableCell>
-            <TableCell className="text-right">
-              <Button type="button" variant="secondary" size="sm" disabled title="Phase sau sẽ triển khai thao tác cập nhật/ủy quyền lại">
-                Phase sau
-              </Button>
+            <TableCell>
+              <div className="flex justify-end gap-2">
+                {isFacebookIntegration(integration) ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={!canUpdate}
+                      title={!canUpdate ? "Bạn không có quyền cấu hình liên kết Facebook." : undefined}
+                      onClick={() => onUpdateConfig(integration)}
+                    >
+                      <PencilSimple className="size-4" aria-hidden />
+                      Cập nhật cấu hình
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" disabled title="Phase 3 sẽ triển khai đăng nhập Facebook">
+                      Đăng nhập Facebook - Phase 3
+                    </Button>
+                  </>
+                ) : (
+                  <Button type="button" variant="secondary" size="sm" disabled title="Phase sau sẽ triển khai thao tác cập nhật/ủy quyền lại">
+                    Phase sau
+                  </Button>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}
@@ -302,6 +569,18 @@ function providerLabel(integration: SocialMediaIntegrationSummary, providerNameB
   if (integration.providerName) return integration.providerName;
   if (code) return providerNameByCode.get(code.toLowerCase()) ?? code;
   return "Provider";
+}
+
+function isFacebookIntegration(integration: SocialMediaIntegrationSummary): boolean {
+  return integration.providerCode.trim().toUpperCase() === "FACEBOOK" || integration.providerName.trim().toLowerCase() === "facebook";
+}
+
+function validateFacebookConfig(form: FacebookConfigForm): FacebookConfigErrors {
+  const errors: FacebookConfigErrors = {};
+  if (!form.businessPartnerId) errors.businessPartnerId = "Vui lòng chọn doanh nghiệp.";
+  if (!form.appId.trim()) errors.appId = "Vui lòng nhập App ID.";
+  if (!form.appSecret.trim()) errors.appSecret = "Vui lòng nhập App Secret.";
+  return errors;
 }
 
 function formatDateTime(value: string | null | undefined): string {

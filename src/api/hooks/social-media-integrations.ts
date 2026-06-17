@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client";
 import { unwrap } from "../errors";
 import type {
+  FacebookAppConfigRequest,
+  FacebookAppConfigResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -57,6 +59,54 @@ export function useBusinessPartnerIntegrationDetail(
   });
 }
 
+export function useCreateFacebookAppConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      businessPartnerId,
+      body,
+    }: {
+      businessPartnerId: string;
+      body: FacebookAppConfigRequest;
+    }): Promise<FacebookAppConfigResponse> =>
+      normalizeFacebookAppConfigResponse(
+        unwrap(
+          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/facebook/app-config", {
+            params: { path: { businessPartnerId } },
+            body,
+          }),
+        ),
+      ),
+    onSuccess: (result, variables) => {
+      invalidateIntegrationQueries(queryClient, variables.businessPartnerId, result.integrationId);
+    },
+  });
+}
+
+export function useUpdateFacebookAppConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      businessPartnerId,
+      body,
+    }: {
+      businessPartnerId: string;
+      body: FacebookAppConfigRequest;
+    }): Promise<FacebookAppConfigResponse> =>
+      normalizeFacebookAppConfigResponse(
+        unwrap(
+          await apiClient.PUT("/api/business-partners/{businessPartnerId}/social-media/facebook/app-config", {
+            params: { path: { businessPartnerId } },
+            body,
+          }),
+        ),
+      ),
+    onSuccess: (result, variables) => {
+      invalidateIntegrationQueries(queryClient, variables.businessPartnerId, result.integrationId);
+    },
+  });
+}
+
 function normalizeProvider(provider: SocialMediaProvider): SocialMediaProvider {
   return {
     id: provider.id ?? provider.code ?? "",
@@ -85,4 +135,27 @@ function normalizeIntegrationDetail(integration: SocialMediaIntegrationDetail): 
     createdAt: integration.createdAt ?? null,
     updatedAt: integration.updatedAt ?? null,
   };
+}
+
+function normalizeFacebookAppConfigResponse(response: FacebookAppConfigResponse): FacebookAppConfigResponse {
+  return {
+    integrationId: response.integrationId ?? "",
+    businessPartnerId: response.businessPartnerId ?? "",
+    providerCode: response.providerCode ?? "FACEBOOK",
+    appId: response.appId ?? "",
+    status: response.status ?? "Configured",
+  };
+}
+
+function invalidateIntegrationQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  businessPartnerId: string,
+  integrationId: string,
+) {
+  queryClient.invalidateQueries({ queryKey: socialMediaKeys.integrations(businessPartnerId) });
+  if (integrationId) {
+    queryClient.invalidateQueries({
+      queryKey: socialMediaKeys.integrationDetail(businessPartnerId, integrationId),
+    });
+  }
 }

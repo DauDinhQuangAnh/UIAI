@@ -39,6 +39,7 @@ export const PERMISSIONS = {
     facebookIntegration: {
       view: "SOCIAL_MEDIA.FACEBOOK_INTEGRATION.VIEW",
       create: "SOCIAL_MEDIA.FACEBOOK_INTEGRATION.CREATE",
+      update: "SOCIAL_MEDIA.FACEBOOK_INTEGRATION.UPDATE",
     },
   },
 } as const;
