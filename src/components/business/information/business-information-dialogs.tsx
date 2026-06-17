@@ -140,7 +140,7 @@ function BusinessPartnerFormFields({
         <Input
           id="business_brand_name"
           value={form.brandName}
-          placeholder="SAR Coffee"
+          placeholder="Demo Store"
           disabled={loading}
           onChange={(event) => onFormChange({ ...form, brandName: event.target.value })}
           required
@@ -150,7 +150,7 @@ function BusinessPartnerFormFields({
         <Input
           id="business_logo_url"
           value={form.logoUrl}
-          placeholder="https://cdn.example.com/logo.png"
+          placeholder="https://example.test/logo.png"
           disabled={loading}
           onChange={(event) => onFormChange({ ...form, logoUrl: event.target.value })}
         />
@@ -160,7 +160,7 @@ function BusinessPartnerFormFields({
           id="business_email"
           type="email"
           value={form.email}
-          placeholder="owner@sarcoffee.vn"
+          placeholder="owner@demo-store.test"
           disabled={loading}
           onChange={(event) => onFormChange({ ...form, email: event.target.value })}
           required
@@ -170,7 +170,7 @@ function BusinessPartnerFormFields({
         <Input
           id="business_phone"
           value={form.phone}
-          placeholder="0900000000"
+          placeholder="0987654321"
           disabled={loading}
           onChange={(event) => onFormChange({ ...form, phone: event.target.value })}
           required
@@ -180,7 +180,7 @@ function BusinessPartnerFormFields({
         <Input
           id="representative_name"
           value={form.representativeName}
-          placeholder="Nguyễn Văn A"
+          placeholder="Test Representative"
           disabled={loading}
           onChange={(event) => onFormChange({ ...form, representativeName: event.target.value })}
           required
@@ -191,7 +191,7 @@ function BusinessPartnerFormFields({
           id="representative_email"
           type="email"
           value={form.representativeEmail}
-          placeholder="rep@sarcoffee.vn"
+          placeholder="representative@demo-store.test"
           disabled={loading}
           onChange={(event) => onFormChange({ ...form, representativeEmail: event.target.value })}
           required
