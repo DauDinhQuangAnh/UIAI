@@ -35,6 +35,12 @@ export const PERMISSIONS = {
     view: "PERMISSION_MANAGEMENT.ROLE_PERMISSION_CONFIG.VIEW",
     update: "PERMISSION_MANAGEMENT.ROLE_PERMISSION_CONFIG.UPDATE",
   },
+  socialMedia: {
+    facebookIntegration: {
+      view: "SOCIAL_MEDIA.FACEBOOK_INTEGRATION.VIEW",
+      create: "SOCIAL_MEDIA.FACEBOOK_INTEGRATION.CREATE",
+    },
+  },
 } as const;
 
 export function hasPermission(permissions: string[], code: string): boolean {
