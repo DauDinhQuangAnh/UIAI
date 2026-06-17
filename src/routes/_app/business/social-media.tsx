@@ -121,7 +121,7 @@ function SocialMediaLinksContent({
   const [oauthPendingIntegrationId, setOauthPendingIntegrationId] = useState<string | null>(null);
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [pageTarget, setPageTarget] = useState<SocialMediaIntegrationRow | null>(null);
-  const [manageTarget, setManageTarget] = useState<SocialMediaIntegrationRow | null>(null);
+  const [manageTarget, setManageTarget] = useState<SocialMediaTableRow | null>(null);
   const [providerFilter, setProviderFilter] = useState<ProviderFilter>("FACEBOOK");
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [pageSelectionError, setPageSelectionError] = useState("");
@@ -759,7 +759,7 @@ function SocialMediaIntegrationManageDialog({
   onStartOAuth,
   onSelectPages,
 }: {
-  row: SocialMediaIntegrationRow | null;
+  row: SocialMediaTableRow | null;
   canViewPages: boolean;
   canUpdate: boolean;
   canReauthorize: boolean;
@@ -770,9 +770,11 @@ function SocialMediaIntegrationManageDialog({
   onSelectPages: (row: SocialMediaIntegrationRow) => void;
 }) {
   const integration = row?.integration;
+  const page = row?.page ?? null;
   const isFacebook = integration ? isFacebookIntegration(integration) : false;
   const authorized = integration ? isAuthorizedIntegration(integration) : false;
   const canOpenPageSelection = isFacebook && authorized && canViewPages;
+  const botActive = (integration?.activeBotPagesCount ?? 0) > 0;
   const selectPagesTitle = !isFacebook
     ? "Chọn trang sẽ được triển khai ở phase sau."
     : !authorized
@@ -783,27 +785,37 @@ function SocialMediaIntegrationManageDialog({
 
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[92vh] max-w-[460px] overflow-y-auto rounded-md p-5">
         <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">Quản lý liên kết</DialogTitle>
-          <DialogDescription>{row?.business.brandName ?? "Doanh nghiệp"}</DialogDescription>
+          <div className="mb-1 flex size-14 items-center justify-center rounded-pill border border-brand-100 bg-brand-50 text-xs font-bold text-brand-700">
+            {isFacebook ? "FB" : integration ? providerCode(integration).slice(0, 2) || "SM" : "SM"}
+          </div>
+          <DialogTitle className="text-sm font-bold uppercase text-brand-800">Thông tin liên kết social media</DialogTitle>
+          <DialogDescription className="sr-only">Chi tiết liên kết mạng xã hội</DialogDescription>
         </DialogHeader>
 
         {row && integration && (
-          <div className="grid gap-4">
-            <div className="grid gap-3 rounded-md border border-border bg-surface p-4 sm:grid-cols-2">
-              <IntegrationInfo label="Provider" value={providerCode(integration)} />
-              <IntegrationInfo label="App ID" value={integration.appId || "-"} mono />
-              <IntegrationInfo label="Trạng thái" value={<IntegrationStatusBadge status={integration.status} />} />
-              <IntegrationInfo label="Thời điểm ủy quyền" value={formatDateTime(integration.authorizedAt)} />
-              <IntegrationInfo label="Số page" value={String(integration.pagesCount)} />
-              <IntegrationInfo label="Bot bật" value={String(integration.activeBotPagesCount)} />
+          <div className="grid gap-3">
+            <DetailReadOnlyField label="Doanh nghiệp" value={row.business.brandName} />
+            <DetailReadOnlyField label="App ID" value={integration.appId || "-"} required mono />
+            <DetailReadOnlyField label="App Secret" value="••••••••••••••••" required mono />
+            <DetailReadOnlyField label="Trang" value={displayPageName(page, integration)} />
+            <DetailReadOnlyField label="ID Trang" value={page?.externalPageId || "-"} mono />
+
+            <div className="grid gap-1.5">
+              <span className="text-[11px] font-bold text-brand-800">Trạng thái hoạt động của Chatbot</span>
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text-primary">
+                {botActive ? "Đang hoạt động" : "Chưa bật"}
+              </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3">
+            <BotSchedulePreview active={botActive} />
+
+            <div className="grid gap-2 pt-1 sm:grid-cols-2">
               <Button
                 type="button"
                 variant="secondary"
+                size="sm"
                 disabled={!isFacebook || !canUpdate}
                 title={
                   !isFacebook
@@ -819,27 +831,35 @@ function SocialMediaIntegrationManageDialog({
               <Button
                 type="button"
                 variant="secondary"
-                loading={oauthPendingIntegrationId === integration.id}
-                disabled={!isFacebook || !canReauthorize || !!oauthPendingIntegrationId}
-                title={
-                  !isFacebook
-                    ? "Ủy quyền provider này sẽ được triển khai ở phase sau."
-                    : !canReauthorize
-                      ? "Bạn không có quyền ủy quyền Facebook."
-                      : undefined
-                }
-                onClick={() => onStartOAuth(row)}
-              >
-                {facebookOAuthActionLabel(integration.status)}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
+                size="sm"
                 disabled={!canOpenPageSelection}
                 title={selectPagesTitle}
                 onClick={() => onSelectPages(row)}
               >
                 Chọn trang
+              </Button>
+            </div>
+
+            <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+              <Button
+                type="button"
+                size="sm"
+                loading={oauthPendingIntegrationId === integration.id}
+                disabled={!isFacebook || !canReauthorize || !!oauthPendingIntegrationId}
+                title={
+                  !isFacebook
+                    ? "Làm mới token provider này sẽ được triển khai ở phase sau."
+                    : !canReauthorize
+                      ? "Bạn không có quyền ủy quyền Facebook."
+                      : undefined
+                }
+                onClick={() => onStartOAuth(row)}
+                className="justify-self-start bg-[#b41fbc] text-white hover:bg-[#9d1ba4]"
+              >
+                Làm mới token liên kết
+              </Button>
+              <Button type="button" size="sm" onClick={() => onOpenChange(false)}>
+                Lưu
               </Button>
             </div>
           </div>
@@ -849,20 +869,69 @@ function SocialMediaIntegrationManageDialog({
   );
 }
 
-function IntegrationInfo({
+function DetailReadOnlyField({
   label,
   value,
+  required,
   mono,
 }: {
   label: string;
-  value: React.ReactNode;
+  value: string;
+  required?: boolean;
   mono?: boolean;
 }) {
   return (
-    <div className="grid gap-1">
-      <span className="text-xs font-semibold uppercase text-text-secondary">{label}</span>
-      <span className={mono ? "font-mono text-sm text-text-primary" : "text-sm font-medium text-text-primary"}>{value}</span>
+    <div className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
+      <Label className="text-[11px] font-bold text-brand-800">
+        {label}
+        {required && <span className="ml-0.5 text-danger-fg">*</span>}
+      </Label>
+      <Input
+        value={value}
+        readOnly
+        className={mono ? "h-8 bg-surface-2 font-mono text-xs" : "h-8 bg-surface-2 text-xs"}
+        aria-label={label}
+      />
     </div>
+  );
+}
+
+function BotSchedulePreview({ active }: { active: boolean }) {
+  const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
+  const slots = ["09:00", "12:00", "18:00"];
+  return (
+    <div className="grid gap-2">
+      <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary">
+        {active ? "Hoạt động toàn thời gian" : "Chưa cấu hình thời gian hoạt động"}
+      </div>
+      <div className="overflow-hidden rounded-md border border-border bg-surface">
+        <div className="border-b border-border px-3 py-2 text-xs font-semibold text-text-primary">Hoạt động bán thời gian</div>
+        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] text-center text-[10px]">
+          <div className="bg-surface-2 px-1 py-1 font-semibold text-text-secondary">Thứ</div>
+          {days.map((day) => (
+            <div key={day} className="bg-surface-2 px-1 py-1 font-semibold text-text-secondary">
+              {day.replace("Thứ ", "T")}
+            </div>
+          ))}
+          {slots.map((slot) => (
+            <ScheduleRow key={slot} slot={slot} days={days} active={active} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScheduleRow({ slot, days, active }: { slot: string; days: string[]; active: boolean }) {
+  return (
+    <>
+      <div className="border-t border-border px-1 py-1 font-medium text-text-secondary">{slot}</div>
+      {days.map((day) => (
+        <div key={`${slot}-${day}`} className="border-t border-border px-1 py-1 text-text-secondary">
+          {active ? "On" : "-"}
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -871,7 +940,7 @@ function SocialMediaIntegrationsTable({
   onManage,
 }: {
   rows: SocialMediaTableRow[];
-  onManage: (row: SocialMediaIntegrationRow) => void;
+  onManage: (row: SocialMediaTableRow) => void;
 }) {
   return (
     <BusinessDataTable className="min-w-[920px]">
@@ -902,7 +971,7 @@ function IntegrationTableRow({
   onManage,
 }: {
   row: SocialMediaTableRow;
-  onManage: (row: SocialMediaIntegrationRow) => void;
+  onManage: (row: SocialMediaTableRow) => void;
 }) {
   const { business, integration, page } = row;
 
@@ -1001,10 +1070,6 @@ function isAuthorizedIntegration(integration: SocialMediaIntegrationSummary): bo
   return integration.status.trim().toLowerCase() === "authorized";
 }
 
-function facebookOAuthActionLabel(status: string): string {
-  return status.trim().toLowerCase() === "authorized" ? "Ủy quyền lại" : "Đăng nhập Facebook";
-}
-
 function pageInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "FB";
@@ -1023,16 +1088,6 @@ function validateFacebookConfig(form: FacebookConfigForm): FacebookConfigErrors 
   if (!form.appId.trim()) errors.appId = "Vui lòng nhập App ID.";
   if (!form.appSecret.trim()) errors.appSecret = "Vui lòng nhập App Secret.";
   return errors;
-}
-
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function apiErrorMessage(error: unknown, fallback: string): string {
