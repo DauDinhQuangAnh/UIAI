@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client";
 import { unwrap } from "../errors";
 import type {
@@ -39,15 +39,28 @@ export function useBusinessPartnerIntegrations(businessPartnerId: string | undef
   return useQuery({
     queryKey: socialMediaKeys.integrations(businessPartnerId),
     enabled: !!businessPartnerId,
-    queryFn: async (): Promise<SocialMediaIntegrationSummary[]> =>
-      (
-        unwrap(
-          await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/integrations", {
-            params: { path: { businessPartnerId: businessPartnerId! } },
-          }),
-        ) ?? []
-      ).map(normalizeIntegration),
+    queryFn: () => fetchBusinessPartnerIntegrations(businessPartnerId!),
   });
+}
+
+export function useBusinessPartnersIntegrations(businessPartnerIds: string[], enabled = true) {
+  return useQueries({
+    queries: businessPartnerIds.map((businessPartnerId) => ({
+      queryKey: socialMediaKeys.integrations(businessPartnerId),
+      enabled: enabled && !!businessPartnerId,
+      queryFn: () => fetchBusinessPartnerIntegrations(businessPartnerId),
+    })),
+  });
+}
+
+export async function fetchBusinessPartnerIntegrations(businessPartnerId: string): Promise<SocialMediaIntegrationSummary[]> {
+  return (
+    unwrap(
+      await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/integrations", {
+        params: { path: { businessPartnerId } },
+      }),
+    ) ?? []
+  ).map(normalizeIntegration);
 }
 
 export function useBusinessPartnerIntegrationDetail(

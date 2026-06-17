@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { CheckCircle, LinkSimple, PencilSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
 import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
-  useBusinessPartnerIntegrations,
+  useBusinessPartnersIntegrations,
   useCreateFacebookAppConfig,
   useFacebookPages,
   useSaveFacebookPages,
@@ -53,6 +53,11 @@ interface FacebookConfigForm {
 }
 
 type FacebookConfigErrors = Partial<Record<keyof FacebookConfigForm, string>>;
+
+interface SocialMediaIntegrationRow {
+  business: BusinessPartner;
+  integration: SocialMediaIntegrationSummary;
+}
 
 const EMPTY_FACEBOOK_CONFIG_FORM: FacebookConfigForm = {
   businessPartnerId: "",
@@ -105,13 +110,11 @@ function SocialMediaLinksContent({
   canReauthorize: boolean;
   canViewPages: boolean;
 }) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const search = Route.useSearch();
-  const [selectedBusinessId, setSelectedBusinessId] = useState(search.businessPartnerId ?? "");
   const [oauthPendingIntegrationId, setOauthPendingIntegrationId] = useState<string | null>(null);
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
-  const [pageTargetIntegration, setPageTargetIntegration] = useState<SocialMediaIntegrationSummary | null>(null);
+  const [pageTarget, setPageTarget] = useState<SocialMediaIntegrationRow | null>(null);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [pageSelectionError, setPageSelectionError] = useState("");
   const [configOpen, setConfigOpen] = useState(false);
@@ -125,40 +128,32 @@ function SocialMediaLinksContent({
     pageSize: BUSINESS_PAGE_SIZE,
   });
   const providers = useSocialMediaProviders();
-  const integrations = useBusinessPartnerIntegrations(selectedBusinessId || undefined);
+  const businesses = businessPartners.data?.items ?? [];
+  const businessIds = useMemo(() => businesses.map((business) => business.id), [businesses]);
+  const integrationQueries = useBusinessPartnersIntegrations(businessIds, !businessPartners.isLoading && !businessPartners.isError);
   const createFacebookConfig = useCreateFacebookAppConfig();
   const updateFacebookConfig = useUpdateFacebookAppConfig();
   const startFacebookOAuth = useStartFacebookOAuth();
-  const facebookPages = useFacebookPages(selectedBusinessId || undefined, pageDialogOpen && !!pageTargetIntegration);
+  const facebookPages = useFacebookPages(pageTarget?.business.id, pageDialogOpen && !!pageTarget);
   const saveFacebookPages = useSaveFacebookPages();
 
-  const businesses = businessPartners.data?.items ?? [];
-  const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId) ?? null;
+  const defaultBusinessId =
+    search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)
+      ? search.businessPartnerId
+      : businesses[0]?.id ?? "";
   const providerNameByCode = useMemo(() => buildProviderNameMap(providers.data ?? []), [providers.data]);
+  const integrationRows = useMemo<SocialMediaIntegrationRow[]>(
+    () =>
+      businesses.flatMap((business, index) =>
+        (integrationQueries[index]?.data ?? []).map((integration) => ({ business, integration })),
+      ),
+    [businesses, integrationQueries],
+  );
+  const integrationsLoading = integrationQueries.some((query) => query.isLoading);
+  const integrationsFetching = integrationQueries.some((query) => query.isFetching);
+  const integrationsError = integrationQueries.find((query) => query.isError)?.error;
   const configSubmitting = createFacebookConfig.isPending || updateFacebookConfig.isPending;
   const pageSelectionCount = selectedPageIds.size;
-
-  useEffect(() => {
-    if (businessPartners.isLoading || businessPartners.isError) return;
-    if (businesses.length === 0) {
-      setSelectedBusinessId("");
-      return;
-    }
-
-    if (search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)) {
-      if (search.businessPartnerId !== selectedBusinessId) setSelectedBusinessId(search.businessPartnerId);
-      return;
-    }
-
-    if (!selectedBusinessId || !businesses.some((business) => business.id === selectedBusinessId)) {
-      setSelectedBusinessId(businesses[0].id);
-    }
-  }, [businessPartners.isError, businessPartners.isLoading, businesses, search.businessPartnerId, selectedBusinessId]);
-
-  const chooseBusiness = (businessPartnerId: string) => {
-    setSelectedBusinessId(businessPartnerId);
-    navigate({ to: "/business/social-media", search: { businessPartnerId } });
-  };
 
   const closeConfigDialog = () => {
     setConfigOpen(false);
@@ -168,18 +163,18 @@ function SocialMediaLinksContent({
   };
 
   const openCreateConfig = () => {
-    if (!selectedBusinessId) return;
+    if (!defaultBusinessId) return;
     setConfigMode("create");
-    setConfigForm({ businessPartnerId: selectedBusinessId, appId: "", appSecret: "" });
+    setConfigForm({ businessPartnerId: defaultBusinessId, appId: "", appSecret: "" });
     setConfigErrors({});
     setConfigOpen(true);
   };
 
-  const openUpdateConfig = (integration: SocialMediaIntegrationSummary) => {
+  const openUpdateConfig = (row: SocialMediaIntegrationRow) => {
     setConfigMode("edit");
     setConfigForm({
-      businessPartnerId: selectedBusinessId,
-      appId: integration.appId,
+      businessPartnerId: row.business.id,
+      appId: row.integration.appId,
       appSecret: "",
     });
     setConfigErrors({});
@@ -214,7 +209,6 @@ function SocialMediaLinksContent({
               : "Đã cập nhật cấu hình Facebook App.",
           );
           closeConfigDialog();
-          if (nextForm.businessPartnerId === selectedBusinessId) integrations.refetch();
         },
         onError: (error) => {
           toast.error(apiErrorMessage(error, "Không thể lưu cấu hình Facebook App."));
@@ -224,13 +218,12 @@ function SocialMediaLinksContent({
     );
   };
 
-  const startOAuth = (integration: SocialMediaIntegrationSummary) => {
-    if (!selectedBusinessId) return;
+  const startOAuth = (row: SocialMediaIntegrationRow) => {
     const redirectUri = facebookOAuthCallbackUrl();
-    setOauthPendingIntegrationId(integration.id);
+    setOauthPendingIntegrationId(row.integration.id);
     startFacebookOAuth.mutate(
       {
-        businessPartnerId: selectedBusinessId,
+        businessPartnerId: row.business.id,
         body: { redirectUri },
       },
       {
@@ -241,8 +234,8 @@ function SocialMediaLinksContent({
             return;
           }
           storeFacebookOAuthContext({
-            businessPartnerId: selectedBusinessId,
-            integrationId: integration.id,
+            businessPartnerId: row.business.id,
+            integrationId: row.integration.id,
             state: result.state,
           });
           toast.info("Đang chuyển sang Facebook để đăng nhập...");
@@ -258,15 +251,15 @@ function SocialMediaLinksContent({
 
   const clearPageSelection = () => {
     setPageDialogOpen(false);
-    setPageTargetIntegration(null);
+    const pageBusinessId = pageTarget?.business.id;
+    setPageTarget(null);
     setSelectedPageIds(new Set());
     setPageSelectionError("");
-    queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(selectedBusinessId || undefined) });
+    queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(pageBusinessId) });
   };
 
-  const openPageSelection = (integration: SocialMediaIntegrationSummary) => {
-    if (!selectedBusinessId) return;
-    setPageTargetIntegration(integration);
+  const openPageSelection = (row: SocialMediaIntegrationRow) => {
+    setPageTarget(row);
     setSelectedPageIds(new Set());
     setPageSelectionError("");
     setPageDialogOpen(true);
@@ -283,7 +276,7 @@ function SocialMediaLinksContent({
   };
 
   const submitSelectedPages = () => {
-    if (!selectedBusinessId) return;
+    if (!pageTarget) return;
     const pages = facebookPages.data?.pages ?? [];
     const selectedPages = pages.filter((page) => selectedPageIds.has(page.externalPageId));
     if (selectedPages.length === 0) {
@@ -293,14 +286,13 @@ function SocialMediaLinksContent({
 
     saveFacebookPages.mutate(
       {
-        businessPartnerId: selectedBusinessId,
+        businessPartnerId: pageTarget.business.id,
         body: { pages: selectedPages },
       },
       {
         onSuccess: () => {
           toast.success("Đã lưu các trang Facebook đã chọn.");
           clearPageSelection();
-          integrations.refetch();
         },
         onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu các trang Facebook đã chọn.")),
       },
@@ -319,46 +311,21 @@ function SocialMediaLinksContent({
           <div className="flex flex-col gap-1">
             <h2 className="text-xl font-semibold text-text-primary">Danh sách liên kết</h2>
             <p className="text-sm text-text-secondary">
-              Chọn doanh nghiệp để tải các integration mạng xã hội đã cấu hình.
+              Hiển thị tất cả integration mạng xã hội đã cấu hình.
             </p>
           </div>
           {canCreate && (
             <Button
               type="button"
               size="sm"
-              disabled={!selectedBusinessId}
-              title={!selectedBusinessId ? "Vui lòng chọn doanh nghiệp trước khi thêm liên kết." : undefined}
+              disabled={!defaultBusinessId}
+              title={!defaultBusinessId ? "Chưa có doanh nghiệp để thêm liên kết." : undefined}
               onClick={openCreateConfig}
             >
               <Plus className="size-4" aria-hidden />
               Thêm liên kết
             </Button>
           )}
-        </div>
-
-        <div className="grid gap-3 rounded-md border border-border bg-surface p-3 lg:grid-cols-[minmax(16rem,1fr)_auto] lg:items-end">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text-primary" htmlFor="social_business_partner">
-              Doanh nghiệp
-            </label>
-            <Select
-              value={selectedBusinessId}
-              disabled={businessPartners.isLoading || businesses.length === 0}
-              onValueChange={chooseBusiness}
-            >
-              <SelectTrigger id="social_business_partner" aria-label="Chọn doanh nghiệp">
-                <SelectValue placeholder={businessPartners.isLoading ? "Đang tải doanh nghiệp..." : "Chọn doanh nghiệp"} />
-              </SelectTrigger>
-              <SelectContent>
-                {businesses.map((business) => (
-                  <SelectItem key={business.id} value={business.id}>
-                    {business.brandName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <ProviderStatus providers={providers.data ?? []} loading={providers.isLoading} error={providers.error} onRetry={() => providers.refetch()} />
         </div>
 
         {businessPartners.isLoading ? (
@@ -380,30 +347,30 @@ function SocialMediaLinksContent({
             title="Chưa có doanh nghiệp để liên kết mạng xã hội."
             description="Hãy tạo business partner trước khi cấu hình các kênh social."
           />
-        ) : integrations.isLoading || integrations.isFetching ? (
+        ) : integrationsLoading || integrationsFetching ? (
           <SocialMediaLoadingState />
-        ) : integrations.isError ? (
+        ) : integrationsError ? (
           <EmptyState
             icon={LinkSimple}
             title="Không tải được liên kết mạng xã hội"
-            description={apiErrorMessage(integrations.error, "Vui lòng thử lại sau.")}
+            description={apiErrorMessage(integrationsError, "Vui lòng thử lại sau.")}
             action={
-              <Button type="button" variant="secondary" onClick={() => integrations.refetch()}>
+              <Button type="button" variant="secondary" onClick={() => integrationQueries.forEach((query) => query.refetch())}>
                 Tải lại
               </Button>
             }
           />
-        ) : (integrations.data ?? []).length === 0 ? (
+        ) : integrationRows.length === 0 ? (
           <EmptyState
             icon={LinkSimple}
-            title="Doanh nghiệp này chưa có liên kết mạng xã hội."
+            title="Chưa có liên kết mạng xã hội."
             description="Các bước cấu hình App ID/App Secret, OAuth và chọn page sẽ được triển khai ở các phase tiếp theo."
             action={
               canCreate ? (
                 <Button
                   type="button"
-                  disabled={!selectedBusinessId}
-                  title={!selectedBusinessId ? "Vui lòng chọn doanh nghiệp trước khi thêm liên kết." : undefined}
+                  disabled={!defaultBusinessId}
+                  title={!defaultBusinessId ? "Chưa có doanh nghiệp để thêm liên kết." : undefined}
                   onClick={openCreateConfig}
                 >
                   <Plus className="size-4" aria-hidden />
@@ -414,8 +381,7 @@ function SocialMediaLinksContent({
           />
         ) : (
           <SocialMediaIntegrationsTable
-            business={selectedBusiness}
-            integrations={integrations.data ?? []}
+            rows={integrationRows}
             providerNameByCode={providerNameByCode}
             canViewPages={canViewPages}
             canUpdate={canUpdate}
@@ -732,38 +698,8 @@ function PageAvatar({ page }: { page: FacebookManagedPage }) {
   );
 }
 
-function ProviderStatus({
-  providers,
-  loading,
-  error,
-  onRetry,
-}: {
-  providers: SocialMediaProvider[];
-  loading: boolean;
-  error: unknown;
-  onRetry: () => void;
-}) {
-  if (loading) {
-    return <Skeleton className="h-10 w-full lg:w-64" />;
-  }
-  if (error) {
-    return (
-      <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
-        Không tải được provider. Tải lại
-      </Button>
-    );
-  }
-  const activeProviders = providers.filter((provider) => provider.isActive).length;
-  return (
-    <div className="rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-secondary">
-      {activeProviders} provider đang hoạt động
-    </div>
-  );
-}
-
 function SocialMediaIntegrationsTable({
-  business,
-  integrations,
+  rows,
   providerNameByCode,
   canViewPages,
   canUpdate,
@@ -773,21 +709,20 @@ function SocialMediaIntegrationsTable({
   onStartOAuth,
   onSelectPages,
 }: {
-  business: BusinessPartner | null;
-  integrations: SocialMediaIntegrationSummary[];
+  rows: SocialMediaIntegrationRow[];
   providerNameByCode: Map<string, string>;
   canViewPages: boolean;
   canUpdate: boolean;
   canReauthorize: boolean;
   oauthPendingIntegrationId: string | null;
-  onUpdateConfig: (integration: SocialMediaIntegrationSummary) => void;
-  onStartOAuth: (integration: SocialMediaIntegrationSummary) => void;
-  onSelectPages: (integration: SocialMediaIntegrationSummary) => void;
+  onUpdateConfig: (row: SocialMediaIntegrationRow) => void;
+  onStartOAuth: (row: SocialMediaIntegrationRow) => void;
+  onSelectPages: (row: SocialMediaIntegrationRow) => void;
 }) {
   return (
     <BusinessDataTable className="min-w-[1460px]">
-      <TableHeader>
-        <TableRow>
+      <TableHeader className="bg-brand-700">
+        <TableRow className="hover:bg-brand-700">
           <BusinessHeadCell className="w-[18%] whitespace-nowrap">Doanh nghiệp</BusinessHeadCell>
           <BusinessHeadCell className="w-[15%] whitespace-nowrap">Nhà cung cấp</BusinessHeadCell>
           <BusinessHeadCell className="w-[15%] whitespace-nowrap">App ID</BusinessHeadCell>
@@ -799,11 +734,10 @@ function SocialMediaIntegrationsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {integrations.map((integration) => (
+        {rows.map((row) => (
           <IntegrationTableRow
-            key={integration.id}
-            business={business}
-            integration={integration}
+            key={`${row.business.id}:${row.integration.id}`}
+            row={row}
             providerNameByCode={providerNameByCode}
             canViewPages={canViewPages}
             canUpdate={canUpdate}
@@ -820,8 +754,7 @@ function SocialMediaIntegrationsTable({
 }
 
 function IntegrationTableRow({
-  business,
-  integration,
+  row,
   providerNameByCode,
   canViewPages,
   canUpdate,
@@ -831,17 +764,17 @@ function IntegrationTableRow({
   onStartOAuth,
   onSelectPages,
 }: {
-  business: BusinessPartner | null;
-  integration: SocialMediaIntegrationSummary;
+  row: SocialMediaIntegrationRow;
   providerNameByCode: Map<string, string>;
   canViewPages: boolean;
   canUpdate: boolean;
   canReauthorize: boolean;
   oauthPendingIntegrationId: string | null;
-  onUpdateConfig: (integration: SocialMediaIntegrationSummary) => void;
-  onStartOAuth: (integration: SocialMediaIntegrationSummary) => void;
-  onSelectPages: (integration: SocialMediaIntegrationSummary) => void;
+  onUpdateConfig: (row: SocialMediaIntegrationRow) => void;
+  onStartOAuth: (row: SocialMediaIntegrationRow) => void;
+  onSelectPages: (row: SocialMediaIntegrationRow) => void;
 }) {
+  const { business, integration } = row;
   const authorized = isAuthorizedIntegration(integration);
   const canOpenPageSelection = authorized && canViewPages;
   const selectPagesTitle = !authorized
@@ -853,7 +786,7 @@ function IntegrationTableRow({
   return (
     <TableRow>
       <TableCell>
-        <div className="font-medium">{business?.brandName ?? "Doanh nghiệp"}</div>
+        <div className="font-medium">{business.brandName}</div>
       </TableCell>
       <TableCell>{providerLabel(integration, providerNameByCode)}</TableCell>
       <TableCell className="font-mono text-sm">{integration.appId || "-"}</TableCell>
@@ -873,7 +806,7 @@ function IntegrationTableRow({
                 size="sm"
                 disabled={!canUpdate}
                 title={!canUpdate ? "Bạn không có quyền cấu hình liên kết Facebook." : undefined}
-                onClick={() => onUpdateConfig(integration)}
+                onClick={() => onUpdateConfig(row)}
               >
                 <PencilSimple className="size-4" aria-hidden />
                 Cập nhật cấu hình
@@ -885,7 +818,7 @@ function IntegrationTableRow({
                 loading={oauthPendingIntegrationId === integration.id}
                 disabled={!canReauthorize || !!oauthPendingIntegrationId}
                 title={!canReauthorize ? "Bạn không có quyền ủy quyền Facebook." : undefined}
-                onClick={() => onStartOAuth(integration)}
+                onClick={() => onStartOAuth(row)}
               >
                 {facebookOAuthActionLabel(integration.status)}
               </Button>
@@ -895,7 +828,7 @@ function IntegrationTableRow({
                 size="sm"
                 disabled={!canOpenPageSelection}
                 title={selectPagesTitle}
-                onClick={() => onSelectPages(integration)}
+                onClick={() => onSelectPages(row)}
               >
                 Chọn trang
               </Button>
