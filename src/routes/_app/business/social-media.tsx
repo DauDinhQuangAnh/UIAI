@@ -943,14 +943,14 @@ function SocialMediaIntegrationsTable({
   onManage: (row: SocialMediaTableRow) => void;
 }) {
   return (
-    <BusinessDataTable className="min-w-[920px]">
+    <BusinessDataTable className="min-w-[900px] table-fixed">
       <TableHeader className="bg-brand-700">
         <TableRow className="hover:bg-brand-700">
-          <BusinessHeadCell className="w-[26%] whitespace-nowrap text-center uppercase">Doanh nghiệp</BusinessHeadCell>
-          <BusinessHeadCell className="w-[26%] whitespace-nowrap text-center uppercase">Trang</BusinessHeadCell>
-          <BusinessHeadCell className="w-[18%] whitespace-nowrap text-center uppercase">ID trang</BusinessHeadCell>
-          <BusinessHeadCell className="w-[18%] whitespace-nowrap text-center uppercase">Trạng thái</BusinessHeadCell>
-          <BusinessHeadCell className="w-32 whitespace-nowrap text-center uppercase">Hành động</BusinessHeadCell>
+          <BusinessHeadCell className="w-[28%] whitespace-nowrap uppercase">Doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[26%] whitespace-nowrap uppercase">Trang</BusinessHeadCell>
+          <BusinessHeadCell className="w-[18%] whitespace-nowrap uppercase">ID trang</BusinessHeadCell>
+          <BusinessHeadCell className="w-[16%] whitespace-nowrap text-center uppercase">Trạng thái</BusinessHeadCell>
+          <BusinessHeadCell className="w-[12%] whitespace-nowrap text-center uppercase">Hành động</BusinessHeadCell>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -977,15 +977,21 @@ function IntegrationTableRow({
 
   return (
     <TableRow>
-      <TableCell>
-        <div className="font-medium">{business.brandName}</div>
+      <TableCell className="h-14">
+        <div className="truncate font-medium">{business.brandName}</div>
       </TableCell>
-      <TableCell>{displayPageName(page, integration)}</TableCell>
-      <TableCell className="font-mono text-sm">{page?.externalPageId || "-"}</TableCell>
-      <TableCell>
-        <IntegrationStatusBadge status={page?.status || integration.status} />
+      <TableCell className="h-14">
+        <span className="block truncate">{displayPageName(page, integration)}</span>
       </TableCell>
-      <TableCell>
+      <TableCell className="h-14 font-mono text-sm">
+        <span className="block truncate">{page?.externalPageId || "-"}</span>
+      </TableCell>
+      <TableCell className="h-14 text-center">
+        <div className="flex justify-center">
+          <IntegrationStatusBadge status={page?.status || integration.status} />
+        </div>
+      </TableCell>
+      <TableCell className="h-14 text-center">
         <div className="flex justify-center">
           <Button
             type="button"
