@@ -4,6 +4,7 @@ import { ApiRequestError, unwrap } from "../errors";
 import type {
   PermissionList,
   PermissionUpdateResult,
+  PatchRolePermissionsRequest,
   ReplaceRolePermissionsRequest,
   Role,
   RoleCreate,
@@ -109,6 +110,18 @@ export function useReplaceRolePermissions() {
   return useMutation({
     mutationFn: async ({ roleId, body }: { roleId: string; body: ReplaceRolePermissionsRequest }): Promise<PermissionUpdateResult> =>
       unwrap(await apiClient.PUT("/api/roles/{roleId}/permissions", { params: { path: { roleId } }, body })),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.matrix(variables.roleId) });
+      queryClient.invalidateQueries({ queryKey: roleKeys.all });
+    },
+  });
+}
+
+export function usePatchRolePermissions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ roleId, body }: { roleId: string; body: PatchRolePermissionsRequest }): Promise<PermissionUpdateResult> =>
+      unwrap(await apiClient.PATCH("/api/roles/{roleId}/permissions", { params: { path: { roleId } }, body })),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: roleKeys.matrix(variables.roleId) });
       queryClient.invalidateQueries({ queryKey: roleKeys.all });

@@ -114,6 +114,7 @@ export function useMePermissions() {
   return useQuery({
     queryKey: ["auth", "permissions"],
     enabled: !!accessToken,
+    refetchOnMount: "always",
     queryFn: async (): Promise<PermissionsResponse> => {
       const { data, error, response } = await apiClient.GET("/api/me/permissions");
       if (error || !data) throw new AuthRequestError(response.status, error);

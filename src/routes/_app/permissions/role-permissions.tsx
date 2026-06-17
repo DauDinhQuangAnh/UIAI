@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { PermissionPageShell, apiErrorMessage } from "@/components/permissions/permission-ui";
 import {
   useCopyRolePermissions,
+  usePatchRolePermissions,
   useReplaceRolePermissions,
   useRolePermissionMatrix,
   useRoles,
@@ -32,11 +33,22 @@ function RolePermissionConfigScreen() {
   const roles = useRoles({ isActive: true, pageNumber: 1, pageSize: 100 });
   const matrix = useRolePermissionMatrix(selectedRoleId || undefined);
   const replacePermissions = useReplaceRolePermissions();
+  const patchPermissions = usePatchRolePermissions();
   const copyPermissions = useCopyRolePermissions();
   const roleItems = roles.data?.items ?? [];
   const selectedRole = roleItems.find((role) => role.id === selectedRoleId);
   const sourceRoles = roleItems.filter((role) => role.id !== selectedRoleId);
   const selectedCount = selectedIds.size;
+  const originalGrantedIds = useMemo(() => new Set(matrix.data?.grantedPageActionIds ?? []), [matrix.data]);
+  const grantPageActionIds = useMemo(
+    () => Array.from(selectedIds).filter((id) => !originalGrantedIds.has(id)),
+    [originalGrantedIds, selectedIds],
+  );
+  const revokePageActionIds = useMemo(
+    () => Array.from(originalGrantedIds).filter((id) => !selectedIds.has(id)),
+    [originalGrantedIds, selectedIds],
+  );
+  const hasPartialChanges = grantPageActionIds.length > 0 || revokePageActionIds.length > 0;
   const totalActions = useMemo(
     () => matrix.data?.features.reduce((featureTotal, feature) => featureTotal + feature.pages.reduce((pageTotal, page) => pageTotal + page.actions.length, 0), 0) ?? 0,
     [matrix.data],
@@ -80,6 +92,24 @@ function RolePermissionConfigScreen() {
     );
   };
 
+  const saveChanges = () => {
+    if (!selectedRoleId) return;
+    if (!hasPartialChanges) {
+      toast.info("Chưa có thay đổi quyền để lưu.");
+      return;
+    }
+    patchPermissions.mutate(
+      { roleId: selectedRoleId, body: { grantPageActionIds, revokePageActionIds } },
+      {
+        onSuccess: (result) => {
+          toast.success(`Đã lưu thay đổi, role hiện có ${result.totalGrantedPermissions} quyền.`);
+          matrix.refetch();
+        },
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu thay đổi quyền cho role.")),
+      },
+    );
+  };
+
   const copy = () => {
     if (!selectedRoleId || !sourceRoleId) return;
     copyPermissions.mutate(
@@ -101,7 +131,7 @@ function RolePermissionConfigScreen() {
       icon={ShieldChevron}
     >
       <div className="flex flex-col gap-5">
-        <div className="grid gap-3 rounded-md border border-border bg-surface p-3 lg:grid-cols-[1fr_1fr_auto_auto]">
+        <div className="grid gap-3 rounded-md border border-border bg-surface p-3 xl:grid-cols-[1fr_1fr_auto_auto_auto]">
           <Select value={selectedRoleId} disabled={roles.isLoading} onValueChange={chooseRole}>
             <SelectTrigger aria-label="Chọn role">
               <SelectValue placeholder="Chọn role cần phân quyền" />
@@ -129,6 +159,16 @@ function RolePermissionConfigScreen() {
           <Button type="button" variant="secondary" disabled={!can(PERMISSIONS.rolePermissions.update) || !selectedRoleId || !sourceRoleId} loading={copyPermissions.isPending} onClick={copy}>
             <Copy className="size-4" aria-hidden />
             Copy quyền
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!can(PERMISSIONS.rolePermissions.update) || !selectedRoleId || matrix.isError || !hasPartialChanges}
+            loading={patchPermissions.isPending}
+            onClick={saveChanges}
+          >
+            <FloppyDisk className="size-4" aria-hidden />
+            Lưu thay đổi
           </Button>
           <Button type="button" disabled={!can(PERMISSIONS.rolePermissions.update) || !selectedRoleId || matrix.isError} loading={replacePermissions.isPending} onClick={save}>
             <FloppyDisk className="size-4" aria-hidden />

@@ -174,9 +174,22 @@ function FeatureConfigScreen() {
                     <PermissionActionButtons
                       editLabel={`Sửa ${feature.name}`}
                       deleteLabel={`Xóa ${feature.name}`}
-                      editDisabled={!can(PERMISSIONS.features.update) || feature.isSystemDefined}
-                      deleteDisabled={!can(PERMISSIONS.features.delete) || feature.isSystemDefined}
-                      deleteTitle={feature.isSystemDefined ? "Feature hệ thống được backend bảo vệ." : undefined}
+                      editDisabled={!can(PERMISSIONS.features.update)}
+                      deleteDisabled={!can(PERMISSIONS.features.delete)}
+                      editTitle={
+                        !can(PERMISSIONS.features.update)
+                          ? "Bạn không có quyền cập nhật"
+                          : feature.isSystemDefined
+                            ? "Feature hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
+                      deleteTitle={
+                        !can(PERMISSIONS.features.delete)
+                          ? "Bạn không có quyền xóa"
+                          : feature.isSystemDefined
+                            ? "Feature hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
                       onEdit={() => {
                         setEditTarget(feature);
                         setEditForm(formFromFeature(feature));
@@ -227,7 +240,11 @@ function FeatureConfigScreen() {
       <DeletePermissionDialog
         open={!!deleteTarget}
         title="Xóa feature"
-        description={`Bạn có chắc muốn xóa ${deleteTarget?.name ?? "feature này"} không?`}
+        description={
+          deleteTarget?.isSystemDefined
+            ? `Bạn có chắc muốn xóa ${deleteTarget.name} không? Đây là dữ liệu hệ thống, backend có thể từ chối thao tác này.`
+            : `Bạn có chắc muốn xóa ${deleteTarget?.name ?? "feature này"} không?`
+        }
         loading={deleteFeature.isPending}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}

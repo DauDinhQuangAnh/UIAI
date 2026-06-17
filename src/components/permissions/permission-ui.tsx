@@ -118,6 +118,7 @@ export function PermissionActionButtons({
   deleteLabel,
   editDisabled,
   deleteDisabled,
+  editTitle,
   deleteTitle,
   onEdit,
   onDelete,
@@ -127,6 +128,7 @@ export function PermissionActionButtons({
   deleteLabel: string;
   editDisabled?: boolean;
   deleteDisabled?: boolean;
+  editTitle?: string;
   deleteTitle?: string;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -135,29 +137,32 @@ export function PermissionActionButtons({
   return (
     <div className="flex justify-end gap-1">
       {children}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label={editLabel}
-        className="size-8 border border-brand-100 bg-brand-50 text-brand-700 shadow-xs hover:border-brand-300 hover:bg-brand-100 hover:text-brand-900"
-        disabled={editDisabled}
-        onClick={onEdit}
-      >
-        <PencilSimple className="size-4" aria-hidden />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label={deleteLabel}
-        title={deleteTitle}
-        className="size-8 border border-danger-border bg-danger-bg text-danger-fg shadow-xs hover:border-danger-base hover:bg-danger-base hover:text-white"
-        disabled={deleteDisabled}
-        onClick={onDelete}
-      >
-        <Trash className="size-4" aria-hidden />
-      </Button>
+      <span title={editTitle} className="inline-flex">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={editLabel}
+          className="size-8 border border-brand-100 bg-brand-50 text-brand-700 shadow-xs hover:border-brand-300 hover:bg-brand-100 hover:text-brand-900"
+          disabled={editDisabled}
+          onClick={onEdit}
+        >
+          <PencilSimple className="size-4" aria-hidden />
+        </Button>
+      </span>
+      <span title={deleteTitle} className="inline-flex">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={deleteLabel}
+          className="size-8 border border-danger-border bg-danger-bg text-danger-fg shadow-xs hover:border-danger-base hover:bg-danger-base hover:text-white"
+          disabled={deleteDisabled}
+          onClick={onDelete}
+        >
+          <Trash className="size-4" aria-hidden />
+        </Button>
+      </span>
     </div>
   );
 }

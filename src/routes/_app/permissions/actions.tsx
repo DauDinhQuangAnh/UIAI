@@ -159,9 +159,22 @@ function ActionConfigScreen() {
                     <PermissionActionButtons
                       editLabel={`Sửa ${action.name}`}
                       deleteLabel={`Xóa ${action.name}`}
-                      editDisabled={!can(PERMISSIONS.actions.update) || action.isSystemDefined}
-                      deleteDisabled={!can(PERMISSIONS.actions.delete) || action.isSystemDefined}
-                      deleteTitle={action.isSystemDefined ? "Action hệ thống được backend bảo vệ." : undefined}
+                      editDisabled={!can(PERMISSIONS.actions.update)}
+                      deleteDisabled={!can(PERMISSIONS.actions.delete)}
+                      editTitle={
+                        !can(PERMISSIONS.actions.update)
+                          ? "Bạn không có quyền cập nhật"
+                          : action.isSystemDefined
+                            ? "Action hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
+                      deleteTitle={
+                        !can(PERMISSIONS.actions.delete)
+                          ? "Bạn không có quyền xóa"
+                          : action.isSystemDefined
+                            ? "Action hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
                       onEdit={() => {
                         setEditTarget(action);
                         setEditForm(formFromAction(action));
@@ -211,7 +224,11 @@ function ActionConfigScreen() {
       <DeletePermissionDialog
         open={!!deleteTarget}
         title="Xóa action"
-        description={`Bạn có chắc muốn xóa ${deleteTarget?.name ?? "action này"} không?`}
+        description={
+          deleteTarget?.isSystemDefined
+            ? `Bạn có chắc muốn xóa ${deleteTarget.name} không? Đây là dữ liệu hệ thống, backend có thể từ chối thao tác này.`
+            : `Bạn có chắc muốn xóa ${deleteTarget?.name ?? "action này"} không?`
+        }
         loading={deleteAction.isPending}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}

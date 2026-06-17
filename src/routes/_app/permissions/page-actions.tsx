@@ -202,9 +202,22 @@ function PageActionConfigScreen() {
                     <PermissionActionButtons
                       editLabel={`Sửa ${item.permissionCode}`}
                       deleteLabel={`Xóa ${item.permissionCode}`}
-                      editDisabled={!can(PERMISSIONS.pageActions.update) || item.isSystemDefined}
-                      deleteDisabled={!can(PERMISSIONS.pageActions.delete) || item.isSystemDefined}
-                      deleteTitle={item.isSystemDefined ? "Page action hệ thống được backend bảo vệ." : undefined}
+                      editDisabled={!can(PERMISSIONS.pageActions.update)}
+                      deleteDisabled={!can(PERMISSIONS.pageActions.delete)}
+                      editTitle={
+                        !can(PERMISSIONS.pageActions.update)
+                          ? "Bạn không có quyền cập nhật"
+                          : item.isSystemDefined
+                            ? "Page action hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
+                      deleteTitle={
+                        !can(PERMISSIONS.pageActions.delete)
+                          ? "Bạn không có quyền xóa"
+                          : item.isSystemDefined
+                            ? "Page action hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
                       onEdit={() => {
                         setEditTarget(item);
                         setEditForm(formFromPageAction(item));
@@ -258,7 +271,11 @@ function PageActionConfigScreen() {
       <DeletePermissionDialog
         open={!!deleteTarget}
         title="Xóa page action"
-        description={`Bạn có chắc muốn xóa ${deleteTarget?.permissionCode ?? "page action này"} không?`}
+        description={
+          deleteTarget?.isSystemDefined
+            ? `Bạn có chắc muốn xóa ${deleteTarget.permissionCode} không? Đây là dữ liệu hệ thống, backend có thể từ chối thao tác này.`
+            : `Bạn có chắc muốn xóa ${deleteTarget?.permissionCode ?? "page action này"} không?`
+        }
         loading={deletePageAction.isPending}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}

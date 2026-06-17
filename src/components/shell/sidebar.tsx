@@ -33,16 +33,20 @@ const BACKEND_ROUTE_MAP: Record<string, string> = {
   "/permissions/role-permissions": "/permissions/role-permissions",
 };
 
-const BACKEND_PAGE_OVERRIDES: Record<
-  string,
-  {
-    icon?: string;
-    label?: string;
-    omit?: boolean;
-    sectionCode?: string;
-    sectionLabel?: string;
-  }
-> = {
+interface BackendPageOverride {
+  icon?: string;
+  label?: string;
+  omit?: boolean;
+  sectionCode?: string;
+  sectionLabel?: string;
+}
+
+const PERMISSION_SECTION = {
+  sectionCode: "PERMISSION_MANAGEMENT",
+  sectionLabel: "Permission Management",
+} satisfies Pick<BackendPageOverride, "sectionCode" | "sectionLabel">;
+
+const BACKEND_PAGE_OVERRIDES: Record<string, BackendPageOverride> = {
   "/business-partner/profile": {
     icon: "briefcase",
     label: "Thông tin doanh nghiệp",
@@ -58,6 +62,51 @@ const BACKEND_PAGE_OVERRIDES: Record<
   "/social-media/bot-schedule": {
     omit: true,
   },
+  "/roles": {
+    ...PERMISSION_SECTION,
+  },
+  "/roles/list": {
+    ...PERMISSION_SECTION,
+  },
+  "/permissions/role-permissions": {
+    omit: true,
+  },
+  "/conversations": {
+    omit: true,
+  },
+  "/conversations/list": {
+    omit: true,
+  },
+  "/messages/history": {
+    omit: true,
+  },
+  "/message-history": {
+    omit: true,
+  },
+  "/users": {
+    omit: true,
+  },
+  "/users/list": {
+    omit: true,
+  },
+};
+
+const OMIT_BACKEND_PAGE_CODES = new Set([
+  "CONVERSATION_LIST",
+  "MESSAGE_HISTORY",
+  "ROLE_PERMISSION_CONFIG",
+  "USER_LIST",
+]);
+
+const OMIT_BACKEND_PAGE_NAMES = new Set([
+  "conversation list",
+  "message history",
+  "role permission config",
+  "user list",
+]);
+
+const BACKEND_PAGE_CODE_OVERRIDES: Record<string, BackendPageOverride> = {
+  ROLE_LIST: PERMISSION_SECTION,
 };
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -172,8 +221,8 @@ function buildBackendNavSections(menus: AuthMenu[]): BackendNavSection[] {
     const pages = (menu.pages ?? []).slice().sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
     for (const page of pages) {
-      const override = page.route ? BACKEND_PAGE_OVERRIDES[page.route] : undefined;
-      if (override?.omit) continue;
+      const override = getBackendPageOverride(page);
+      if (override?.omit || shouldOmitBackendPage(page)) continue;
 
       const sectionKey = override?.sectionCode ?? menu.featureCode ?? menu.featureId ?? menu.featureName ?? "menu";
       const sectionLabel = override?.sectionLabel ?? menu.featureName ?? "Menu";
@@ -198,6 +247,19 @@ function buildBackendNavSections(menus: AuthMenu[]): BackendNavSection[] {
   return Array.from(sections.values())
     .filter((section) => section.pages.length > 0)
     .sort((a, b) => a.displayOrder - b.displayOrder);
+}
+
+function getBackendPageOverride(page: AuthMenuPage): BackendPageOverride | undefined {
+  const routeOverride = page.route ? BACKEND_PAGE_OVERRIDES[page.route] : undefined;
+  if (routeOverride) return routeOverride;
+  const code = (page.pageCode ?? "").trim().toUpperCase();
+  return BACKEND_PAGE_CODE_OVERRIDES[code];
+}
+
+function shouldOmitBackendPage(page: AuthMenuPage): boolean {
+  const code = (page.pageCode ?? "").trim().toUpperCase();
+  const name = (page.pageName ?? "").trim().toLowerCase();
+  return OMIT_BACKEND_PAGE_CODES.has(code) || OMIT_BACKEND_PAGE_NAMES.has(name);
 }
 
 function BackendNavItem({ page, onNavigate }: { page: AuthMenuPage; onNavigate?: () => void }) {

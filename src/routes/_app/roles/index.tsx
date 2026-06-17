@@ -211,9 +211,22 @@ function RoleListScreen() {
                       <PermissionActionButtons
                         editLabel={`Sửa ${role.name}`}
                         deleteLabel={`Xóa ${role.name}`}
-                        editDisabled={!can(PERMISSIONS.roles.update) || role.isSystemRole}
-                        deleteDisabled={!can(PERMISSIONS.roles.delete) || role.isSystemRole}
-                        deleteTitle={role.isSystemRole ? "Vai trò hệ thống được backend bảo vệ." : undefined}
+                        editDisabled={!can(PERMISSIONS.roles.update)}
+                        deleteDisabled={!can(PERMISSIONS.roles.delete)}
+                        editTitle={
+                          !can(PERMISSIONS.roles.update)
+                            ? "Bạn không có quyền cập nhật"
+                            : role.isSystemRole
+                              ? "Vai trò hệ thống có thể được backend bảo vệ."
+                              : undefined
+                        }
+                        deleteTitle={
+                          !can(PERMISSIONS.roles.delete)
+                            ? "Bạn không có quyền xóa"
+                            : role.isSystemRole
+                              ? "Vai trò hệ thống có thể được backend bảo vệ."
+                              : undefined
+                        }
                         onEdit={() => openEdit(role)}
                         onDelete={() => setDeleteTarget(role)}
                       >
@@ -286,7 +299,11 @@ function RoleListScreen() {
       <DeletePermissionDialog
         open={!!deleteTarget}
         title="Xóa vai trò"
-        description={`Bạn có chắc muốn xóa ${deleteTarget?.name ?? "vai trò này"} không?`}
+        description={
+          deleteTarget?.isSystemRole
+            ? `Bạn có chắc muốn xóa ${deleteTarget.name} không? Đây là vai trò hệ thống, backend có thể từ chối thao tác này.`
+            : `Bạn có chắc muốn xóa ${deleteTarget?.name ?? "vai trò này"} không?`
+        }
         loading={deleteRole.isPending}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}

@@ -191,9 +191,22 @@ function PageConfigScreen() {
                     <PermissionActionButtons
                       editLabel={`Sửa ${page.name}`}
                       deleteLabel={`Xóa ${page.name}`}
-                      editDisabled={!can(PERMISSIONS.pages.update) || page.isSystemDefined}
-                      deleteDisabled={!can(PERMISSIONS.pages.delete) || page.isSystemDefined}
-                      deleteTitle={page.isSystemDefined ? "Page hệ thống được backend bảo vệ." : undefined}
+                      editDisabled={!can(PERMISSIONS.pages.update)}
+                      deleteDisabled={!can(PERMISSIONS.pages.delete)}
+                      editTitle={
+                        !can(PERMISSIONS.pages.update)
+                          ? "Bạn không có quyền cập nhật"
+                          : page.isSystemDefined
+                            ? "Page hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
+                      deleteTitle={
+                        !can(PERMISSIONS.pages.delete)
+                          ? "Bạn không có quyền xóa"
+                          : page.isSystemDefined
+                            ? "Page hệ thống có thể được backend bảo vệ."
+                            : undefined
+                      }
                       onEdit={() => {
                         setEditTarget(page);
                         setEditForm(formFromPage(page));
@@ -243,7 +256,11 @@ function PageConfigScreen() {
       <DeletePermissionDialog
         open={!!deleteTarget}
         title="Xóa page"
-        description={`Bạn có chắc muốn xóa ${deleteTarget?.name ?? "page này"} không?`}
+        description={
+          deleteTarget?.isSystemDefined
+            ? `Bạn có chắc muốn xóa ${deleteTarget.name} không? Đây là dữ liệu hệ thống, backend có thể từ chối thao tác này.`
+            : `Bạn có chắc muốn xóa ${deleteTarget?.name ?? "page này"} không?`
+        }
         loading={deletePage.isPending}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={confirmDelete}
