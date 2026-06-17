@@ -341,7 +341,7 @@ function SocialMediaLinksContent({
               </TabsTrigger>
               <TabsTrigger
                 value="TIKTOK"
-                className="h-10 min-w-32 rounded-md border border-black px-6 font-bold uppercase text-black data-[state=active]:bg-black data-[state=active]:text-white"
+                className="h-10 min-w-32 rounded-md border border-black bg-black px-6 font-bold uppercase text-white hover:bg-neutral-900 data-[state=active]:bg-black data-[state=active]:text-white"
               >
                 TikTok
                 {tiktokCount > 0 && <span className="ml-1 text-xs opacity-80">({tiktokCount})</span>}
