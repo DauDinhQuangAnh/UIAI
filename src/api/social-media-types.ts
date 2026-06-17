@@ -14,11 +14,20 @@ export interface SocialMediaIntegrationSummary {
   authorizedAt?: string | null;
   pagesCount: number;
   activeBotPagesCount: number;
+  pages?: SocialMediaLinkedPage[];
+  selectedPages?: SocialMediaLinkedPage[];
 }
 
 export interface SocialMediaIntegrationDetail extends SocialMediaIntegrationSummary {
   createdAt?: string | null;
   updatedAt?: string | null;
+}
+
+export interface SocialMediaLinkedPage {
+  externalPageId: string;
+  pageName: string;
+  username?: string | null;
+  status?: string | null;
 }
 
 export interface FacebookAppConfigRequest {

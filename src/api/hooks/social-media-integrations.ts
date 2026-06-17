@@ -13,6 +13,7 @@ import type {
   SaveFacebookPagesResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
+  SocialMediaLinkedPage,
   SocialMediaProvider,
 } from "../social-media-types";
 
@@ -225,6 +226,8 @@ function normalizeIntegration(integration: SocialMediaIntegrationSummary): Socia
     authorizedAt: integration.authorizedAt ?? null,
     pagesCount: integration.pagesCount ?? 0,
     activeBotPagesCount: integration.activeBotPagesCount ?? 0,
+    pages: normalizeLinkedPages(integration.pages),
+    selectedPages: normalizeLinkedPages(integration.selectedPages),
   };
 }
 
@@ -278,6 +281,16 @@ function normalizeFacebookManagedPage(page: FacebookManagedPage): FacebookManage
     avatarUrl: page.avatarUrl ?? null,
     pageAccessToken: page.pageAccessToken ?? "",
   };
+}
+
+function normalizeLinkedPages(pages: SocialMediaLinkedPage[] | undefined): SocialMediaLinkedPage[] | undefined {
+  if (!Array.isArray(pages)) return undefined;
+  return pages.map((page) => ({
+    externalPageId: page.externalPageId ?? "",
+    pageName: page.pageName ?? "",
+    username: page.username ?? null,
+    status: page.status ?? null,
+  }));
 }
 
 function normalizeSaveFacebookPagesResponse(response: SaveFacebookPagesResponse): SaveFacebookPagesResponse {

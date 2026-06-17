@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { BusinessDataTable, BusinessHeadCell } from "@/components/business/business-management-table";
 import { BusinessPageShell } from "@/components/business/business-page-shell";
@@ -28,7 +29,6 @@ import {
   useCreateFacebookAppConfig,
   useFacebookPages,
   useSaveFacebookPages,
-  useSocialMediaProviders,
   useStartFacebookOAuth,
   useUpdateFacebookAppConfig,
   socialMediaKeys,
@@ -36,7 +36,7 @@ import {
 import type {
   FacebookManagedPage,
   SocialMediaIntegrationSummary,
-  SocialMediaProvider,
+  SocialMediaLinkedPage,
 } from "@/api/social-media-types";
 import { ApiRequestError, errorMessage } from "@/api/errors";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
@@ -45,6 +45,7 @@ import { storeFacebookOAuthContext } from "@/lib/facebook-oauth-context";
 const BUSINESS_PAGE_SIZE = 100;
 
 type FacebookConfigMode = "create" | "edit";
+type ProviderFilter = "FACEBOOK" | "TIKTOK";
 
 interface FacebookConfigForm {
   businessPartnerId: string;
@@ -57,6 +58,11 @@ type FacebookConfigErrors = Partial<Record<keyof FacebookConfigForm, string>>;
 interface SocialMediaIntegrationRow {
   business: BusinessPartner;
   integration: SocialMediaIntegrationSummary;
+}
+
+interface SocialMediaTableRow extends SocialMediaIntegrationRow {
+  page: SocialMediaLinkedPage | null;
+  rowKey: string;
 }
 
 const EMPTY_FACEBOOK_CONFIG_FORM: FacebookConfigForm = {
@@ -115,6 +121,8 @@ function SocialMediaLinksContent({
   const [oauthPendingIntegrationId, setOauthPendingIntegrationId] = useState<string | null>(null);
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [pageTarget, setPageTarget] = useState<SocialMediaIntegrationRow | null>(null);
+  const [manageTarget, setManageTarget] = useState<SocialMediaIntegrationRow | null>(null);
+  const [providerFilter, setProviderFilter] = useState<ProviderFilter>("FACEBOOK");
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [pageSelectionError, setPageSelectionError] = useState("");
   const [configOpen, setConfigOpen] = useState(false);
@@ -127,7 +135,6 @@ function SocialMediaLinksContent({
     pageNumber: 1,
     pageSize: BUSINESS_PAGE_SIZE,
   });
-  const providers = useSocialMediaProviders();
   const businesses = businessPartners.data?.items ?? [];
   const businessIds = useMemo(() => businesses.map((business) => business.id), [businesses]);
   const integrationQueries = useBusinessPartnersIntegrations(businessIds, !businessPartners.isLoading && !businessPartners.isError);
@@ -141,7 +148,6 @@ function SocialMediaLinksContent({
     search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)
       ? search.businessPartnerId
       : businesses[0]?.id ?? "";
-  const providerNameByCode = useMemo(() => buildProviderNameMap(providers.data ?? []), [providers.data]);
   const integrationRows = useMemo<SocialMediaIntegrationRow[]>(
     () =>
       businesses.flatMap((business, index) =>
@@ -149,11 +155,24 @@ function SocialMediaLinksContent({
       ),
     [businesses, integrationQueries],
   );
+  const filteredIntegrationRows = useMemo(
+    () => integrationRows.filter((row) => providerCode(row.integration) === providerFilter),
+    [integrationRows, providerFilter],
+  );
+  const tableRows = useMemo(() => buildSocialMediaTableRows(filteredIntegrationRows), [filteredIntegrationRows]);
+  const facebookCount = integrationRows.filter((row) => providerCode(row.integration) === "FACEBOOK").length;
+  const tiktokCount = integrationRows.filter((row) => providerCode(row.integration) === "TIKTOK").length;
   const integrationsLoading = integrationQueries.some((query) => query.isLoading);
   const integrationsFetching = integrationQueries.some((query) => query.isFetching);
   const integrationsError = integrationQueries.find((query) => query.isError)?.error;
   const configSubmitting = createFacebookConfig.isPending || updateFacebookConfig.isPending;
   const pageSelectionCount = selectedPageIds.size;
+  const createDisabled = !defaultBusinessId || providerFilter !== "FACEBOOK";
+  const createDisabledTitle = !defaultBusinessId
+    ? "Chưa có doanh nghiệp để thêm liên kết."
+    : providerFilter !== "FACEBOOK"
+      ? "Thêm liên kết TikTok sẽ được triển khai ở phase sau."
+      : undefined;
 
   const closeConfigDialog = () => {
     setConfigOpen(false);
@@ -163,7 +182,7 @@ function SocialMediaLinksContent({
   };
 
   const openCreateConfig = () => {
-    if (!defaultBusinessId) return;
+    if (createDisabled) return;
     setConfigMode("create");
     setConfigForm({ businessPartnerId: defaultBusinessId, appId: "", appSecret: "" });
     setConfigErrors({});
@@ -171,6 +190,7 @@ function SocialMediaLinksContent({
   };
 
   const openUpdateConfig = (row: SocialMediaIntegrationRow) => {
+    setManageTarget(null);
     setConfigMode("edit");
     setConfigForm({
       businessPartnerId: row.business.id,
@@ -219,6 +239,7 @@ function SocialMediaLinksContent({
   };
 
   const startOAuth = (row: SocialMediaIntegrationRow) => {
+    setManageTarget(null);
     const redirectUri = facebookOAuthCallbackUrl();
     setOauthPendingIntegrationId(row.integration.id);
     startFacebookOAuth.mutate(
@@ -259,6 +280,7 @@ function SocialMediaLinksContent({
   };
 
   const openPageSelection = (row: SocialMediaIntegrationRow) => {
+    setManageTarget(null);
     setPageTarget(row);
     setSelectedPageIds(new Set());
     setPageSelectionError("");
@@ -307,25 +329,41 @@ function SocialMediaLinksContent({
       className="max-w-7xl"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-semibold text-text-primary">Danh sách liên kết</h2>
-            <p className="text-sm text-text-secondary">
-              Hiển thị tất cả integration mạng xã hội đã cấu hình.
-            </p>
+        <div className="flex flex-col gap-4">
+          <Tabs value={providerFilter} onValueChange={(value) => setProviderFilter(value as ProviderFilter)}>
+            <TabsList className="gap-2 bg-transparent p-0">
+              <TabsTrigger
+                value="FACEBOOK"
+                className="h-10 min-w-32 rounded-md border border-brand-700 px-6 font-bold uppercase text-brand-800 data-[state=active]:bg-brand-700 data-[state=active]:text-white"
+              >
+                Facebook
+                {facebookCount > 0 && <span className="ml-1 text-xs opacity-80">({facebookCount})</span>}
+              </TabsTrigger>
+              <TabsTrigger
+                value="TIKTOK"
+                className="h-10 min-w-32 rounded-md border border-brand-700 px-6 font-bold uppercase text-brand-800 data-[state=active]:bg-brand-700 data-[state=active]:text-white"
+              >
+                TikTok
+                {tiktokCount > 0 && <span className="ml-1 text-xs opacity-80">({tiktokCount})</span>}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex justify-end">
+            {canCreate && (
+              <Button
+                type="button"
+                size="sm"
+                disabled={createDisabled}
+                title={createDisabledTitle}
+                onClick={openCreateConfig}
+                className="uppercase"
+              >
+                <Plus className="size-4" aria-hidden />
+                Thêm liên kết
+              </Button>
+            )}
           </div>
-          {canCreate && (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!defaultBusinessId}
-              title={!defaultBusinessId ? "Chưa có doanh nghiệp để thêm liên kết." : undefined}
-              onClick={openCreateConfig}
-            >
-              <Plus className="size-4" aria-hidden />
-              Thêm liên kết
-            </Button>
-          )}
         </div>
 
         {businessPartners.isLoading ? (
@@ -369,8 +407,8 @@ function SocialMediaLinksContent({
               canCreate ? (
                 <Button
                   type="button"
-                  disabled={!defaultBusinessId}
-                  title={!defaultBusinessId ? "Chưa có doanh nghiệp để thêm liên kết." : undefined}
+                  disabled={createDisabled}
+                  title={createDisabledTitle}
                   onClick={openCreateConfig}
                 >
                   <Plus className="size-4" aria-hidden />
@@ -379,20 +417,32 @@ function SocialMediaLinksContent({
               ) : undefined
             }
           />
+        ) : tableRows.length === 0 ? (
+          <EmptyState
+            icon={LinkSimple}
+            title={`Chưa có liên kết ${providerFilter === "FACEBOOK" ? "Facebook" : "TikTok"}.`}
+            description="Đổi bộ lọc hoặc thêm liên kết mới để bắt đầu."
+          />
         ) : (
           <SocialMediaIntegrationsTable
-            rows={integrationRows}
-            providerNameByCode={providerNameByCode}
-            canViewPages={canViewPages}
-            canUpdate={canUpdate}
-            canReauthorize={canReauthorize}
-            oauthPendingIntegrationId={oauthPendingIntegrationId}
-            onUpdateConfig={openUpdateConfig}
-            onStartOAuth={startOAuth}
-            onSelectPages={openPageSelection}
+            rows={tableRows}
+            onManage={setManageTarget}
           />
         )}
       </div>
+      <SocialMediaIntegrationManageDialog
+        row={manageTarget}
+        canViewPages={canViewPages}
+        canUpdate={canUpdate}
+        canReauthorize={canReauthorize}
+        oauthPendingIntegrationId={oauthPendingIntegrationId}
+        onOpenChange={(open) => {
+          if (!open) setManageTarget(null);
+        }}
+        onUpdateConfig={openUpdateConfig}
+        onStartOAuth={startOAuth}
+        onSelectPages={openPageSelection}
+      />
       <FacebookAppConfigDialog
         open={configOpen}
         mode={configMode}
@@ -698,54 +748,148 @@ function PageAvatar({ page }: { page: FacebookManagedPage }) {
   );
 }
 
-function SocialMediaIntegrationsTable({
-  rows,
-  providerNameByCode,
+function SocialMediaIntegrationManageDialog({
+  row,
   canViewPages,
   canUpdate,
   canReauthorize,
   oauthPendingIntegrationId,
+  onOpenChange,
   onUpdateConfig,
   onStartOAuth,
   onSelectPages,
 }: {
-  rows: SocialMediaIntegrationRow[];
-  providerNameByCode: Map<string, string>;
+  row: SocialMediaIntegrationRow | null;
   canViewPages: boolean;
   canUpdate: boolean;
   canReauthorize: boolean;
   oauthPendingIntegrationId: string | null;
+  onOpenChange: (open: boolean) => void;
   onUpdateConfig: (row: SocialMediaIntegrationRow) => void;
   onStartOAuth: (row: SocialMediaIntegrationRow) => void;
   onSelectPages: (row: SocialMediaIntegrationRow) => void;
 }) {
+  const integration = row?.integration;
+  const isFacebook = integration ? isFacebookIntegration(integration) : false;
+  const authorized = integration ? isAuthorizedIntegration(integration) : false;
+  const canOpenPageSelection = isFacebook && authorized && canViewPages;
+  const selectPagesTitle = !isFacebook
+    ? "Chọn trang sẽ được triển khai ở phase sau."
+    : !authorized
+      ? "Cần ủy quyền Facebook trước khi chọn trang."
+      : !canViewPages
+        ? "Bạn không có quyền xem trang Facebook."
+        : undefined;
+
   return (
-    <BusinessDataTable className="min-w-[1460px]">
+    <Dialog open={!!row} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader className="items-center text-center">
+          <DialogTitle className="text-brand-800">Quản lý liên kết</DialogTitle>
+          <DialogDescription>{row?.business.brandName ?? "Doanh nghiệp"}</DialogDescription>
+        </DialogHeader>
+
+        {row && integration && (
+          <div className="grid gap-4">
+            <div className="grid gap-3 rounded-md border border-border bg-surface p-4 sm:grid-cols-2">
+              <IntegrationInfo label="Provider" value={providerCode(integration)} />
+              <IntegrationInfo label="App ID" value={integration.appId || "-"} mono />
+              <IntegrationInfo label="Trạng thái" value={<IntegrationStatusBadge status={integration.status} />} />
+              <IntegrationInfo label="Thời điểm ủy quyền" value={formatDateTime(integration.authorizedAt)} />
+              <IntegrationInfo label="Số page" value={String(integration.pagesCount)} />
+              <IntegrationInfo label="Bot bật" value={String(integration.activeBotPagesCount)} />
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!isFacebook || !canUpdate}
+                title={
+                  !isFacebook
+                    ? "Cấu hình provider này sẽ được triển khai ở phase sau."
+                    : !canUpdate
+                      ? "Bạn không có quyền cấu hình liên kết Facebook."
+                      : undefined
+                }
+                onClick={() => onUpdateConfig(row)}
+              >
+                Cập nhật cấu hình
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                loading={oauthPendingIntegrationId === integration.id}
+                disabled={!isFacebook || !canReauthorize || !!oauthPendingIntegrationId}
+                title={
+                  !isFacebook
+                    ? "Ủy quyền provider này sẽ được triển khai ở phase sau."
+                    : !canReauthorize
+                      ? "Bạn không có quyền ủy quyền Facebook."
+                      : undefined
+                }
+                onClick={() => onStartOAuth(row)}
+              >
+                {facebookOAuthActionLabel(integration.status)}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!canOpenPageSelection}
+                title={selectPagesTitle}
+                onClick={() => onSelectPages(row)}
+              >
+                Chọn trang
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function IntegrationInfo({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="grid gap-1">
+      <span className="text-xs font-semibold uppercase text-text-secondary">{label}</span>
+      <span className={mono ? "font-mono text-sm text-text-primary" : "text-sm font-medium text-text-primary"}>{value}</span>
+    </div>
+  );
+}
+
+function SocialMediaIntegrationsTable({
+  rows,
+  onManage,
+}: {
+  rows: SocialMediaTableRow[];
+  onManage: (row: SocialMediaIntegrationRow) => void;
+}) {
+  return (
+    <BusinessDataTable className="min-w-[920px]">
       <TableHeader className="bg-brand-700">
         <TableRow className="hover:bg-brand-700">
-          <BusinessHeadCell className="w-[18%] whitespace-nowrap">Doanh nghiệp</BusinessHeadCell>
-          <BusinessHeadCell className="w-[15%] whitespace-nowrap">Nhà cung cấp</BusinessHeadCell>
-          <BusinessHeadCell className="w-[15%] whitespace-nowrap">App ID</BusinessHeadCell>
-          <BusinessHeadCell className="w-[12%] whitespace-nowrap">Trạng thái</BusinessHeadCell>
-          <BusinessHeadCell className="w-[16%] whitespace-nowrap">Thời điểm ủy quyền</BusinessHeadCell>
-          <BusinessHeadCell className="w-[10%] whitespace-nowrap text-right">Số page</BusinessHeadCell>
-          <BusinessHeadCell className="w-[10%] whitespace-nowrap text-right">Bot bật</BusinessHeadCell>
-          <BusinessHeadCell className="w-[26rem] whitespace-nowrap text-right">Thao tác</BusinessHeadCell>
+          <BusinessHeadCell className="w-[26%] whitespace-nowrap text-center uppercase">Doanh nghiệp</BusinessHeadCell>
+          <BusinessHeadCell className="w-[26%] whitespace-nowrap text-center uppercase">Trang</BusinessHeadCell>
+          <BusinessHeadCell className="w-[18%] whitespace-nowrap text-center uppercase">ID trang</BusinessHeadCell>
+          <BusinessHeadCell className="w-[18%] whitespace-nowrap text-center uppercase">Trạng thái</BusinessHeadCell>
+          <BusinessHeadCell className="w-32 whitespace-nowrap text-center uppercase">Hành động</BusinessHeadCell>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
           <IntegrationTableRow
-            key={`${row.business.id}:${row.integration.id}`}
+            key={row.rowKey}
             row={row}
-            providerNameByCode={providerNameByCode}
-            canViewPages={canViewPages}
-            canUpdate={canUpdate}
-            canReauthorize={canReauthorize}
-            oauthPendingIntegrationId={oauthPendingIntegrationId}
-            onUpdateConfig={onUpdateConfig}
-            onStartOAuth={onStartOAuth}
-            onSelectPages={onSelectPages}
+            onManage={onManage}
           />
         ))}
       </TableBody>
@@ -755,89 +899,35 @@ function SocialMediaIntegrationsTable({
 
 function IntegrationTableRow({
   row,
-  providerNameByCode,
-  canViewPages,
-  canUpdate,
-  canReauthorize,
-  oauthPendingIntegrationId,
-  onUpdateConfig,
-  onStartOAuth,
-  onSelectPages,
+  onManage,
 }: {
-  row: SocialMediaIntegrationRow;
-  providerNameByCode: Map<string, string>;
-  canViewPages: boolean;
-  canUpdate: boolean;
-  canReauthorize: boolean;
-  oauthPendingIntegrationId: string | null;
-  onUpdateConfig: (row: SocialMediaIntegrationRow) => void;
-  onStartOAuth: (row: SocialMediaIntegrationRow) => void;
-  onSelectPages: (row: SocialMediaIntegrationRow) => void;
+  row: SocialMediaTableRow;
+  onManage: (row: SocialMediaIntegrationRow) => void;
 }) {
-  const { business, integration } = row;
-  const authorized = isAuthorizedIntegration(integration);
-  const canOpenPageSelection = authorized && canViewPages;
-  const selectPagesTitle = !authorized
-    ? "Cần ủy quyền Facebook trước khi chọn trang."
-    : !canViewPages
-      ? "Bạn không có quyền xem trang Facebook."
-      : undefined;
+  const { business, integration, page } = row;
 
   return (
     <TableRow>
       <TableCell>
         <div className="font-medium">{business.brandName}</div>
       </TableCell>
-      <TableCell>{providerLabel(integration, providerNameByCode)}</TableCell>
-      <TableCell className="font-mono text-sm">{integration.appId || "-"}</TableCell>
+      <TableCell>{displayPageName(page, integration)}</TableCell>
+      <TableCell className="font-mono text-sm">{page?.externalPageId || "-"}</TableCell>
       <TableCell>
-        <IntegrationStatusBadge status={integration.status} />
+        <IntegrationStatusBadge status={page?.status || integration.status} />
       </TableCell>
-      <TableCell>{formatDateTime(integration.authorizedAt)}</TableCell>
-      <TableCell className="text-right tabular-nums">{integration.pagesCount}</TableCell>
-      <TableCell className="text-right tabular-nums">{integration.activeBotPagesCount}</TableCell>
       <TableCell>
-        <div className="flex justify-end gap-2">
-          {isFacebookIntegration(integration) ? (
-            <>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={!canUpdate}
-                title={!canUpdate ? "Bạn không có quyền cấu hình liên kết Facebook." : undefined}
-                onClick={() => onUpdateConfig(row)}
-              >
-                <PencilSimple className="size-4" aria-hidden />
-                Cập nhật cấu hình
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                loading={oauthPendingIntegrationId === integration.id}
-                disabled={!canReauthorize || !!oauthPendingIntegrationId}
-                title={!canReauthorize ? "Bạn không có quyền ủy quyền Facebook." : undefined}
-                onClick={() => onStartOAuth(row)}
-              >
-                {facebookOAuthActionLabel(integration.status)}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={!canOpenPageSelection}
-                title={selectPagesTitle}
-                onClick={() => onSelectPages(row)}
-              >
-                Chọn trang
-              </Button>
-            </>
-          ) : (
-            <Button type="button" variant="secondary" size="sm" disabled title="Phase sau sẽ triển khai thao tác cập nhật/ủy quyền lại">
-              Phase sau
-            </Button>
-          )}
+        <div className="flex justify-center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Chỉnh sửa liên kết"
+            className="size-9 border border-brand-100 bg-brand-50 text-brand-700 shadow-xs hover:border-brand-300 hover:bg-brand-100 hover:text-brand-900"
+            onClick={() => onManage(row)}
+          >
+            <PencilSimple className="size-4" aria-hidden />
+          </Button>
         </div>
       </TableCell>
     </TableRow>
@@ -869,19 +959,42 @@ function SocialMediaLoadingState() {
   );
 }
 
-function buildProviderNameMap(providers: SocialMediaProvider[]): Map<string, string> {
-  return new Map(providers.map((provider) => [provider.code.toLowerCase(), provider.name]));
+function buildSocialMediaTableRows(rows: SocialMediaIntegrationRow[]): SocialMediaTableRow[] {
+  return rows.flatMap((row) => {
+    const pages = integrationPages(row.integration);
+    if (pages.length === 0) {
+      const tableRow: SocialMediaTableRow = { ...row, page: null, rowKey: `${row.business.id}:${row.integration.id}` };
+      return [tableRow];
+    }
+    return pages.map<SocialMediaTableRow>((page) => ({
+      ...row,
+      page,
+      rowKey: `${row.business.id}:${row.integration.id}:${page.externalPageId || page.pageName}`,
+    }));
+  });
 }
 
-function providerLabel(integration: SocialMediaIntegrationSummary, providerNameByCode: Map<string, string>): string {
-  const code = integration.providerCode.trim();
-  if (integration.providerName) return integration.providerName;
-  if (code) return providerNameByCode.get(code.toLowerCase()) ?? code;
-  return "Provider";
+function integrationPages(integration: SocialMediaIntegrationSummary): SocialMediaLinkedPage[] {
+  if (integration.selectedPages && integration.selectedPages.length > 0) return integration.selectedPages;
+  if (integration.pages && integration.pages.length > 0) return integration.pages;
+  return [];
+}
+
+function displayPageName(page: SocialMediaLinkedPage | null, integration: SocialMediaIntegrationSummary): string {
+  if (page?.pageName) return page.pageName;
+  if (page?.username) return page.username;
+  if (integration.pagesCount > 0) return `${integration.pagesCount} trang đã chọn`;
+  return "Chưa chọn trang";
+}
+
+function providerCode(integration: SocialMediaIntegrationSummary): string {
+  const code = integration.providerCode.trim().toUpperCase();
+  if (code) return code;
+  return integration.providerName.trim().toUpperCase();
 }
 
 function isFacebookIntegration(integration: SocialMediaIntegrationSummary): boolean {
-  return integration.providerCode.trim().toUpperCase() === "FACEBOOK" || integration.providerName.trim().toLowerCase() === "facebook";
+  return providerCode(integration) === "FACEBOOK";
 }
 
 function isAuthorizedIntegration(integration: SocialMediaIntegrationSummary): boolean {
