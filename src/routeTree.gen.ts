@@ -25,6 +25,7 @@ import { Route as AppBusinessSocialMediaRouteImport } from './routes/_app/busine
 import { Route as AppBusinessInformationRouteImport } from './routes/_app/business/information'
 import { Route as AppAgentsNewRouteImport } from './routes/_app/agents/new'
 import { Route as AppAgentsAgentIdIndexRouteImport } from './routes/_app/agents/$agentId/index'
+import { Route as BusinessSocialMediaOauthCallbackRouteImport } from './routes/business/social-media/oauth/callback'
 import { Route as AppAgentsAgentIdKnowledgeIndexRouteImport } from './routes/_app/agents/$agentId/knowledge/index'
 import { Route as AppAgentsAgentIdGraphIndexRouteImport } from './routes/_app/agents/$agentId/graph/index'
 import { Route as AppAgentsAgentIdDocumentsIndexRouteImport } from './routes/_app/agents/$agentId/documents/index'
@@ -114,6 +115,12 @@ const AppAgentsAgentIdIndexRoute = AppAgentsAgentIdIndexRouteImport.update({
   path: '/agents/$agentId/',
   getParentRoute: () => AppRoute,
 } as any)
+const BusinessSocialMediaOauthCallbackRoute =
+  BusinessSocialMediaOauthCallbackRouteImport.update({
+    id: '/business/social-media/oauth/callback',
+    path: '/business/social-media/oauth/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppAgentsAgentIdKnowledgeIndexRoute =
   AppAgentsAgentIdKnowledgeIndexRouteImport.update({
     id: '/agents/$agentId/knowledge/',
@@ -172,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/permissions/role-permissions': typeof AppPermissionsRolePermissionsRoute
   '/agents/': typeof AppAgentsIndexRoute
   '/roles/': typeof AppRolesIndexRoute
+  '/business/social-media/oauth/callback': typeof BusinessSocialMediaOauthCallbackRoute
   '/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
   '/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
   '/agents/$agentId/analytics/': typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -196,6 +204,7 @@ export interface FileRoutesByTo {
   '/permissions/role-permissions': typeof AppPermissionsRolePermissionsRoute
   '/agents': typeof AppAgentsIndexRoute
   '/roles': typeof AppRolesIndexRoute
+  '/business/social-media/oauth/callback': typeof BusinessSocialMediaOauthCallbackRoute
   '/agents/$agentId': typeof AppAgentsAgentIdIndexRoute
   '/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
   '/agents/$agentId/analytics': typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -222,6 +231,7 @@ export interface FileRoutesById {
   '/_app/permissions/role-permissions': typeof AppPermissionsRolePermissionsRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/roles/': typeof AppRolesIndexRoute
+  '/business/social-media/oauth/callback': typeof BusinessSocialMediaOauthCallbackRoute
   '/_app/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
   '/_app/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
   '/_app/agents/$agentId/analytics/': typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/permissions/role-permissions'
     | '/agents/'
     | '/roles/'
+    | '/business/social-media/oauth/callback'
     | '/agents/$agentId/'
     | '/agents/$agentId/conversations/$conversationId'
     | '/agents/$agentId/analytics/'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/permissions/role-permissions'
     | '/agents'
     | '/roles'
+    | '/business/social-media/oauth/callback'
     | '/agents/$agentId'
     | '/agents/$agentId/conversations/$conversationId'
     | '/agents/$agentId/analytics'
@@ -297,6 +309,7 @@ export interface FileRouteTypes {
     | '/_app/permissions/role-permissions'
     | '/_app/agents/'
     | '/_app/roles/'
+    | '/business/social-media/oauth/callback'
     | '/_app/agents/$agentId/'
     | '/_app/agents/$agentId/conversations/$conversationId'
     | '/_app/agents/$agentId/analytics/'
@@ -312,6 +325,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   StyleguideRoute: typeof StyleguideRoute
+  BusinessSocialMediaOauthCallbackRoute: typeof BusinessSocialMediaOauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -428,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsAgentIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/business/social-media/oauth/callback': {
+      id: '/business/social-media/oauth/callback'
+      path: '/business/social-media/oauth/callback'
+      fullPath: '/business/social-media/oauth/callback'
+      preLoaderRoute: typeof BusinessSocialMediaOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/agents/$agentId/knowledge/': {
       id: '/_app/agents/$agentId/knowledge/'
       path: '/agents/$agentId/knowledge'
@@ -533,6 +554,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   StyleguideRoute: StyleguideRoute,
+  BusinessSocialMediaOauthCallbackRoute: BusinessSocialMediaOauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

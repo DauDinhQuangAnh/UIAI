@@ -33,3 +33,20 @@ export interface FacebookAppConfigResponse {
   appId: string;
   status: string;
 }
+
+export interface FacebookOAuthStartRequest {
+  redirectUri: string;
+}
+
+export interface FacebookOAuthStartResponse {
+  authorizationUrl: string;
+  state: string;
+}
+
+export interface FacebookOAuthCallbackResponse {
+  success: boolean;
+  businessPartnerId?: string | null;
+  integrationId?: string | null;
+  status?: string | null;
+  message?: string | null;
+}

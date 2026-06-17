@@ -4,6 +4,9 @@ import { unwrap } from "../errors";
 import type {
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
+  FacebookOAuthCallbackResponse,
+  FacebookOAuthStartRequest,
+  FacebookOAuthStartResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -107,6 +110,42 @@ export function useUpdateFacebookAppConfig() {
   });
 }
 
+export function useStartFacebookOAuth() {
+  return useMutation({
+    mutationFn: async ({
+      businessPartnerId,
+      body,
+    }: {
+      businessPartnerId: string;
+      body: FacebookOAuthStartRequest;
+    }): Promise<FacebookOAuthStartResponse> =>
+      normalizeFacebookOAuthStartResponse(
+        unwrap(
+          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/facebook/oauth/start", {
+            params: { path: { businessPartnerId } },
+            body,
+          }),
+        ),
+      ),
+  });
+}
+
+export async function completeFacebookOAuthCallback({
+  code,
+  state,
+}: {
+  code: string;
+  state: string;
+}): Promise<FacebookOAuthCallbackResponse> {
+  return normalizeFacebookOAuthCallbackResponse(
+    unwrap(
+      await apiClient.GET("/api/social-media/facebook/oauth/callback", {
+        params: { query: { code, state } },
+      }),
+    ),
+  );
+}
+
 function normalizeProvider(provider: SocialMediaProvider): SocialMediaProvider {
   return {
     id: provider.id ?? provider.code ?? "",
@@ -144,6 +183,23 @@ function normalizeFacebookAppConfigResponse(response: FacebookAppConfigResponse)
     providerCode: response.providerCode ?? "FACEBOOK",
     appId: response.appId ?? "",
     status: response.status ?? "Configured",
+  };
+}
+
+function normalizeFacebookOAuthStartResponse(response: FacebookOAuthStartResponse): FacebookOAuthStartResponse {
+  return {
+    authorizationUrl: response.authorizationUrl ?? "",
+    state: response.state ?? "",
+  };
+}
+
+function normalizeFacebookOAuthCallbackResponse(response: FacebookOAuthCallbackResponse): FacebookOAuthCallbackResponse {
+  return {
+    success: response.success ?? false,
+    businessPartnerId: response.businessPartnerId ?? null,
+    integrationId: response.integrationId ?? null,
+    status: response.status ?? null,
+    message: response.message ?? null,
   };
 }
 

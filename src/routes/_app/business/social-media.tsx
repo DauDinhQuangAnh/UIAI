@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { LinkSimple, PencilSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import {
   useBusinessPartnerIntegrations,
   useCreateFacebookAppConfig,
   useSocialMediaProviders,
+  useStartFacebookOAuth,
   useUpdateFacebookAppConfig,
 } from "@/api/hooks/social-media-integrations";
 import type {
@@ -34,6 +35,7 @@ import type {
 } from "@/api/social-media-types";
 import { ApiRequestError, errorMessage } from "@/api/errors";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
+import { storeFacebookOAuthContext } from "@/lib/facebook-oauth-context";
 
 const BUSINESS_PAGE_SIZE = 100;
 
@@ -54,6 +56,9 @@ const EMPTY_FACEBOOK_CONFIG_FORM: FacebookConfigForm = {
 };
 
 export const Route = createFileRoute("/_app/business/social-media")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    businessPartnerId: typeof search.businessPartnerId === "string" ? search.businessPartnerId : undefined,
+  }),
   component: SocialMediaLinksScreen,
 });
 
@@ -62,6 +67,7 @@ function SocialMediaLinksScreen() {
   const canView = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.view);
   const canCreate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.create);
   const canUpdate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.update);
+  const canReauthorize = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.reauthorize);
 
   if (!canView) {
     return (
@@ -80,11 +86,22 @@ function SocialMediaLinksScreen() {
     );
   }
 
-  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} />;
+  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} canReauthorize={canReauthorize} />;
 }
 
-function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean; canUpdate: boolean }) {
-  const [selectedBusinessId, setSelectedBusinessId] = useState("");
+function SocialMediaLinksContent({
+  canCreate,
+  canUpdate,
+  canReauthorize,
+}: {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canReauthorize: boolean;
+}) {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const [selectedBusinessId, setSelectedBusinessId] = useState(search.businessPartnerId ?? "");
+  const [oauthPendingIntegrationId, setOauthPendingIntegrationId] = useState<string | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [configMode, setConfigMode] = useState<FacebookConfigMode>("create");
   const [configForm, setConfigForm] = useState<FacebookConfigForm>(EMPTY_FACEBOOK_CONFIG_FORM);
@@ -99,6 +116,7 @@ function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean;
   const integrations = useBusinessPartnerIntegrations(selectedBusinessId || undefined);
   const createFacebookConfig = useCreateFacebookAppConfig();
   const updateFacebookConfig = useUpdateFacebookAppConfig();
+  const startFacebookOAuth = useStartFacebookOAuth();
 
   const businesses = businessPartners.data?.items ?? [];
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId) ?? null;
@@ -111,10 +129,21 @@ function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean;
       setSelectedBusinessId("");
       return;
     }
+
+    if (search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)) {
+      if (search.businessPartnerId !== selectedBusinessId) setSelectedBusinessId(search.businessPartnerId);
+      return;
+    }
+
     if (!selectedBusinessId || !businesses.some((business) => business.id === selectedBusinessId)) {
       setSelectedBusinessId(businesses[0].id);
     }
-  }, [businessPartners.isError, businessPartners.isLoading, businesses, selectedBusinessId]);
+  }, [businessPartners.isError, businessPartners.isLoading, businesses, search.businessPartnerId, selectedBusinessId]);
+
+  const chooseBusiness = (businessPartnerId: string) => {
+    setSelectedBusinessId(businessPartnerId);
+    navigate({ to: "/business/social-media", search: { businessPartnerId } });
+  };
 
   const closeConfigDialog = () => {
     setConfigOpen(false);
@@ -180,6 +209,38 @@ function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean;
     );
   };
 
+  const startOAuth = (integration: SocialMediaIntegrationSummary) => {
+    if (!selectedBusinessId) return;
+    const redirectUri = facebookOAuthCallbackUrl();
+    setOauthPendingIntegrationId(integration.id);
+    startFacebookOAuth.mutate(
+      {
+        businessPartnerId: selectedBusinessId,
+        body: { redirectUri },
+      },
+      {
+        onSuccess: (result) => {
+          if (!result.authorizationUrl) {
+            toast.error("Không nhận được đường dẫn đăng nhập Facebook.");
+            setOauthPendingIntegrationId(null);
+            return;
+          }
+          storeFacebookOAuthContext({
+            businessPartnerId: selectedBusinessId,
+            integrationId: integration.id,
+            state: result.state,
+          });
+          toast.info("Đang chuyển sang Facebook để đăng nhập...");
+          window.location.href = result.authorizationUrl;
+        },
+        onError: (error) => {
+          toast.error(apiErrorMessage(error, "Không thể bắt đầu ủy quyền Facebook."));
+          setOauthPendingIntegrationId(null);
+        },
+      },
+    );
+  };
+
   return (
     <BusinessPageShell
       title="Liên kết mạng xã hội"
@@ -217,7 +278,7 @@ function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean;
             <Select
               value={selectedBusinessId}
               disabled={businessPartners.isLoading || businesses.length === 0}
-              onValueChange={setSelectedBusinessId}
+              onValueChange={chooseBusiness}
             >
               <SelectTrigger id="social_business_partner" aria-label="Chọn doanh nghiệp">
                 <SelectValue placeholder={businessPartners.isLoading ? "Đang tải doanh nghiệp..." : "Chọn doanh nghiệp"} />
@@ -291,7 +352,10 @@ function SocialMediaLinksContent({ canCreate, canUpdate }: { canCreate: boolean;
             integrations={integrations.data ?? []}
             providerNameByCode={providerNameByCode}
             canUpdate={canUpdate}
+            canReauthorize={canReauthorize}
+            oauthPendingIntegrationId={oauthPendingIntegrationId}
             onUpdateConfig={openUpdateConfig}
+            onStartOAuth={startOAuth}
           />
         )}
       </div>
@@ -466,13 +530,19 @@ function SocialMediaIntegrationsTable({
   integrations,
   providerNameByCode,
   canUpdate,
+  canReauthorize,
+  oauthPendingIntegrationId,
   onUpdateConfig,
+  onStartOAuth,
 }: {
   business: BusinessPartner | null;
   integrations: SocialMediaIntegrationSummary[];
   providerNameByCode: Map<string, string>;
   canUpdate: boolean;
+  canReauthorize: boolean;
+  oauthPendingIntegrationId: string | null;
   onUpdateConfig: (integration: SocialMediaIntegrationSummary) => void;
+  onStartOAuth: (integration: SocialMediaIntegrationSummary) => void;
 }) {
   return (
     <BusinessDataTable className="min-w-[1320px]">
@@ -517,8 +587,16 @@ function SocialMediaIntegrationsTable({
                       <PencilSimple className="size-4" aria-hidden />
                       Cập nhật cấu hình
                     </Button>
-                    <Button type="button" variant="secondary" size="sm" disabled title="Phase 3 sẽ triển khai đăng nhập Facebook">
-                      Đăng nhập Facebook - Phase 3
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      loading={oauthPendingIntegrationId === integration.id}
+                      disabled={!canReauthorize || !!oauthPendingIntegrationId}
+                      title={!canReauthorize ? "Bạn không có quyền ủy quyền Facebook." : undefined}
+                      onClick={() => onStartOAuth(integration)}
+                    >
+                      {facebookOAuthActionLabel(integration.status)}
                     </Button>
                   </>
                 ) : (
@@ -573,6 +651,16 @@ function providerLabel(integration: SocialMediaIntegrationSummary, providerNameB
 
 function isFacebookIntegration(integration: SocialMediaIntegrationSummary): boolean {
   return integration.providerCode.trim().toUpperCase() === "FACEBOOK" || integration.providerName.trim().toLowerCase() === "facebook";
+}
+
+function facebookOAuthActionLabel(status: string): string {
+  return status.trim().toLowerCase() === "authorized" ? "Ủy quyền lại" : "Đăng nhập Facebook";
+}
+
+function facebookOAuthCallbackUrl(): string {
+  const configured = import.meta.env.VITE_FACEBOOK_OAUTH_CALLBACK_URL?.trim();
+  if (configured) return configured;
+  return `${window.location.origin}/business/social-media/oauth/callback`;
 }
 
 function validateFacebookConfig(form: FacebookConfigForm): FacebookConfigErrors {

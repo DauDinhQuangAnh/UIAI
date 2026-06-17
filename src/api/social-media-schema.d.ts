@@ -1,6 +1,9 @@
 import type {
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
+  FacebookOAuthCallbackResponse,
+  FacebookOAuthStartRequest,
+  FacebookOAuthStartResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -25,6 +28,13 @@ type PathParams<T> = {
   cookie?: never;
 };
 
+type QueryParams<T> = {
+  query?: T;
+  header?: never;
+  path?: never;
+  cookie?: never;
+};
+
 type PathItem<TGet = never> = {
   parameters: NoParams;
   get: TGet;
@@ -42,6 +52,18 @@ type AppConfigPathItem<TPost = never, TPut = never> = {
   get?: never;
   post: TPost;
   put: TPut;
+  delete?: never;
+  patch?: never;
+  options?: never;
+  head?: never;
+  trace?: never;
+};
+
+type PostOnlyPathItem<TPost = never> = {
+  parameters: NoParams;
+  get?: never;
+  post: TPost;
+  put?: never;
   delete?: never;
   patch?: never;
   options?: never;
@@ -75,5 +97,14 @@ declare module "./schema" {
         responses: { 200: JsonResponse<FacebookAppConfigResponse> };
       }
     >;
+    "/api/business-partners/{businessPartnerId}/social-media/facebook/oauth/start": PostOnlyPathItem<{
+      parameters: PathParams<{ businessPartnerId: string }>;
+      requestBody: { content: { "application/json": FacebookOAuthStartRequest } };
+      responses: { 200: JsonResponse<FacebookOAuthStartResponse> };
+    }>;
+    "/api/social-media/facebook/oauth/callback": PathItem<{
+      parameters: QueryParams<{ code: string; state: string }>;
+      responses: { 200: JsonResponse<FacebookOAuthCallbackResponse> };
+    }>;
   }
 }
