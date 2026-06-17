@@ -91,17 +91,19 @@ function SocialMediaLinksScreen() {
     );
   }
 
-  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} canReauthorize={canReauthorize} />;
+  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} canReauthorize={canReauthorize} canViewPages={canView} />;
 }
 
 function SocialMediaLinksContent({
   canCreate,
   canUpdate,
   canReauthorize,
+  canViewPages,
 }: {
   canCreate: boolean;
   canUpdate: boolean;
   canReauthorize: boolean;
+  canViewPages: boolean;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -415,6 +417,7 @@ function SocialMediaLinksContent({
             business={selectedBusiness}
             integrations={integrations.data ?? []}
             providerNameByCode={providerNameByCode}
+            canViewPages={canViewPages}
             canUpdate={canUpdate}
             canReauthorize={canReauthorize}
             oauthPendingIntegrationId={oauthPendingIntegrationId}
@@ -762,6 +765,7 @@ function SocialMediaIntegrationsTable({
   business,
   integrations,
   providerNameByCode,
+  canViewPages,
   canUpdate,
   canReauthorize,
   oauthPendingIntegrationId,
@@ -772,6 +776,7 @@ function SocialMediaIntegrationsTable({
   business: BusinessPartner | null;
   integrations: SocialMediaIntegrationSummary[];
   providerNameByCode: Map<string, string>;
+  canViewPages: boolean;
   canUpdate: boolean;
   canReauthorize: boolean;
   oauthPendingIntegrationId: string | null;
@@ -795,66 +800,114 @@ function SocialMediaIntegrationsTable({
       </TableHeader>
       <TableBody>
         {integrations.map((integration) => (
-          <TableRow key={integration.id}>
-            <TableCell>
-              <div className="font-medium">{business?.brandName ?? "Doanh nghiệp"}</div>
-            </TableCell>
-            <TableCell>{providerLabel(integration, providerNameByCode)}</TableCell>
-            <TableCell className="font-mono text-sm">{integration.appId || "-"}</TableCell>
-            <TableCell>
-              <IntegrationStatusBadge status={integration.status} />
-            </TableCell>
-            <TableCell>{formatDateTime(integration.authorizedAt)}</TableCell>
-            <TableCell className="text-right tabular-nums">{integration.pagesCount}</TableCell>
-            <TableCell className="text-right tabular-nums">{integration.activeBotPagesCount}</TableCell>
-            <TableCell>
-              <div className="flex justify-end gap-2">
-                {isFacebookIntegration(integration) ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={!canUpdate}
-                      title={!canUpdate ? "Bạn không có quyền cấu hình liên kết Facebook." : undefined}
-                      onClick={() => onUpdateConfig(integration)}
-                    >
-                      <PencilSimple className="size-4" aria-hidden />
-                      Cập nhật cấu hình
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      loading={oauthPendingIntegrationId === integration.id}
-                      disabled={!canReauthorize || !!oauthPendingIntegrationId}
-                      title={!canReauthorize ? "Bạn không có quyền ủy quyền Facebook." : undefined}
-                      onClick={() => onStartOAuth(integration)}
-                    >
-                      {facebookOAuthActionLabel(integration.status)}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={!isAuthorizedIntegration(integration)}
-                      title={!isAuthorizedIntegration(integration) ? "Cần ủy quyền Facebook trước khi chọn trang." : undefined}
-                      onClick={() => onSelectPages(integration)}
-                    >
-                      Chọn trang
-                    </Button>
-                  </>
-                ) : (
-                  <Button type="button" variant="secondary" size="sm" disabled title="Phase sau sẽ triển khai thao tác cập nhật/ủy quyền lại">
-                    Phase sau
-                  </Button>
-                )}
-              </div>
-            </TableCell>
-          </TableRow>
+          <IntegrationTableRow
+            key={integration.id}
+            business={business}
+            integration={integration}
+            providerNameByCode={providerNameByCode}
+            canViewPages={canViewPages}
+            canUpdate={canUpdate}
+            canReauthorize={canReauthorize}
+            oauthPendingIntegrationId={oauthPendingIntegrationId}
+            onUpdateConfig={onUpdateConfig}
+            onStartOAuth={onStartOAuth}
+            onSelectPages={onSelectPages}
+          />
         ))}
       </TableBody>
     </BusinessDataTable>
+  );
+}
+
+function IntegrationTableRow({
+  business,
+  integration,
+  providerNameByCode,
+  canViewPages,
+  canUpdate,
+  canReauthorize,
+  oauthPendingIntegrationId,
+  onUpdateConfig,
+  onStartOAuth,
+  onSelectPages,
+}: {
+  business: BusinessPartner | null;
+  integration: SocialMediaIntegrationSummary;
+  providerNameByCode: Map<string, string>;
+  canViewPages: boolean;
+  canUpdate: boolean;
+  canReauthorize: boolean;
+  oauthPendingIntegrationId: string | null;
+  onUpdateConfig: (integration: SocialMediaIntegrationSummary) => void;
+  onStartOAuth: (integration: SocialMediaIntegrationSummary) => void;
+  onSelectPages: (integration: SocialMediaIntegrationSummary) => void;
+}) {
+  const authorized = isAuthorizedIntegration(integration);
+  const canOpenPageSelection = authorized && canViewPages;
+  const selectPagesTitle = !authorized
+    ? "Cần ủy quyền Facebook trước khi chọn trang."
+    : !canViewPages
+      ? "Bạn không có quyền xem trang Facebook."
+      : undefined;
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="font-medium">{business?.brandName ?? "Doanh nghiệp"}</div>
+      </TableCell>
+      <TableCell>{providerLabel(integration, providerNameByCode)}</TableCell>
+      <TableCell className="font-mono text-sm">{integration.appId || "-"}</TableCell>
+      <TableCell>
+        <IntegrationStatusBadge status={integration.status} />
+      </TableCell>
+      <TableCell>{formatDateTime(integration.authorizedAt)}</TableCell>
+      <TableCell className="text-right tabular-nums">{integration.pagesCount}</TableCell>
+      <TableCell className="text-right tabular-nums">{integration.activeBotPagesCount}</TableCell>
+      <TableCell>
+        <div className="flex justify-end gap-2">
+          {isFacebookIntegration(integration) ? (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={!canUpdate}
+                title={!canUpdate ? "Bạn không có quyền cấu hình liên kết Facebook." : undefined}
+                onClick={() => onUpdateConfig(integration)}
+              >
+                <PencilSimple className="size-4" aria-hidden />
+                Cập nhật cấu hình
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                loading={oauthPendingIntegrationId === integration.id}
+                disabled={!canReauthorize || !!oauthPendingIntegrationId}
+                title={!canReauthorize ? "Bạn không có quyền ủy quyền Facebook." : undefined}
+                onClick={() => onStartOAuth(integration)}
+              >
+                {facebookOAuthActionLabel(integration.status)}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={!canOpenPageSelection}
+                title={selectPagesTitle}
+                onClick={() => onSelectPages(integration)}
+              >
+                Chọn trang
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="secondary" size="sm" disabled title="Phase sau sẽ triển khai thao tác cập nhật/ủy quyền lại">
+              Phase sau
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
