@@ -24,6 +24,13 @@ const active = "bg-brand-50 text-brand-800 font-medium";
 const BACKEND_ROUTE_MAP: Record<string, string> = {
   "/business-partner/profile": "/business/information",
   "/social-media/facebook": "/business/social-media",
+  "/roles": "/roles",
+  "/roles/list": "/roles",
+  "/permissions/features": "/permissions/features",
+  "/permissions/pages": "/permissions/pages",
+  "/permissions/actions": "/permissions/actions",
+  "/permissions/page-actions": "/permissions/page-actions",
+  "/permissions/role-permissions": "/permissions/role-permissions",
 };
 
 const BACKEND_PAGE_OVERRIDES: Record<
@@ -227,6 +234,10 @@ function iconForPage(page: AuthMenuPage): Icon {
   if (key.includes("history")) return FileText;
   if (key.includes("users") || key.includes("user")) return UserCircle;
   if (key.includes("shield") || key.includes("role")) return SlidersHorizontal;
+  if (key.includes("feature") || key.includes("module")) return Sparkle;
+  if (key.includes("page_action") || key.includes("page-action")) return LinkSimple;
+  if (key.includes("action")) return SlidersHorizontal;
+  if (key.includes("page")) return FileText;
   if (key.includes("table")) return Graph;
   if (key.includes("config") || key.includes("cog") || key.includes("panel") || key.includes("pointer")) {
     return SlidersHorizontal;

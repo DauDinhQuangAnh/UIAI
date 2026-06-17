@@ -14,7 +14,13 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
+import { Route as AppRolesIndexRouteImport } from './routes/_app/roles/index'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
+import { Route as AppPermissionsRolePermissionsRouteImport } from './routes/_app/permissions/role-permissions'
+import { Route as AppPermissionsPagesRouteImport } from './routes/_app/permissions/pages'
+import { Route as AppPermissionsPageActionsRouteImport } from './routes/_app/permissions/page-actions'
+import { Route as AppPermissionsFeaturesRouteImport } from './routes/_app/permissions/features'
+import { Route as AppPermissionsActionsRouteImport } from './routes/_app/permissions/actions'
 import { Route as AppBusinessSocialMediaRouteImport } from './routes/_app/business/social-media'
 import { Route as AppBusinessInformationRouteImport } from './routes/_app/business/information'
 import { Route as AppAgentsNewRouteImport } from './routes/_app/agents/new'
@@ -51,9 +57,41 @@ const AppAccountRoute = AppAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRolesIndexRoute = AppRolesIndexRouteImport.update({
+  id: '/roles/',
+  path: '/roles/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAgentsIndexRoute = AppAgentsIndexRouteImport.update({
   id: '/agents/',
   path: '/agents/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPermissionsRolePermissionsRoute =
+  AppPermissionsRolePermissionsRouteImport.update({
+    id: '/permissions/role-permissions',
+    path: '/permissions/role-permissions',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppPermissionsPagesRoute = AppPermissionsPagesRouteImport.update({
+  id: '/permissions/pages',
+  path: '/permissions/pages',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPermissionsPageActionsRoute =
+  AppPermissionsPageActionsRouteImport.update({
+    id: '/permissions/page-actions',
+    path: '/permissions/page-actions',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppPermissionsFeaturesRoute = AppPermissionsFeaturesRouteImport.update({
+  id: '/permissions/features',
+  path: '/permissions/features',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPermissionsActionsRoute = AppPermissionsActionsRouteImport.update({
+  id: '/permissions/actions',
+  path: '/permissions/actions',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBusinessSocialMediaRoute = AppBusinessSocialMediaRouteImport.update({
@@ -127,7 +165,13 @@ export interface FileRoutesByFullPath {
   '/agents/new': typeof AppAgentsNewRoute
   '/business/information': typeof AppBusinessInformationRoute
   '/business/social-media': typeof AppBusinessSocialMediaRoute
+  '/permissions/actions': typeof AppPermissionsActionsRoute
+  '/permissions/features': typeof AppPermissionsFeaturesRoute
+  '/permissions/page-actions': typeof AppPermissionsPageActionsRoute
+  '/permissions/pages': typeof AppPermissionsPagesRoute
+  '/permissions/role-permissions': typeof AppPermissionsRolePermissionsRoute
   '/agents/': typeof AppAgentsIndexRoute
+  '/roles/': typeof AppRolesIndexRoute
   '/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
   '/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
   '/agents/$agentId/analytics/': typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -145,7 +189,13 @@ export interface FileRoutesByTo {
   '/agents/new': typeof AppAgentsNewRoute
   '/business/information': typeof AppBusinessInformationRoute
   '/business/social-media': typeof AppBusinessSocialMediaRoute
+  '/permissions/actions': typeof AppPermissionsActionsRoute
+  '/permissions/features': typeof AppPermissionsFeaturesRoute
+  '/permissions/page-actions': typeof AppPermissionsPageActionsRoute
+  '/permissions/pages': typeof AppPermissionsPagesRoute
+  '/permissions/role-permissions': typeof AppPermissionsRolePermissionsRoute
   '/agents': typeof AppAgentsIndexRoute
+  '/roles': typeof AppRolesIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdIndexRoute
   '/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
   '/agents/$agentId/analytics': typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -165,7 +215,13 @@ export interface FileRoutesById {
   '/_app/agents/new': typeof AppAgentsNewRoute
   '/_app/business/information': typeof AppBusinessInformationRoute
   '/_app/business/social-media': typeof AppBusinessSocialMediaRoute
+  '/_app/permissions/actions': typeof AppPermissionsActionsRoute
+  '/_app/permissions/features': typeof AppPermissionsFeaturesRoute
+  '/_app/permissions/page-actions': typeof AppPermissionsPageActionsRoute
+  '/_app/permissions/pages': typeof AppPermissionsPagesRoute
+  '/_app/permissions/role-permissions': typeof AppPermissionsRolePermissionsRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
+  '/_app/roles/': typeof AppRolesIndexRoute
   '/_app/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
   '/_app/agents/$agentId/conversations/$conversationId': typeof AppAgentsAgentIdConversationsConversationIdRoute
   '/_app/agents/$agentId/analytics/': typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -185,7 +241,13 @@ export interface FileRouteTypes {
     | '/agents/new'
     | '/business/information'
     | '/business/social-media'
+    | '/permissions/actions'
+    | '/permissions/features'
+    | '/permissions/page-actions'
+    | '/permissions/pages'
+    | '/permissions/role-permissions'
     | '/agents/'
+    | '/roles/'
     | '/agents/$agentId/'
     | '/agents/$agentId/conversations/$conversationId'
     | '/agents/$agentId/analytics/'
@@ -203,7 +265,13 @@ export interface FileRouteTypes {
     | '/agents/new'
     | '/business/information'
     | '/business/social-media'
+    | '/permissions/actions'
+    | '/permissions/features'
+    | '/permissions/page-actions'
+    | '/permissions/pages'
+    | '/permissions/role-permissions'
     | '/agents'
+    | '/roles'
     | '/agents/$agentId'
     | '/agents/$agentId/conversations/$conversationId'
     | '/agents/$agentId/analytics'
@@ -222,7 +290,13 @@ export interface FileRouteTypes {
     | '/_app/agents/new'
     | '/_app/business/information'
     | '/_app/business/social-media'
+    | '/_app/permissions/actions'
+    | '/_app/permissions/features'
+    | '/_app/permissions/page-actions'
+    | '/_app/permissions/pages'
+    | '/_app/permissions/role-permissions'
     | '/_app/agents/'
+    | '/_app/roles/'
     | '/_app/agents/$agentId/'
     | '/_app/agents/$agentId/conversations/$conversationId'
     | '/_app/agents/$agentId/analytics/'
@@ -277,11 +351,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/roles/': {
+      id: '/_app/roles/'
+      path: '/roles'
+      fullPath: '/roles/'
+      preLoaderRoute: typeof AppRolesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/agents/': {
       id: '/_app/agents/'
       path: '/agents'
       fullPath: '/agents/'
       preLoaderRoute: typeof AppAgentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/permissions/role-permissions': {
+      id: '/_app/permissions/role-permissions'
+      path: '/permissions/role-permissions'
+      fullPath: '/permissions/role-permissions'
+      preLoaderRoute: typeof AppPermissionsRolePermissionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/permissions/pages': {
+      id: '/_app/permissions/pages'
+      path: '/permissions/pages'
+      fullPath: '/permissions/pages'
+      preLoaderRoute: typeof AppPermissionsPagesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/permissions/page-actions': {
+      id: '/_app/permissions/page-actions'
+      path: '/permissions/page-actions'
+      fullPath: '/permissions/page-actions'
+      preLoaderRoute: typeof AppPermissionsPageActionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/permissions/features': {
+      id: '/_app/permissions/features'
+      path: '/permissions/features'
+      fullPath: '/permissions/features'
+      preLoaderRoute: typeof AppPermissionsFeaturesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/permissions/actions': {
+      id: '/_app/permissions/actions'
+      path: '/permissions/actions'
+      fullPath: '/permissions/actions'
+      preLoaderRoute: typeof AppPermissionsActionsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/business/social-media': {
@@ -369,7 +485,13 @@ interface AppRouteChildren {
   AppAgentsNewRoute: typeof AppAgentsNewRoute
   AppBusinessInformationRoute: typeof AppBusinessInformationRoute
   AppBusinessSocialMediaRoute: typeof AppBusinessSocialMediaRoute
+  AppPermissionsActionsRoute: typeof AppPermissionsActionsRoute
+  AppPermissionsFeaturesRoute: typeof AppPermissionsFeaturesRoute
+  AppPermissionsPageActionsRoute: typeof AppPermissionsPageActionsRoute
+  AppPermissionsPagesRoute: typeof AppPermissionsPagesRoute
+  AppPermissionsRolePermissionsRoute: typeof AppPermissionsRolePermissionsRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
+  AppRolesIndexRoute: typeof AppRolesIndexRoute
   AppAgentsAgentIdIndexRoute: typeof AppAgentsAgentIdIndexRoute
   AppAgentsAgentIdConversationsConversationIdRoute: typeof AppAgentsAgentIdConversationsConversationIdRoute
   AppAgentsAgentIdAnalyticsIndexRoute: typeof AppAgentsAgentIdAnalyticsIndexRoute
@@ -385,7 +507,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppAgentsNewRoute: AppAgentsNewRoute,
   AppBusinessInformationRoute: AppBusinessInformationRoute,
   AppBusinessSocialMediaRoute: AppBusinessSocialMediaRoute,
+  AppPermissionsActionsRoute: AppPermissionsActionsRoute,
+  AppPermissionsFeaturesRoute: AppPermissionsFeaturesRoute,
+  AppPermissionsPageActionsRoute: AppPermissionsPageActionsRoute,
+  AppPermissionsPagesRoute: AppPermissionsPagesRoute,
+  AppPermissionsRolePermissionsRoute: AppPermissionsRolePermissionsRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,
+  AppRolesIndexRoute: AppRolesIndexRoute,
   AppAgentsAgentIdIndexRoute: AppAgentsAgentIdIndexRoute,
   AppAgentsAgentIdConversationsConversationIdRoute:
     AppAgentsAgentIdConversationsConversationIdRoute,
