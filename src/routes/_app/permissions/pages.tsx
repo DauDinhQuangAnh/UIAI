@@ -250,10 +250,16 @@ function PageConfigScreen() {
         form={form}
         features={features.data ?? []}
         loading={createPage.isPending || features.isLoading}
+        orderUnlocked={addOrderUnlocked}
+        orderError={addOrderError}
+        onUnlockOrder={() => setAddOrderUnlocked(true)}
         submitLabel="Tạo page"
         onOpenChange={(open) => {
           setAddOpen(open);
-          if (!open) setForm(EMPTY_FORM);
+          if (!open) {
+            setForm(EMPTY_FORM);
+            setAddOrderUnlocked(false);
+          }
         }}
         onFormChange={setForm}
         onSubmit={submitAdd}
@@ -265,12 +271,16 @@ function PageConfigScreen() {
         form={editForm}
         features={features.data ?? []}
         loading={updatePage.isPending || features.isLoading}
+        orderUnlocked={editOrderUnlocked}
+        orderError={editOrderError}
+        onUnlockOrder={() => setEditOrderUnlocked(true)}
         submitLabel="Lưu thay đổi"
         showStatus
         onOpenChange={(open) => {
           if (!open) {
             setEditTarget(null);
             setEditForm(EMPTY_FORM);
+            setEditOrderUnlocked(false);
           }
         }}
         onFormChange={setEditForm}
@@ -299,6 +309,9 @@ function PageDialog(props: {
   form: PageForm;
   features: Feature[];
   loading?: boolean;
+  orderUnlocked: boolean;
+  orderError?: string;
+  onUnlockOrder: () => void;
   submitLabel: string;
   showStatus?: boolean;
   onOpenChange: (open: boolean) => void;
@@ -342,7 +355,6 @@ function PageDialog(props: {
                   name: props.form.name || definition?.name || "",
                   route: props.form.route || definition?.route || "",
                   icon: props.form.icon || definition?.icon || "",
-                  displayOrder: props.form.displayOrder || definition?.displayOrder || 0,
                 });
               }}
             >
@@ -364,7 +376,30 @@ function PageDialog(props: {
             <Input id="page_icon" value={props.form.icon} disabled={loading} onChange={(event) => props.onFormChange({ ...props.form, icon: event.target.value })} />
           </PermissionField>
           <PermissionField label="Thứ tự" htmlFor="page_order" required>
-            <Input id="page_order" type="number" value={props.form.displayOrder} disabled={loading} onChange={(event) => props.onFormChange({ ...props.form, displayOrder: Number(event.target.value) })} required />
+            <div className="grid gap-1">
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <Input
+                  id="page_order"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={props.form.displayOrder}
+                  readOnly={!props.orderUnlocked}
+                  disabled={loading}
+                  invalid={!!props.orderError}
+                  onChange={(event) => props.onFormChange({ ...props.form, displayOrder: Number(event.target.value) })}
+                  required
+                />
+                <Button type="button" variant="secondary" size="sm" disabled={loading || props.orderUnlocked} onClick={props.onUnlockOrder}>
+                  <PencilSimple className="size-4" aria-hidden />
+                  Chỉnh
+                </Button>
+              </div>
+              <p className="text-xs text-text-secondary">
+                Hệ thống tự đề xuất thứ tự tiếp theo. Bấm Chỉnh nếu muốn thay đổi.
+              </p>
+              {props.orderError && <p className="text-xs font-medium text-danger-fg">{props.orderError}</p>}
+            </div>
           </PermissionField>
           <PermissionField label="Hiển thị menu" htmlFor="page_menu">
             <Select value={String(props.form.isMenuVisible)} disabled={loading} onValueChange={(value) => props.onFormChange({ ...props.form, isMenuVisible: value === "true" })}>
@@ -382,7 +417,7 @@ function PageDialog(props: {
           )}
           <DialogFooter className="mt-3">
             <Button type="button" variant="secondary" onClick={() => props.onOpenChange(false)}>Hủy</Button>
-            <Button type="submit" loading={loading}>{props.submitLabel}</Button>
+            <Button type="submit" loading={loading} disabled={!!props.orderError}>{props.submitLabel}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -427,4 +462,16 @@ function payloadFromForm(form: PageForm) {
     displayOrder: form.displayOrder,
     isMenuVisible: form.isMenuVisible,
   };
+}
+
+function nextPageDisplayOrder(pages: Page[], featureId: string): number {
+  const pagesInFeature = pages.filter((page) => page.featureId === featureId);
+  return Math.max(0, ...pagesInFeature.map((page) => page.displayOrder ?? 0)) + 1;
+}
+
+function pageDisplayOrderError(value: number, pages: Page[], featureId: string, currentPageId?: string): string | undefined {
+  if (!Number.isInteger(value) || value < 1) return "Thứ tự phải là số nguyên dương.";
+  if (!featureId) return undefined;
+  const duplicate = pages.some((page) => page.id !== currentPageId && page.featureId === featureId && (page.displayOrder ?? 0) === value);
+  return duplicate ? "Thứ tự này đã được dùng bởi page khác trong feature này." : undefined;
 }
