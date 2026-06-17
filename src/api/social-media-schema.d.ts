@@ -50,6 +50,18 @@ type PathItem<TGet = never> = {
   trace?: never;
 };
 
+type GetDeletePathItem<TGet = never, TDelete = never> = {
+  parameters: NoParams;
+  get: TGet;
+  post?: never;
+  put?: never;
+  delete: TDelete;
+  patch?: never;
+  options?: never;
+  head?: never;
+  trace?: never;
+};
+
 type AppConfigPathItem<TPost = never, TPut = never> = {
   parameters: NoParams;
   get?: never;
@@ -96,10 +108,16 @@ declare module "./schema" {
       parameters: PathParams<{ businessPartnerId: string }>;
       responses: { 200: JsonResponse<SocialMediaIntegrationSummary[]> };
     }>;
-    "/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}": PathItem<{
-      parameters: PathParams<{ businessPartnerId: string; integrationId: string }>;
-      responses: { 200: JsonResponse<SocialMediaIntegrationDetail> };
-    }>;
+    "/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}": GetDeletePathItem<
+      {
+        parameters: PathParams<{ businessPartnerId: string; integrationId: string }>;
+        responses: { 200: JsonResponse<SocialMediaIntegrationDetail> };
+      },
+      {
+        parameters: PathParams<{ businessPartnerId: string; integrationId: string }>;
+        responses: { 204: never; 200: JsonResponse<{ message?: string }> };
+      }
+    >;
     "/api/business-partners/{businessPartnerId}/social-media/facebook/app-config": AppConfigPathItem<
       {
         parameters: PathParams<{ businessPartnerId: string }>;

@@ -1,6 +1,6 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../client";
-import { unwrap } from "../errors";
+import { ApiRequestError, unwrap } from "../errors";
 import type {
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
@@ -186,6 +186,34 @@ export function useSaveFacebookPages() {
       ),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: socialMediaKeys.integrations(variables.businessPartnerId) });
+      queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(variables.businessPartnerId) });
+    },
+  });
+}
+
+export function useDeleteSocialMediaIntegration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      businessPartnerId,
+      integrationId,
+    }: {
+      businessPartnerId: string;
+      integrationId: string;
+    }): Promise<void> => {
+      const { error, response } = await apiClient.DELETE(
+        "/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}",
+        {
+          params: { path: { businessPartnerId, integrationId } },
+        },
+      );
+      if (error || !response.ok) throw new ApiRequestError(response.status, error);
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: socialMediaKeys.integrations(variables.businessPartnerId) });
+      queryClient.removeQueries({
+        queryKey: socialMediaKeys.integrationDetail(variables.businessPartnerId, variables.integrationId),
+      });
       queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(variables.businessPartnerId) });
     },
   });

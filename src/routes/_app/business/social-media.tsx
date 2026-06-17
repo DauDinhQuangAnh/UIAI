@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useMemo, useState } from "react";
-import { CheckCircle, LinkSimple, PencilSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
+import { CheckCircle, LinkSimple, PencilSimple, Plus, ShieldWarning, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
   useBusinessPartnersIntegrations,
   useCreateFacebookAppConfig,
+  useDeleteSocialMediaIntegration,
   useFacebookPages,
   useSaveFacebookPages,
   useStartFacebookOAuth,
@@ -83,6 +84,7 @@ function SocialMediaLinksScreen() {
   const canView = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.view);
   const canCreate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.create);
   const canUpdate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.update);
+  const canDelete = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.delete);
   const canReauthorize = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.reauthorize);
 
   if (!canView) {
@@ -102,17 +104,27 @@ function SocialMediaLinksScreen() {
     );
   }
 
-  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} canReauthorize={canReauthorize} canViewPages={canView} />;
+  return (
+    <SocialMediaLinksContent
+      canCreate={canCreate}
+      canUpdate={canUpdate}
+      canDelete={canDelete}
+      canReauthorize={canReauthorize}
+      canViewPages={canView}
+    />
+  );
 }
 
 function SocialMediaLinksContent({
   canCreate,
   canUpdate,
+  canDelete,
   canReauthorize,
   canViewPages,
 }: {
   canCreate: boolean;
   canUpdate: boolean;
+  canDelete: boolean;
   canReauthorize: boolean;
   canViewPages: boolean;
 }) {
@@ -122,6 +134,7 @@ function SocialMediaLinksContent({
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [pageTarget, setPageTarget] = useState<SocialMediaIntegrationRow | null>(null);
   const [manageTarget, setManageTarget] = useState<SocialMediaTableRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SocialMediaTableRow | null>(null);
   const [providerFilter, setProviderFilter] = useState<ProviderFilter>("FACEBOOK");
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [pageSelectionError, setPageSelectionError] = useState("");
@@ -143,6 +156,7 @@ function SocialMediaLinksContent({
   const startFacebookOAuth = useStartFacebookOAuth();
   const facebookPages = useFacebookPages(pageTarget?.business.id, pageDialogOpen && !!pageTarget);
   const saveFacebookPages = useSaveFacebookPages();
+  const deleteIntegration = useDeleteSocialMediaIntegration();
 
   const defaultBusinessId =
     search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)
@@ -321,6 +335,24 @@ function SocialMediaLinksContent({
     );
   };
 
+  const confirmDeleteIntegration = () => {
+    if (!deleteTarget) return;
+    deleteIntegration.mutate(
+      {
+        businessPartnerId: deleteTarget.business.id,
+        integrationId: deleteTarget.integration.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Đã xóa liên kết mạng xã hội.");
+          setDeleteTarget(null);
+          if (manageTarget?.integration.id === deleteTarget.integration.id) setManageTarget(null);
+        },
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thể xóa liên kết mạng xã hội.")),
+      },
+    );
+  };
+
   return (
     <BusinessPageShell
       title="Liên kết mạng xã hội"
@@ -427,6 +459,8 @@ function SocialMediaLinksContent({
           <SocialMediaIntegrationsTable
             rows={tableRows}
             onManage={setManageTarget}
+            onDelete={setDeleteTarget}
+            canDelete={canDelete}
           />
         )}
       </div>
@@ -477,6 +511,12 @@ function SocialMediaLinksContent({
         onRetry={() => facebookPages.refetch()}
         onTogglePage={toggleManagedPage}
         onSubmit={submitSelectedPages}
+      />
+      <DeleteSocialMediaIntegrationDialog
+        target={deleteTarget}
+        loading={deleteIntegration.isPending}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={confirmDeleteIntegration}
       />
     </BusinessPageShell>
   );
@@ -869,6 +909,39 @@ function SocialMediaIntegrationManageDialog({
   );
 }
 
+function DeleteSocialMediaIntegrationDialog({
+  target,
+  loading,
+  onOpenChange,
+  onConfirm,
+}: {
+  target: SocialMediaTableRow | null;
+  loading: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Xóa liên kết mạng xã hội</DialogTitle>
+          <DialogDescription>
+            Bạn có chắc muốn xóa liên kết {target ? displayDeleteTargetName(target) : "này"} không? Hành động này sẽ gọi API xóa integration.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
+            Hủy
+          </Button>
+          <Button type="button" variant="danger" loading={loading} onClick={onConfirm}>
+            Xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DetailReadOnlyField({
   label,
   value,
@@ -938,9 +1011,13 @@ function ScheduleRow({ slot, days, active }: { slot: string; days: string[]; act
 function SocialMediaIntegrationsTable({
   rows,
   onManage,
+  onDelete,
+  canDelete,
 }: {
   rows: SocialMediaTableRow[];
   onManage: (row: SocialMediaTableRow) => void;
+  onDelete: (row: SocialMediaTableRow) => void;
+  canDelete: boolean;
 }) {
   return (
     <BusinessDataTable className="min-w-[900px] table-fixed">
@@ -959,6 +1036,8 @@ function SocialMediaIntegrationsTable({
             key={row.rowKey}
             row={row}
             onManage={onManage}
+            onDelete={onDelete}
+            canDelete={canDelete}
           />
         ))}
       </TableBody>
@@ -969,9 +1048,13 @@ function SocialMediaIntegrationsTable({
 function IntegrationTableRow({
   row,
   onManage,
+  onDelete,
+  canDelete,
 }: {
   row: SocialMediaTableRow;
   onManage: (row: SocialMediaTableRow) => void;
+  onDelete: (row: SocialMediaTableRow) => void;
+  canDelete: boolean;
 }) {
   const { business, integration, page } = row;
 
@@ -992,7 +1075,7 @@ function IntegrationTableRow({
         </div>
       </TableCell>
       <TableCell className="h-14 text-center">
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -1002,6 +1085,18 @@ function IntegrationTableRow({
             onClick={() => onManage(row)}
           >
             <PencilSimple className="size-4" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Xóa liên kết"
+            disabled={!canDelete}
+            title={!canDelete ? "Bạn không có quyền xóa liên kết Facebook." : undefined}
+            className="size-9 border border-danger-border bg-danger-bg text-danger-fg shadow-xs hover:border-danger-base hover:bg-danger-base hover:text-white"
+            onClick={() => onDelete(row)}
+          >
+            <Trash className="size-4" aria-hidden />
           </Button>
         </div>
       </TableCell>
@@ -1060,6 +1155,11 @@ function displayPageName(page: SocialMediaLinkedPage | null, integration: Social
   if (page?.username) return page.username;
   if (integration.pagesCount > 0) return `${integration.pagesCount} trang đã chọn`;
   return "Chưa chọn trang";
+}
+
+function displayDeleteTargetName(row: SocialMediaTableRow): string {
+  const pageName = displayPageName(row.page, row.integration);
+  return pageName === "Chưa chọn trang" ? row.business.brandName : `${row.business.brandName} / ${pageName}`;
 }
 
 function providerCode(integration: SocialMediaIntegrationSummary): string {
