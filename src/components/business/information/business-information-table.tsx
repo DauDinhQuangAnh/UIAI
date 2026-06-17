@@ -34,9 +34,6 @@ export function BusinessInformationTable({
             <TableCell>
               <div className="flex min-w-0 flex-col gap-1">
                 <span className="font-medium text-text-primary">{business.brandName}</span>
-                {business.logoUrl && (
-                  <span className="truncate text-xs text-text-dim">{business.logoUrl}</span>
-                )}
               </div>
             </TableCell>
             <TableCell>
