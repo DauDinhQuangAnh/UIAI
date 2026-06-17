@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   Buildings,
+  CaretDown,
   Robot,
   FileText,
   Graph,
@@ -18,8 +20,8 @@ import { cn } from "@/lib/cn";
 import { useSession, type AuthMenu, type AuthMenuPage } from "@/auth/session-store";
 
 const linkBase = "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors";
-const idle = "text-text-secondary hover:bg-surface-2 hover:text-text-primary";
-const active = "bg-brand-50 text-brand-800 font-medium";
+const idle = "text-text-secondary hover:bg-surface hover:text-text-primary hover:shadow-xs";
+const active = "border border-brand-100 bg-brand-50 text-brand-800 font-semibold shadow-xs";
 
 const BACKEND_ROUTE_MAP: Record<string, string> = {
   "/business-partner/profile": "/business/information",
@@ -51,13 +53,13 @@ const BACKEND_PAGE_OVERRIDES: Record<string, BackendPageOverride> = {
     icon: "briefcase",
     label: "Thông tin doanh nghiệp",
     sectionCode: "BUSINESS_PARTNER",
-    sectionLabel: "Quản lý doanh nghiệp",
+    sectionLabel: "Business Management",
   },
   "/social-media/facebook": {
     icon: "link",
     label: "Liên kết mạng xã hội",
     sectionCode: "BUSINESS_PARTNER",
-    sectionLabel: "Quản lý doanh nghiệp",
+    sectionLabel: "Business Management",
   },
   "/social-media/bot-schedule": {
     omit: true,
@@ -118,12 +120,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex h-full w-64 flex-col gap-1 border-r border-border bg-surface p-3" aria-label="Điều hướng chính">
+      <div className="flex h-full flex-col gap-2 rounded-md border border-border bg-surface-2 p-2 shadow-sm">
       <Link
         to="/agents"
         onClick={onNavigate}
-        className="mb-2 flex items-center gap-2 px-3 py-2 font-display text-lg font-semibold text-text-primary"
+        className="mb-2 flex items-center gap-2 rounded-md border border-brand-100 bg-surface px-3 py-2 font-display text-lg font-semibold text-text-primary shadow-xs"
       >
-        <Sparkle weight="fill" className="size-5 text-brand-500" aria-hidden />
+        <span className="flex size-8 items-center justify-center rounded-md bg-brand-50 text-brand-600">
+          <Sparkle weight="fill" className="size-5" aria-hidden />
+        </span>
         social-ai
       </Link>
 
@@ -140,7 +145,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </NavSection>
           ))
       ) : (
-        <NavSection label="Quản lý doanh nghiệp">
+        <NavSection label="Business Management">
           <NavItem
             to="/business/information"
             icon={Buildings}
@@ -156,8 +161,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </NavSection>
       )}
 
-      <NavSection label="Tác nhân">
-        <NavItem to="/agents" icon={Robot} label="Tác nhân" onNavigate={onNavigate} />
+      <NavSection label="Agents">
+        <NavItem to="/agents" icon={Robot} label="Agents" onNavigate={onNavigate} />
         <AgentNavItem agentId={agentId} to="/agents/$agentId" icon={SlidersHorizontal} label="Cấu hình" onNavigate={onNavigate} exact />
         <AgentNavItem agentId={agentId} to="/agents/$agentId/documents" icon={FileText} label="Tài liệu" onNavigate={onNavigate} />
         <AgentNavItem agentId={agentId} to="/agents/$agentId/knowledge" icon={Graph} label="Tri thức" onNavigate={onNavigate} />
@@ -167,18 +172,36 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <AgentNavItem agentId={agentId} to="/agents/$agentId/analytics" icon={ChartBar} label="Phân tích" onNavigate={onNavigate} />
       </NavSection>
 
-      <NavSection label="Hệ thống">
+      <NavSection label="System">
         <NavItem to="/account" icon={UserCircle} label="Tài khoản" onNavigate={onNavigate} />
       </NavSection>
+      </div>
     </nav>
   );
 }
 
 function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+
   return (
     <div className="mt-3 flex flex-col gap-1">
-      <span className="px-3 py-1 font-mono text-xs uppercase tracking-wide text-text-dim">{label}</span>
-      {children}
+      <button
+        type="button"
+        className={cn(
+          "flex w-full items-center justify-between gap-2 rounded-md border border-border-strong bg-surface px-3 py-2 text-left text-sm font-semibold text-text-primary shadow-sm transition-colors",
+          "hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 focus-visible:outline-none focus-visible:shadow-focus",
+        )}
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="truncate">{label}</span>
+        <CaretDown className={cn("size-4 text-text-dim transition-transform", !open && "-rotate-90")} aria-hidden />
+      </button>
+      {open && (
+        <div className="ml-3 flex flex-col gap-1 rounded-r-md border-l-2 border-brand-100 bg-surface-2/70 py-1 pl-2 pr-1 shadow-xs">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

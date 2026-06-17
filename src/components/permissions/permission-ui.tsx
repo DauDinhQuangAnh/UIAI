@@ -55,7 +55,7 @@ export function PermissionHeadCell({
   className?: string;
   children: React.ReactNode;
 }) {
-  return <BusinessHeadCell className={className}>{children}</BusinessHeadCell>;
+  return <BusinessHeadCell className={cn("whitespace-nowrap", className)}>{children}</BusinessHeadCell>;
 }
 
 export function ActiveBadge({ active }: { active: boolean }) {

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { type FormEvent, useMemo, useState } from "react";
-import { Files, Plus } from "@phosphor-icons/react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { Files, PencilSimple, Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,8 +72,10 @@ function PageConfigScreen() {
   const [menuFilter, setMenuFilter] = useState<MenuFilterValue>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState<PageForm>(EMPTY_FORM);
+  const [addOrderUnlocked, setAddOrderUnlocked] = useState(false);
   const [editTarget, setEditTarget] = useState<Page | null>(null);
   const [editForm, setEditForm] = useState<PageForm>(EMPTY_FORM);
+  const [editOrderUnlocked, setEditOrderUnlocked] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Page | null>(null);
 
   const features = usePermissionFeatures({ isActive: true });
@@ -87,13 +89,23 @@ function PageConfigScreen() {
     [featureFilter, keyword, menuFilter, statusFilter],
   );
   const pages = usePermissionPages(params);
+  const allPages = usePermissionPages({});
   const createPage = useCreatePermissionPage();
   const updatePage = useUpdatePermissionPage();
   const deletePage = useDeletePermissionPage();
   const items = pages.data ?? [];
+  const allPageItems = allPages.data ?? [];
+  const addOrderError = pageDisplayOrderError(form.displayOrder, allPageItems, form.featureId);
+  const editOrderError = pageDisplayOrderError(editForm.displayOrder, allPageItems, editForm.featureId, editTarget?.id);
+
+  useEffect(() => {
+    if (!addOpen || addOrderUnlocked || !form.featureId) return;
+    setForm((current) => ({ ...current, displayOrder: nextPageDisplayOrder(allPageItems, current.featureId) }));
+  }, [addOpen, addOrderUnlocked, allPageItems, form.featureId]);
 
   const submitAdd = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (addOrderError) return;
     createPage.mutate(payloadFromForm(form), {
       onSuccess: () => {
         toast.success("Đã tạo page.");
@@ -107,6 +119,7 @@ function PageConfigScreen() {
   const submitEdit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editTarget) return;
+    if (editOrderError) return;
     updatePage.mutate(
       { id: editTarget.id, body: { ...payloadFromForm(editForm), isActive: editForm.isActive } },
       {
@@ -139,7 +152,16 @@ function PageConfigScreen() {
             <h2 className="text-xl font-semibold text-text-primary">Cấu hình page</h2>
             <p className="text-sm text-text-secondary">{items.length} page phù hợp với bộ lọc hiện tại.</p>
           </div>
-          <Button type="button" size="sm" disabled={!can(PERMISSIONS.pages.create)} onClick={() => setAddOpen(true)}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!can(PERMISSIONS.pages.create)}
+            onClick={() => {
+              setForm({ ...EMPTY_FORM, displayOrder: 1 });
+              setAddOrderUnlocked(false);
+              setAddOpen(true);
+            }}
+          >
             <Plus className="size-4" aria-hidden />
             Thêm page
           </Button>
@@ -210,6 +232,7 @@ function PageConfigScreen() {
                       onEdit={() => {
                         setEditTarget(page);
                         setEditForm(formFromPage(page));
+                        setEditOrderUnlocked(false);
                       }}
                       onDelete={() => setDeleteTarget(page)}
                     />
