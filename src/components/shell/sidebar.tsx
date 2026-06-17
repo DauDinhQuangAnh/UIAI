@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/cn";
 import { useSession, type AuthMenu, type AuthMenuPage } from "@/auth/session-store";
 
-const linkBase = "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors";
+const linkBase = "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors";
 const idle = "text-text-secondary hover:bg-surface hover:text-text-primary hover:shadow-xs";
 const active = "border border-brand-100 bg-brand-50 text-brand-800 font-semibold shadow-xs";
 
@@ -172,9 +172,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <AgentNavItem agentId={agentId} to="/agents/$agentId/analytics" icon={ChartBar} label="Phân tích" onNavigate={onNavigate} />
       </NavSection>
 
-      <NavSection label="System">
-        <NavItem to="/account" icon={UserCircle} label="Tài khoản" onNavigate={onNavigate} />
-      </NavSection>
       </div>
     </nav>
   );
@@ -188,17 +185,17 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
       <button
         type="button"
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-md border border-border-strong bg-surface px-3 py-2 text-left text-sm font-semibold text-text-primary shadow-sm transition-colors",
+          "flex w-full min-w-0 items-center justify-between gap-1.5 rounded-md border border-border-strong bg-surface px-2.5 py-2 text-left text-[13px] font-semibold text-text-primary shadow-sm transition-colors",
           "hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 focus-visible:outline-none focus-visible:shadow-focus",
         )}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="truncate">{label}</span>
-        <CaretDown className={cn("size-4 text-text-dim transition-transform", !open && "-rotate-90")} aria-hidden />
+        <span className="min-w-0 flex-1 truncate" title={label}>{label}</span>
+        <CaretDown className={cn("size-3 flex-none text-text-dim transition-transform", !open && "-rotate-90")} aria-hidden />
       </button>
       {open && (
-        <div className="ml-3 flex flex-col gap-1 rounded-r-md border-l-2 border-brand-100 bg-surface-2/70 py-1 pl-2 pr-1 shadow-xs">
+        <div className="flex flex-col gap-1 rounded-md bg-surface-2/70 py-1 shadow-xs">
           {children}
         </div>
       )}
