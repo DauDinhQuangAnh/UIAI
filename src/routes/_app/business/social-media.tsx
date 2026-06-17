@@ -334,14 +334,14 @@ function SocialMediaLinksContent({
             <TabsList className="gap-2 bg-transparent p-0">
               <TabsTrigger
                 value="FACEBOOK"
-                className="h-10 min-w-32 rounded-md border border-brand-700 px-6 font-bold uppercase text-brand-800 data-[state=active]:bg-brand-700 data-[state=active]:text-white"
+                className="h-10 min-w-32 rounded-md border border-[#1877f2] px-6 font-bold uppercase text-[#1877f2] data-[state=active]:bg-[#1877f2] data-[state=active]:text-white"
               >
                 Facebook
                 {facebookCount > 0 && <span className="ml-1 text-xs opacity-80">({facebookCount})</span>}
               </TabsTrigger>
               <TabsTrigger
                 value="TIKTOK"
-                className="h-10 min-w-32 rounded-md border border-brand-700 px-6 font-bold uppercase text-brand-800 data-[state=active]:bg-brand-700 data-[state=active]:text-white"
+                className="h-10 min-w-32 rounded-md border border-black px-6 font-bold uppercase text-black data-[state=active]:bg-black data-[state=active]:text-white"
               >
                 TikTok
                 {tiktokCount > 0 && <span className="ml-1 text-xs opacity-80">({tiktokCount})</span>}
