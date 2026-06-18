@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { CheckCircle, LinkSimple, PencilSimple, Plus, ShieldWarning, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
@@ -25,23 +26,30 @@ import type { BusinessPartner } from "@/components/business/information/business
 import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
   useBusinessPartnersIntegrations,
-  useCreateSocialMediaIntegration,
+  useCreateFacebookAppConfig,
   useDeleteSocialMediaIntegration,
-  useDeleteSocialMediaPage,
+  useFacebookPages,
+  useSaveFacebookPages,
   useStartFacebookOAuth,
+  useUpdateFacebookAppConfig,
   useUpdateSocialMediaPage,
+  socialMediaKeys,
 } from "@/api/hooks/social-media-integrations";
 import type {
   BotScheduleRequest,
-  CreateSocialMediaIntegrationPageRequest,
+  BotWorkingScheduleRequest,
+  FacebookManagedPage,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
-  SocialMediaPageSchedule,
   UpdateSocialMediaPageRequest,
 } from "@/api/social-media-types";
 import { ApiRequestError, errorMessage } from "@/api/errors";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
-import { storeFacebookOAuthContext } from "@/lib/facebook-oauth-context";
+import {
+  clearFacebookOAuthContext,
+  readFacebookOAuthContext,
+  storeFacebookOAuthContext,
+} from "@/lib/facebook-oauth-context";
 
 const BUSINESS_PAGE_SIZE = 100;
 const DEFAULT_TIMEZONE = "Asia/Ho_Chi_Minh";
@@ -49,10 +57,12 @@ const FULL_TIME_START = "00:00";
 const FULL_TIME_END = "23:59";
 const DEFAULT_PART_TIME_START = "08:00";
 const DEFAULT_PART_TIME_END = "17:30";
+const APP_SECRET_MASK = "••••••••••••••••••••••••";
 
 type ProviderFilter = "FACEBOOK" | "TIKTOK";
 type CreateStep = "config" | "pages" | "schedule";
 type ScheduleMode = "full" | "part";
+type ManageBotMode = "inactive" | "full" | "part";
 type DayOfWeekName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 
 interface PageScheduleDraft {
@@ -67,8 +77,10 @@ interface SocialMediaCreatePageDraft {
   localId: string;
   externalPageId: string;
   pageName: string;
+  username?: string | null;
   pageAvatarUrl: string;
   pageImageUrl: string;
+  pageAccessToken: string;
   status: "Active" | "Inactive";
   schedule: PageScheduleDraft;
 }
@@ -80,9 +92,16 @@ interface SocialMediaCreateForm {
   pages: SocialMediaCreatePageDraft[];
 }
 
-interface SocialMediaPageEditForm {
-  status: "Active" | "Inactive";
+interface ManageConfigForm {
+  businessPartnerId: string;
+  appSecret: string;
+  botMode: ManageBotMode;
   schedule: PageScheduleDraft;
+}
+
+interface RefreshTokenForm {
+  businessPartnerId: string;
+  appSecret: string;
 }
 
 type CreateFormErrors = Partial<Record<"businessPartnerId" | "appId" | "appSecret" | "pages" | "schedule", string>>;
@@ -132,7 +151,7 @@ function SocialMediaLinksScreen() {
         <EmptyState
           icon={ShieldWarning}
           title="Bạn không có quyền xem liên kết mạng xã hội"
-          description="Cần quyền SOCIAL_MEDIA.FACEBOOK_INTEGRATION.VIEW để truy cập màn hình này."
+          description="Cần quyền SOCIAL_MEDIA.FACEBOOK_INTEGRATION.VIEW đềEtruy cập màn hình này."
         />
       </BusinessPageShell>
     );
@@ -156,6 +175,7 @@ function SocialMediaLinksContent({
   canUpdate: boolean;
   canReauthorize: boolean;
 }) {
+  const queryClient = useQueryClient();
   const search = Route.useSearch();
   const [providerFilter, setProviderFilter] = useState<ProviderFilter>("FACEBOOK");
   const [createOpen, setCreateOpen] = useState(false);
@@ -163,11 +183,9 @@ function SocialMediaLinksContent({
   const [createForm, setCreateForm] = useState<SocialMediaCreateForm>(() => defaultCreateForm(""));
   const [createErrors, setCreateErrors] = useState<CreateFormErrors>({});
   const [manageTarget, setManageTarget] = useState<SocialMediaTableRow | null>(null);
-  const [editPageTarget, setEditPageTarget] = useState<SocialMediaTableRow | null>(null);
-  const [editPageForm, setEditPageForm] = useState<SocialMediaPageEditForm>(() => defaultEditPageForm(null));
-  const [editPageError, setEditPageError] = useState("");
+  const [refreshTarget, setRefreshTarget] = useState<SocialMediaTableRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SocialMediaTableRow | null>(null);
-  const [oauthPendingIntegrationId, setOauthPendingIntegrationId] = useState<string | null>(null);
+  const [oauthResumeHandled, setOauthResumeHandled] = useState(false);
 
   const businessPartners = useBusinessPartners({
     isActive: true,
@@ -177,11 +195,13 @@ function SocialMediaLinksContent({
   const businesses = businessPartners.data?.items ?? [];
   const businessIds = useMemo(() => businesses.map((business) => business.id), [businesses]);
   const integrationQueries = useBusinessPartnersIntegrations(businessIds, !businessPartners.isLoading && !businessPartners.isError);
-  const createIntegration = useCreateSocialMediaIntegration();
+  const createFacebookConfig = useCreateFacebookAppConfig();
+  const updateFacebookConfig = useUpdateFacebookAppConfig();
   const updatePage = useUpdateSocialMediaPage();
   const deleteIntegration = useDeleteSocialMediaIntegration();
-  const deletePage = useDeleteSocialMediaPage();
   const startFacebookOAuth = useStartFacebookOAuth();
+  const facebookPages = useFacebookPages(createForm.businessPartnerId, createOpen && createStep === "pages");
+  const saveFacebookPages = useSaveFacebookPages();
 
   const defaultBusinessId =
     search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)
@@ -204,13 +224,49 @@ function SocialMediaLinksContent({
   const integrationsLoading = integrationQueries.some((query) => query.isLoading);
   const integrationsFetching = integrationQueries.some((query) => query.isFetching);
   const integrationsError = integrationQueries.find((query) => query.isError)?.error;
-  const deleteSubmitting = deleteIntegration.isPending || deletePage.isPending;
+  const deleteSubmitting = deleteIntegration.isPending;
+  const manageConfigSubmitting = updateFacebookConfig.isPending || updatePage.isPending;
+  const createSubmitting = createFacebookConfig.isPending || startFacebookOAuth.isPending || saveFacebookPages.isPending;
   const createDisabled = !defaultBusinessId || providerFilter !== "FACEBOOK";
   const createDisabledTitle = !defaultBusinessId
-    ? "Chưa có doanh nghiệp để thêm liên kết."
+    ? "Chưa có doanh nghiệp đềEthêm liên kết."
     : providerFilter !== "FACEBOOK"
-      ? "Thêm liên kết TikTok sẽ được triển khai ở phase sau."
+      ? "Thêm liên kết TikTok sẽ được triển khai ềEphase sau."
       : undefined;
+
+  useEffect(() => {
+    if (oauthResumeHandled || businessPartners.isLoading || integrationsLoading) return;
+    const context = readFacebookOAuthContext();
+    if (!context?.resumePageSelection || context.flow !== "add-link") return;
+
+    const businessExists = businesses.some((business) => business.id === context.businessPartnerId);
+    if (!businessExists) {
+      if (!businessPartners.isFetching) {
+        toast.error("Không tìm thấy doanh nghiệp đềEtiếp tục chọn trang Facebook.");
+        clearFacebookOAuthContext();
+        setOauthResumeHandled(true);
+      }
+      return;
+    }
+
+    setProviderFilter("FACEBOOK");
+    setCreateStep("pages");
+    setCreateForm({
+      ...defaultCreateForm(context.businessPartnerId),
+      appId: context.appId ?? "",
+      appSecret: "",
+      pages: [],
+    });
+    setCreateErrors({});
+    setCreateOpen(true);
+    setOauthResumeHandled(true);
+  }, [
+    businesses,
+    businessPartners.isFetching,
+    businessPartners.isLoading,
+    integrationsLoading,
+    oauthResumeHandled,
+  ]);
 
   const openCreate = () => {
     if (createDisabled) return;
@@ -221,10 +277,13 @@ function SocialMediaLinksContent({
   };
 
   const closeCreate = () => {
+    const businessPartnerId = createForm.businessPartnerId;
     setCreateOpen(false);
     setCreateStep("config");
     setCreateErrors({});
     setCreateForm(defaultCreateForm(defaultBusinessId));
+    clearFacebookOAuthContext();
+    queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(businessPartnerId) });
   };
 
   const goToCreateStep = (nextStep: CreateStep) => {
@@ -236,8 +295,68 @@ function SocialMediaLinksContent({
 
   const submitCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (createStep !== "schedule") {
-      goToCreateStep(createStep === "config" ? "pages" : "schedule");
+    if (createStep === "config") {
+      const nextErrors = validateCreateConfig(createForm);
+      setCreateErrors(nextErrors);
+      if (hasErrors(nextErrors)) return;
+
+      const nextForm = {
+        businessPartnerId: createForm.businessPartnerId,
+        appId: createForm.appId.trim(),
+        appSecret: createForm.appSecret.trim(),
+      };
+
+      createFacebookConfig.mutate(
+        {
+          businessPartnerId: nextForm.businessPartnerId,
+          body: {
+            appId: nextForm.appId,
+            appSecret: nextForm.appSecret,
+          },
+        },
+        {
+          onSuccess: (configResult) => {
+            startFacebookOAuth.mutate(
+              {
+                businessPartnerId: nextForm.businessPartnerId,
+                body: { redirectUri: facebookOAuthCallbackUrl() },
+              },
+              {
+                onSuccess: (oauthResult) => {
+                  if (!oauthResult.authorizationUrl) {
+                    toast.error("Không nhận được đường dẫn đăng nhập Facebook.");
+                    return;
+                  }
+                  storeFacebookOAuthContext({
+                    businessPartnerId: nextForm.businessPartnerId,
+                    integrationId: configResult.integrationId,
+                    appId: nextForm.appId,
+                    state: oauthResult.state,
+                    flow: "add-link",
+                    resumePageSelection: false,
+                  });
+                  toast.info("Đang chuyển sang Facebook đềEđăng nhập...");
+                  setCreateOpen(false);
+                  window.location.href = oauthResult.authorizationUrl;
+                },
+                onError: (error) => {
+                  toast.error(apiErrorMessage(error, "Không thềEbắt đầu ủy quyền Facebook."));
+                  setCreateForm((current) => ({ ...current, appSecret: "" }));
+                },
+              },
+            );
+          },
+          onError: (error) => {
+            toast.error(apiErrorMessage(error, "Không thềElưu cấu hình Facebook App."));
+            setCreateForm((current) => ({ ...current, appSecret: "" }));
+          },
+        },
+      );
+      return;
+    }
+
+    if (createStep === "pages") {
+      goToCreateStep("schedule");
       return;
     }
 
@@ -245,86 +364,77 @@ function SocialMediaLinksContent({
     setCreateErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
 
-    createIntegration.mutate(
+    saveFacebookPages.mutate(
       {
         businessPartnerId: createForm.businessPartnerId,
         body: {
-          provider: "Facebook",
-          appId: createForm.appId.trim(),
-          appSecret: createForm.appSecret.trim(),
-          pages: createForm.pages.map(createPagePayload),
+          pages: createForm.pages.map((page) => ({
+            externalPageId: page.externalPageId,
+            pageName: page.pageName,
+            pageAvatarUrl: nullableTrim(page.pageAvatarUrl),
+            pageAccessToken: page.pageAccessToken,
+            schedules: schedulesFromDraft(page.schedule),
+          })),
         },
-      },
-      {
-        onSuccess: (result) => {
-          toast.success(result.message || "Đã tạo liên kết Facebook.");
-          closeCreate();
-        },
-        onError: (error) => {
-          toast.error(apiErrorMessage(error, "Không thể tạo liên kết Facebook."));
-          setCreateForm((current) => ({ ...current, appSecret: "" }));
-        },
-      },
-    );
-  };
-
-  const openEditPage = (row: SocialMediaTableRow) => {
-    setManageTarget(null);
-    if (!row.page?.id) {
-      toast.error("Liên kết này chưa có pageId để cập nhật page.");
-      return;
-    }
-    setEditPageTarget(row);
-    setEditPageForm(defaultEditPageForm(row.page));
-    setEditPageError("");
-  };
-
-  const submitEditPage = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editPageTarget?.page?.id) return;
-    const validationError = validateScheduleDraft(editPageForm.schedule, displayPageName(editPageTarget.page, editPageTarget.integration));
-    setEditPageError(validationError);
-    if (validationError) return;
-
-    updatePage.mutate(
-      {
-        businessPartnerId: editPageTarget.business.id,
-        pageId: editPageTarget.page.id,
-        body: updatePagePayload(editPageForm),
       },
       {
         onSuccess: () => {
-          toast.success("Đã cập nhật page Facebook.");
-          setEditPageTarget(null);
+          toast.success("Đã lưu page Facebook và lịch hoạt động.");
+          closeCreate();
         },
-        onError: (error) => toast.error(apiErrorMessage(error, "Không thể cập nhật page Facebook.")),
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thềElưu page Facebook và lịch hoạt động.")),
       },
     );
   };
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    if (deleteTarget.page && !deleteTarget.page.id) {
-      toast.error("Page này thiếu pageId nên chưa thể gọi API xóa page.");
-      return;
-    }
-    if (deleteTarget.page?.id) {
-      deletePage.mutate(
-        {
-          businessPartnerId: deleteTarget.business.id,
-          pageId: deleteTarget.page.id,
-        },
-        {
-          onSuccess: () => {
-            toast.success("Đã xóa page khỏi liên kết.");
-            setDeleteTarget(null);
-          },
-          onError: (error) => toast.error(apiErrorMessage(error, "Không thể xóa page khỏi liên kết.")),
-        },
-      );
+  const saveManageConfig = async (row: SocialMediaTableRow, form: ManageConfigForm) => {
+    const appSecret = form.appSecret.trim();
+    if (!form.businessPartnerId) {
+      toast.error("Vui long chon doanh nghiep.");
       return;
     }
 
+    const shouldUpdateAppConfig = isEditedAppSecret(appSecret);
+    const shouldUpdatePage = !!row.page?.id;
+    if (!shouldUpdateAppConfig && !shouldUpdatePage) {
+      toast.error("Lien ket nay chua co page de cap nhat trang thai bot.");
+      return;
+    }
+
+    const validationError = form.botMode === "part"
+      ? validateScheduleDraft({ ...form.schedule, mode: "part" }, displayPageName(row.page, row.integration))
+      : "";
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    try {
+      if (shouldUpdateAppConfig) {
+        await updateFacebookConfig.mutateAsync({
+          businessPartnerId: form.businessPartnerId,
+          body: {
+            appId: row.integration.appId,
+            appSecret,
+          },
+        });
+      }
+      if (shouldUpdatePage && row.page?.id) {
+        await updatePage.mutateAsync({
+          businessPartnerId: row.business.id,
+          pageId: row.page.id,
+          body: managePagePayload(form),
+        });
+      }
+      toast.success("Da cap nhat lien ket social media.");
+      setManageTarget(null);
+      integrationQueries.forEach((query) => query.refetch());
+    } catch (error) {
+      toast.error(apiErrorMessage(error, "Khong the cap nhat lien ket social media."));
+    }
+  };
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
     deleteIntegration.mutate(
       {
         businessPartnerId: deleteTarget.business.id,
@@ -332,48 +442,47 @@ function SocialMediaLinksContent({
       },
       {
         onSuccess: () => {
-          toast.success("Đã xóa liên kết mạng xã hội.");
+          toast.success("Da xoa mem lien ket mang xa hoi.");
           setDeleteTarget(null);
         },
-        onError: (error) => toast.error(apiErrorMessage(error, "Không thể xóa liên kết mạng xã hội.")),
+        onError: (error) => toast.error(deleteSocialMediaErrorMessage(error)),
       },
     );
   };
-
-  const startOAuth = (row: SocialMediaIntegrationRow) => {
+  const openRefreshToken = (row: SocialMediaTableRow) => {
     setManageTarget(null);
-    if (!isFacebookIntegration(row.integration)) return;
-    setOauthPendingIntegrationId(row.integration.id);
-    startFacebookOAuth.mutate(
+    setRefreshTarget(row);
+  };
+
+  const saveRefreshTokenConfig = (row: SocialMediaTableRow, form: RefreshTokenForm) => {
+    const appSecret = form.appSecret.trim();
+    if (!form.businessPartnerId) {
+      toast.error("Vui long chon doanh nghiep.");
+      return;
+    }
+    if (!isEditedAppSecret(appSecret)) {
+      toast.error("Vui long nhap App Secret moi neu muon cap nhat cau hinh.");
+      return;
+    }
+
+    updateFacebookConfig.mutate(
       {
-        businessPartnerId: row.business.id,
-        body: { redirectUri: facebookOAuthCallbackUrl() },
+        businessPartnerId: form.businessPartnerId,
+        body: {
+          appId: row.integration.appId,
+          appSecret,
+        },
       },
       {
-        onSuccess: (result) => {
-          if (!result.authorizationUrl) {
-            toast.error("Không nhận được đường dẫn đăng nhập Facebook.");
-            setOauthPendingIntegrationId(null);
-            return;
-          }
-          storeFacebookOAuthContext({
-            businessPartnerId: row.business.id,
-            integrationId: row.integration.id,
-            state: result.state,
-            flow: "reauthorize",
-            resumePageSelection: false,
-          });
-          toast.info("Đang chuyển sang Facebook để đăng nhập...");
-          window.location.href = result.authorizationUrl;
+        onSuccess: () => {
+          toast.success("Da luu cau hinh lam moi lien ket social media.");
+          setRefreshTarget(null);
+          integrationQueries.forEach((query) => query.refetch());
         },
-        onError: (error) => {
-          toast.error(apiErrorMessage(error, "Không thể bắt đầu ủy quyền Facebook."));
-          setOauthPendingIntegrationId(null);
-        },
+        onError: (error) => toast.error(apiErrorMessage(error, "Khong the luu cau hinh lam moi lien ket social media.")),
       },
     );
   };
-
   return (
     <BusinessPageShell
       title="Liên kết mạng xã hội"
@@ -435,7 +544,7 @@ function SocialMediaLinksContent({
         ) : businesses.length === 0 ? (
           <EmptyState
             icon={LinkSimple}
-            title="Chưa có doanh nghiệp để liên kết mạng xã hội."
+            title="Chưa có doanh nghiệp đềEliên kết mạng xã hội."
             description="Hãy tạo business partner trước khi cấu hình các kênh social."
           />
         ) : integrationsLoading || integrationsFetching ? (
@@ -474,12 +583,11 @@ function SocialMediaLinksContent({
           <EmptyState
             icon={LinkSimple}
             title={`Chưa có liên kết ${providerFilter === "FACEBOOK" ? "Facebook" : "TikTok"}.`}
-            description="Đổi bộ lọc hoặc thêm liên kết mới để bắt đầu."
+            description="Đổi bềElọc hoặc thêm liên kết mới đềEbắt đầu."
           />
         ) : (
           <SocialMediaIntegrationsTable
             rows={tableRows}
-            canDelete={canUpdate}
             onManage={setManageTarget}
             onDelete={setDeleteTarget}
           />
@@ -492,7 +600,10 @@ function SocialMediaLinksContent({
         form={createForm}
         errors={createErrors}
         businesses={businesses}
-        loading={createIntegration.isPending}
+        managedPages={facebookPages.data?.pages ?? []}
+        pagesLoading={facebookPages.isLoading || facebookPages.isFetching}
+        pagesError={facebookPages.error}
+        loading={createSubmitting}
         onOpenChange={(open) => {
           if (!open) closeCreate();
           else setCreateOpen(true);
@@ -502,37 +613,29 @@ function SocialMediaLinksContent({
           setCreateForm(form);
           setCreateErrors({});
         }}
+        onRetryPages={() => facebookPages.refetch()}
         onSubmit={submitCreate}
       />
 
       <SocialMediaIntegrationManageDialog
         row={manageTarget}
+        businesses={businesses}
         canUpdate={canUpdate}
         canReauthorize={canReauthorize}
-        oauthPendingIntegrationId={oauthPendingIntegrationId}
+        saving={manageConfigSubmitting}
         onOpenChange={(open) => {
           if (!open) setManageTarget(null);
         }}
-        onEditPage={openEditPage}
-        onStartOAuth={startOAuth}
+        onSaveConfig={saveManageConfig}
+        onRefreshToken={openRefreshToken}
       />
 
-      <SocialMediaPageEditDialog
-        target={editPageTarget}
-        form={editPageForm}
-        error={editPageError}
-        loading={updatePage.isPending}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditPageTarget(null);
-            setEditPageError("");
-          }
-        }}
-        onFormChange={(form) => {
-          setEditPageForm(form);
-          setEditPageError("");
-        }}
-        onSubmit={submitEditPage}
+      <RefreshSocialMediaTokenDialog
+        target={refreshTarget}
+        businesses={businesses}
+        loading={updateFacebookConfig.isPending}
+        onOpenChange={(open) => !open && setRefreshTarget(null)}
+        onSubmit={saveRefreshTokenConfig}
       />
 
       <DeleteSocialMediaIntegrationDialog
@@ -551,10 +654,14 @@ function SocialMediaCreateDialog({
   form,
   errors,
   businesses,
+  managedPages,
+  pagesLoading,
+  pagesError,
   loading,
   onOpenChange,
   onStepChange,
   onFormChange,
+  onRetryPages,
   onSubmit,
 }: {
   open: boolean;
@@ -562,13 +669,25 @@ function SocialMediaCreateDialog({
   form: SocialMediaCreateForm;
   errors: CreateFormErrors;
   businesses: BusinessPartner[];
+  managedPages: FacebookManagedPage[];
+  pagesLoading: boolean;
+  pagesError: unknown;
   loading: boolean;
   onOpenChange: (open: boolean) => void;
   onStepChange: (step: CreateStep) => void;
   onFormChange: (form: SocialMediaCreateForm) => void;
+  onRetryPages: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const submitLabel = step === "schedule" ? "Xác nhận" : "Tiếp tục";
+  const submitDisabled =
+    step === "pages" && (pagesLoading || !!pagesError || form.pages.length === 0 || managedPages.length === 0);
+  const submitTitle =
+    step === "pages" && form.pages.length === 0
+      ? "Vui lòng chọn ít nhất một page."
+      : step === "pages" && pagesError
+        ? "Cần tải được danh sách page trước khi tiếp tục."
+        : undefined;
 
   const updatePageDraft = (localId: string, patch: Partial<SocialMediaCreatePageDraft>) => {
     onFormChange({
@@ -577,21 +696,13 @@ function SocialMediaCreateDialog({
     });
   };
 
-  const addPageDraft = () => {
+  const toggleManagedPage = (managedPage: FacebookManagedPage) => {
+    const selected = form.pages.some((page) => page.externalPageId === managedPage.externalPageId);
     onFormChange({
       ...form,
-      pages: [...form.pages, blankCreatePageDraft()],
-    });
-  };
-
-  const removePageDraft = (localId: string) => {
-    if (form.pages.length <= 1) {
-      onFormChange({ ...form, pages: [blankCreatePageDraft()] });
-      return;
-    }
-    onFormChange({
-      ...form,
-      pages: form.pages.filter((page) => page.localId !== localId),
+      pages: selected
+        ? form.pages.filter((page) => page.externalPageId !== managedPage.externalPageId)
+        : [...form.pages, createPageDraftFromManagedPage(managedPage)],
     });
   };
 
@@ -601,7 +712,7 @@ function SocialMediaCreateDialog({
         <DialogHeader className="items-center text-center">
           <DialogTitle className="text-brand-800">Thêm liên kết mạng xã hội</DialogTitle>
           <DialogDescription>
-            Nhập cấu hình Facebook App, danh sách page và lịch hoạt động bot theo API social-media integrations mới.
+            Nhập cấu hình Facebook App, đăng nhập Facebook, chọn page quản lý và cấu hình lịch hoạt động bot.
           </DialogDescription>
         </DialogHeader>
 
@@ -658,90 +769,75 @@ function SocialMediaCreateDialog({
             <div className="grid gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-text-primary">Page muốn liên kết</h3>
-                  <p className="text-sm text-text-secondary">Có thể thêm nhiều page trước khi cấu hình lịch bot.</p>
+                  <h3 className="text-sm font-semibold text-text-primary">Chọn trang muốn liên kết</h3>
+                  <p className="text-sm text-text-secondary">Danh sách này được lấy từ tài khoản Facebook vừa ủy quyền.</p>
                 </div>
-                <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={addPageDraft}>
-                  <Plus className="size-4" aria-hidden />
-                  Thêm page
-                </Button>
+                <Badge tone="info">{form.pages.length} page đã chọn</Badge>
               </div>
 
               {errors.pages && <p className="text-sm font-medium text-danger-fg">{errors.pages}</p>}
 
-              <div className="grid max-h-[56vh] gap-3 overflow-y-auto pr-1">
-                {form.pages.map((page, index) => (
-                  <div key={page.localId} className="grid gap-3 rounded-md border border-border bg-surface p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold text-text-primary">Page {index + 1}</span>
-                      <Button
+              {pagesLoading ? (
+                <div className="grid gap-3">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : pagesError ? (
+                <EmptyState
+                  icon={LinkSimple}
+                  title="Không tải được danh sách trang Facebook"
+                  description={apiErrorMessage(pagesError, "Vui lòng thử lại sau.")}
+                  className="py-10"
+                  action={
+                    <Button type="button" variant="secondary" onClick={onRetryPages}>
+                      Tải lại
+                    </Button>
+                  }
+                />
+              ) : managedPages.length === 0 ? (
+                <EmptyState
+                  icon={LinkSimple}
+                  title="Không tìm thấy trang Facebook nào"
+                  description="Hãy kiểm tra tài khoản vừa ủy quyền có quyền quản lý page hay chưa."
+                  className="py-10"
+                />
+              ) : (
+                <div className="grid max-h-[56vh] gap-2 overflow-y-auto pr-1">
+                  {managedPages.map((page) => {
+                    const selected = form.pages.some((selectedPage) => selectedPage.externalPageId === page.externalPageId);
+                    return (
+                      <button
+                        key={page.externalPageId}
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={loading}
-                        onClick={() => removePageDraft(page.localId)}
+                        className={[
+                          "grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border bg-surface p-3 text-left transition-colors",
+                          selected
+                            ? "border-brand-300 bg-brand-50 text-brand-900"
+                            : "border-border hover:border-brand-200 hover:bg-surface-2",
+                        ].join(" ")}
+                        onClick={() => toggleManagedPage(page)}
+                        aria-pressed={selected}
                       >
-                        Xóa page
-                      </Button>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <SocialConfigField label="Tên page" htmlFor={`page_name_${page.localId}`} required>
-                        <Input
-                          id={`page_name_${page.localId}`}
-                          value={page.pageName}
-                          disabled={loading}
-                          placeholder="SAR Demo Page"
-                          onChange={(event) => updatePageDraft(page.localId, { pageName: event.target.value })}
-                        />
-                      </SocialConfigField>
-                      <SocialConfigField label="ID page" htmlFor={`external_page_id_${page.localId}`} required>
-                        <Input
-                          id={`external_page_id_${page.localId}`}
-                          value={page.externalPageId}
-                          disabled={loading}
-                          placeholder="123456789"
-                          onChange={(event) => updatePageDraft(page.localId, { externalPageId: event.target.value })}
-                        />
-                      </SocialConfigField>
-                      <SocialConfigField label="Avatar URL" htmlFor={`page_avatar_${page.localId}`}>
-                        <Input
-                          id={`page_avatar_${page.localId}`}
-                          value={page.pageAvatarUrl}
-                          disabled={loading}
-                          placeholder="https://example.test/avatar.png"
-                          onChange={(event) => updatePageDraft(page.localId, { pageAvatarUrl: event.target.value })}
-                        />
-                      </SocialConfigField>
-                      <SocialConfigField label="Image URL" htmlFor={`page_image_${page.localId}`}>
-                        <Input
-                          id={`page_image_${page.localId}`}
-                          value={page.pageImageUrl}
-                          disabled={loading}
-                          placeholder="https://example.test/page.png"
-                          onChange={(event) => updatePageDraft(page.localId, { pageImageUrl: event.target.value })}
-                        />
-                      </SocialConfigField>
-                      <SocialConfigField label="Trạng thái" htmlFor={`page_status_${page.localId}`}>
-                        <Select
-                          value={page.status}
-                          disabled={loading}
-                          onValueChange={(status) =>
-                            updatePageDraft(page.localId, { status: status as SocialMediaCreatePageDraft["status"] })
-                          }
+                        <PageAvatar name={page.pageName || "Facebook Page"} url={page.pageAvatarUrl ?? page.avatarUrl} />
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-text-primary">{page.pageName || "Facebook Page"}</span>
+                          <span className="block truncate text-sm text-text-secondary">{page.username || page.externalPageId}</span>
+                        </span>
+                        <span
+                          className={[
+                            "flex size-6 items-center justify-center rounded-pill border",
+                            selected ? "border-brand-600 bg-brand-600 text-white" : "border-border-strong text-transparent",
+                          ].join(" ")}
+                          aria-hidden
                         >
-                          <SelectTrigger id={`page_status_${page.localId}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="Inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </SocialConfigField>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                          <CheckCircle className="size-5" weight="fill" />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -749,7 +845,7 @@ function SocialMediaCreateDialog({
             <div className="grid gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-text-primary">Cấu hình hoạt động</h3>
-                <p className="text-sm text-text-secondary">Mỗi page có lịch bot riêng. Part time cho phép khung giờ qua ngày.</p>
+                <p className="text-sm text-text-secondary">Mỗi page có lịch bot riêng. Part time cho phép khung giềEqua ngày.</p>
               </div>
               {errors.schedule && <p className="text-sm font-medium text-danger-fg">{errors.schedule}</p>}
               <div className="grid max-h-[58vh] gap-3 overflow-y-auto pr-1">
@@ -787,7 +883,7 @@ function SocialMediaCreateDialog({
                 Quay lại
               </Button>
             )}
-            <Button type="submit" loading={loading}>
+            <Button type="submit" loading={loading} disabled={submitDisabled} title={submitTitle}>
               {submitLabel}
             </Button>
           </DialogFooter>
@@ -821,68 +917,6 @@ function CreateStepIndicator({ step }: { step: CreateStep }) {
         </div>
       ))}
     </div>
-  );
-}
-
-function SocialMediaPageEditDialog({
-  target,
-  form,
-  error,
-  loading,
-  onOpenChange,
-  onFormChange,
-  onSubmit,
-}: {
-  target: SocialMediaTableRow | null;
-  form: SocialMediaPageEditForm;
-  error?: string;
-  loading: boolean;
-  onOpenChange: (open: boolean) => void;
-  onFormChange: (form: SocialMediaPageEditForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <Dialog open={!!target} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
-        <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">Cập nhật page Facebook</DialogTitle>
-          <DialogDescription>
-            Cập nhật trạng thái và lịch bot cho {target ? displayPageName(target.page, target.integration) : "page"}.
-          </DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <SocialConfigField label="Trạng thái" htmlFor="edit_page_status">
-            <Select
-              value={form.status}
-              disabled={loading}
-              onValueChange={(status) => onFormChange({ ...form, status: status as SocialMediaPageEditForm["status"] })}
-            >
-              <SelectTrigger id="edit_page_status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </SocialConfigField>
-          <ScheduleEditor
-            schedule={form.schedule}
-            disabled={loading}
-            onChange={(schedule) => onFormChange({ ...form, schedule })}
-          />
-          {error && <p className="text-sm font-medium text-danger-fg">{error}</p>}
-          <DialogFooter className="mt-3">
-            <Button type="button" variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
-              Hủy
-            </Button>
-            <Button type="submit" loading={loading}>
-              Lưu thay đổi
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -955,14 +989,14 @@ function ScheduleEditor({
             Part time
             {schedule.mode === "part" && <CheckCircle className="size-5 text-brand-700" weight="fill" aria-hidden />}
           </span>
-          <span className="mt-1 text-sm text-text-secondary">Chọn ngày và một khung giờ dùng chung.</span>
+          <span className="mt-1 text-sm text-text-secondary">Chọn ngày và một khung giềEdùng chung.</span>
         </button>
       </div>
 
       {schedule.mode === "full" ? (
         <div className="flex items-center gap-2 rounded-md border border-success-border bg-success-bg px-3 py-2 text-sm font-medium text-success-fg">
           <CheckCircle className="size-5" weight="fill" aria-hidden />
-          Đã chọn Full time: hệ thống sẽ lưu 7 ngày, 00:00 - 23:59.
+          Đã chọn Full time: hềEthống sẽ lưu 7 ngày, 00:00 - 23:59.
         </div>
       ) : (
         <div className="grid gap-3 rounded-md border border-border bg-card p-3">
@@ -1068,103 +1102,369 @@ function PageAvatar({ name, url }: { name: string; url?: string | null }) {
   );
 }
 
+function ManageDialogAvatar({
+  name,
+  url,
+  fallback,
+}: {
+  name: string;
+  url?: string | null;
+  fallback: string;
+}) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        className="size-16 rounded-pill border border-[#2f63a8] bg-white object-cover p-0.5 shadow-xs"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <span className="flex size-16 items-center justify-center rounded-pill border border-[#bdd0ea] bg-[#eef5ff] text-sm font-bold text-[#24589a] shadow-xs">
+      {fallback || pageInitials(name)}
+    </span>
+  );
+}
+
 function SocialMediaIntegrationManageDialog({
   row,
+  businesses,
   canUpdate,
   canReauthorize,
-  oauthPendingIntegrationId,
+  saving,
   onOpenChange,
-  onEditPage,
-  onStartOAuth,
+  onSaveConfig,
+  onRefreshToken,
 }: {
   row: SocialMediaTableRow | null;
+  businesses: BusinessPartner[];
   canUpdate: boolean;
   canReauthorize: boolean;
-  oauthPendingIntegrationId: string | null;
+  saving: boolean;
   onOpenChange: (open: boolean) => void;
-  onEditPage: (row: SocialMediaTableRow) => void;
-  onStartOAuth: (row: SocialMediaIntegrationRow) => void;
+  onSaveConfig: (row: SocialMediaTableRow, form: ManageConfigForm) => void;
+  onRefreshToken: (row: SocialMediaTableRow) => void;
 }) {
   const integration = row?.integration;
   const page = row?.page ?? null;
   const isFacebook = integration ? isFacebookIntegration(integration) : false;
-  const canEditPage = !!page?.id && isFacebook && canUpdate;
-  const botActive = page?.isBotEnabled ?? (integration?.activeBotPagesCount ?? 0) > 0;
+  const [form, setForm] = useState<ManageConfigForm>({
+    businessPartnerId: "",
+    appSecret: APP_SECRET_MASK,
+    botMode: "inactive",
+    schedule: blankScheduleDraft(),
+  });
+
+  useEffect(() => {
+    setForm({
+      businessPartnerId: row?.business.id ?? "",
+      appSecret: appSecretDisplayValue(integration),
+      botMode: manageBotModeFromPage(page),
+      schedule: scheduleDraftFromPage(page),
+    });
+  }, [row?.business.id, row?.integration.id, page]);
 
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-[500px] overflow-y-auto rounded-md p-5">
-        <DialogHeader className="items-center text-center">
-          <div className="mb-1 flex size-14 items-center justify-center rounded-pill border border-brand-100 bg-brand-50 text-xs font-bold text-brand-700">
-            {isFacebook ? "FB" : integration ? providerCode(integration).slice(0, 2) || "SM" : "SM"}
+      <DialogContent className="max-h-[92vh] max-w-[760px] overflow-y-auto rounded-md border border-[#d7e3f4] bg-white p-6 shadow-xl">
+        <DialogHeader className="grid grid-cols-[4rem_1fr_4rem] items-start gap-3 text-center">
+          <div className="justify-self-start">
+            <ManageDialogAvatar
+              name={row?.business.brandName ?? (isFacebook ? "Facebook" : "Social")}
+              url={row?.business.logoUrl ?? page?.pageAvatarUrl}
+              fallback={isFacebook ? "FB" : integration ? providerCode(integration).slice(0, 2) || "SM" : "SM"}
+            />
           </div>
-          <DialogTitle className="text-sm font-bold uppercase text-brand-800">Thông tin liên kết social media</DialogTitle>
+          <DialogTitle className="pt-2 text-base font-bold uppercase tracking-wide text-[#24589a]">
+            Thông tin liên kết social media
+          </DialogTitle>
+          <span aria-hidden />
           <DialogDescription className="sr-only">Chi tiết liên kết mạng xã hội</DialogDescription>
         </DialogHeader>
 
         {row && integration && (
-          <div className="grid gap-3">
-            <DetailReadOnlyField label="Doanh nghiệp" value={row.business.brandName} />
+          <form className="grid gap-4 pt-2" onSubmit={(event) => {
+            event.preventDefault();
+            onSaveConfig(row, form);
+          }}>
+            <DetailSelectField
+              label="Doanh nghiệp"
+              value={form.businessPartnerId}
+              disabled={saving || !canUpdate}
+              businesses={businesses}
+              onChange={(businessPartnerId) => setForm((current) => ({ ...current, businessPartnerId }))}
+            />
             <DetailReadOnlyField label="App ID" value={integration.appId || "-"} required mono />
+            <DetailSecretField
+              value={form.appSecret}
+              disabled={saving || !canUpdate}
+              onChange={(appSecret) => setForm((current) => ({ ...current, appSecret }))}
+            />
             <DetailReadOnlyField label="Trang" value={displayPageName(page, integration)} />
             <DetailReadOnlyField label="ID Trang" value={page?.externalPageId || "-"} mono />
 
-            <div className="grid gap-1.5">
-              <span className="text-[11px] font-bold text-brand-800">Trạng thái hoạt động của Chatbot</span>
-              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text-primary">
-                {botActive ? "Đang hoạt động" : "Chưa bật"}
-              </div>
-            </div>
-
-            <BotSchedulePreview schedules={page?.schedules} />
-
-            <div className="grid gap-2 pt-1 sm:grid-cols-2">
+            <ManageBotStatusEditor
+              value={form.botMode}
+              schedule={form.schedule}
+              disabled={saving || !canUpdate || !page?.id}
+              onModeChange={(botMode) => setForm((current) => ({ ...current, botMode }))}
+              onScheduleChange={(schedule) => setForm((current) => ({ ...current, schedule }))}
+            />
+            <div className="mt-4 flex items-center justify-between gap-4">
               <Button
                 type="button"
-                variant="secondary"
-                size="sm"
-                disabled={!canEditPage}
+                disabled={!isFacebook || !canReauthorize || saving}
                 title={
                   !isFacebook
-                    ? "Cấu hình provider này sẽ được triển khai ở phase sau."
-                    : !canUpdate
-                      ? "Bạn không có quyền cập nhật liên kết Facebook."
-                      : !page?.id
-                        ? "Liên kết này chưa có pageId để cập nhật page."
-                        : undefined
-                }
-                onClick={() => onEditPage(row)}
-              >
-                Cập nhật page
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                loading={oauthPendingIntegrationId === integration.id}
-                disabled={!isFacebook || !canReauthorize || !!oauthPendingIntegrationId}
-                title={
-                  !isFacebook
-                    ? "Làm mới token provider này sẽ được triển khai ở phase sau."
+                    ? "Làm mới token provider này sẽ được triển khai ềEphase sau."
                     : !canReauthorize
                       ? "Bạn không có quyền ủy quyền Facebook."
                       : undefined
                 }
-                onClick={() => onStartOAuth(row)}
-                className="bg-[#1877f2] text-white hover:bg-[#1464cc]"
+                onClick={() => onRefreshToken(row)}
+                className="bg-[#bb18b8] text-white hover:bg-[#9f139d]"
               >
-                Ủy quyền lại
+                Làm mới token liên kết
+              </Button>
+              <Button
+                type="submit"
+                loading={saving}
+                disabled={!canUpdate}
+                title={!canUpdate ? "Bạn không có quyền cập nhật liên kết Facebook." : undefined}
+                className="min-w-28 bg-[#2f63a8] text-white hover:bg-[#24589a]"
+              >
+                Lưu
               </Button>
             </div>
-
-            <div className="mt-2 flex justify-end">
-              <Button type="button" size="sm" onClick={() => onOpenChange(false)}>
-                Đóng
-              </Button>
-            </div>
-          </div>
+          </form>
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RefreshSocialMediaTokenDialog({
+  target,
+  businesses,
+  loading,
+  onOpenChange,
+  onSubmit,
+}: {
+  target: SocialMediaTableRow | null;
+  businesses: BusinessPartner[];
+  loading: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (row: SocialMediaTableRow, form: RefreshTokenForm) => void;
+}) {
+  const [form, setForm] = useState<RefreshTokenForm>({ businessPartnerId: "", appSecret: APP_SECRET_MASK });
+
+  useEffect(() => {
+    setForm({ businessPartnerId: target?.business.id ?? "", appSecret: appSecretDisplayValue(target?.integration) });
+  }, [target?.business.id, target?.integration.id]);
+
+  return (
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl rounded-md border border-[#d7e3f4] bg-white p-6 shadow-xl">
+        <DialogHeader className="text-center">
+          <DialogTitle className="text-base font-bold uppercase tracking-wide text-[#24589a]">
+            Làm mới liên kết social media
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Nhập lại App Secret đềElưu cấu hình làm mới liên kết social media.
+          </DialogDescription>
+        </DialogHeader>
+
+        {target && (
+          <form
+            className="grid gap-4 pt-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSubmit(target, form);
+            }}
+          >
+            <DetailSelectField
+              label="Doanh nghiệp"
+              value={form.businessPartnerId}
+              disabled
+              businesses={businesses}
+              onChange={(businessPartnerId) => setForm((current) => ({ ...current, businessPartnerId }))}
+            />
+            <DetailReadOnlyField label="App ID" value={target.integration.appId || "-"} required mono />
+            <DetailSecretField
+              value={form.appSecret}
+              disabled={loading}
+              onChange={(appSecret) => setForm((current) => ({ ...current, appSecret }))}
+            />
+            <div className="flex justify-center pt-2">
+              <Button type="submit" loading={loading} className="min-w-32 bg-[#2f63a8] text-white hover:bg-[#24589a]">
+                Tiếp tục
+              </Button>
+            </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ManageBotStatusEditor({
+  value,
+  schedule,
+  disabled,
+  onModeChange,
+  onScheduleChange,
+}: {
+  value: ManageBotMode;
+  schedule: PageScheduleDraft;
+  disabled?: boolean;
+  onModeChange: (value: ManageBotMode) => void;
+  onScheduleChange: (schedule: PageScheduleDraft) => void;
+}) {
+  const selectMode = (mode: ManageBotMode) => {
+    if (disabled) return;
+    onModeChange(mode);
+    if (mode === "full") {
+      onScheduleChange({
+        ...schedule,
+        mode: "full",
+        workingDays: DAY_OPTIONS.map((day) => day.value),
+        startTime: FULL_TIME_START,
+        endTime: FULL_TIME_END,
+      });
+    }
+    if (mode === "part") {
+      onScheduleChange({
+        ...schedule,
+        mode: "part",
+        startTime: schedule.startTime === FULL_TIME_START ? DEFAULT_PART_TIME_START : schedule.startTime,
+        endTime: schedule.endTime === FULL_TIME_END ? DEFAULT_PART_TIME_END : schedule.endTime,
+        workingDays: schedule.workingDays.length > 0
+          ? schedule.workingDays
+          : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      });
+    }
+  };
+
+  const toggleDay = (day: DayOfWeekName) => {
+    const workingDays = schedule.workingDays.includes(day)
+      ? schedule.workingDays.filter((item) => item !== day)
+      : [...schedule.workingDays, day];
+    onModeChange("part");
+    onScheduleChange({ ...schedule, mode: "part", workingDays });
+  };
+
+  return (
+    <div className="grid gap-2">
+      <Label className="font-medium text-brand-800">Trạng thái hoạt động của Chatbot</Label>
+      <BotModeRow
+        label="Dừng hoạt động"
+        selected={value === "inactive"}
+        disabled={disabled}
+        onClick={() => selectMode("inactive")}
+      />
+      <BotModeRow
+        label="Hoạt động toàn thời gian"
+        selected={value === "full"}
+        disabled={disabled}
+        onClick={() => selectMode("full")}
+      />
+      <div
+        className={[
+          "overflow-hidden rounded-md border bg-white shadow-xs transition-colors",
+          value === "part" ? "border-[#2f63a8]" : "border-[#d6dce5]",
+          disabled ? "opacity-60" : "",
+        ].join(" ")}
+      >
+        <button
+          type="button"
+          disabled={disabled}
+          className="flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left font-medium text-text-primary disabled:cursor-not-allowed"
+          onClick={() => selectMode("part")}
+        >
+          <span>Hoạt động bán thời gian</span>
+          {value === "part" && <CheckCircle className="size-5 text-[#2f63a8]" weight="fill" aria-hidden />}
+        </button>
+        {value === "part" && (
+          <div className="border-t border-[#d6dce5] p-3">
+            <div className="grid grid-cols-7 gap-2">
+              {DAY_OPTIONS.map((day) => {
+                const selected = schedule.workingDays.includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    disabled={disabled}
+                    className={[
+                      "h-8 rounded-md border text-xs font-semibold transition-colors disabled:cursor-not-allowed",
+                      selected
+                        ? "border-[#2f63a8] bg-[#2f63a8] text-white"
+                        : "border-[#d6dce5] bg-white text-text-secondary hover:border-[#2f63a8]",
+                    ].join(" ")}
+                    onClick={() => toggleDay(day.value)}
+                  >
+                    {day.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm font-medium text-brand-800">
+                GiềEbắt đầu
+                <Input
+                  type="time"
+                  value={schedule.startTime}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onScheduleChange({ ...schedule, mode: "part", startTime: event.target.value })
+                  }
+                />
+              </label>
+              <label className="grid gap-1 text-sm font-medium text-brand-800">
+                GiềEkết thúc
+                <Input
+                  type="time"
+                  value={schedule.endTime}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onScheduleChange({ ...schedule, mode: "part", endTime: event.target.value })
+                  }
+                />
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BotModeRow({
+  label,
+  selected,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      className={[
+        "flex min-h-11 items-center justify-between gap-3 rounded-md border bg-white px-3 text-left font-medium text-text-primary shadow-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        selected ? "border-[#2f63a8]" : "border-[#d6dce5] hover:border-[#2f63a8]",
+      ].join(" ")}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      {selected && <CheckCircle className="size-5 text-[#2f63a8]" weight="fill" aria-hidden />}
+    </button>
   );
 }
 
@@ -1179,29 +1479,27 @@ function DeleteSocialMediaIntegrationDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }) {
-  const isPageRow = !!target?.page;
   return (
     <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isPageRow ? "Xóa page khỏi liên kết" : "Xóa liên kết mạng xã hội"}</DialogTitle>
+          <DialogTitle>Xoa lien ket mang xa hoi</DialogTitle>
           <DialogDescription>
-            Bạn có chắc muốn xóa {target ? displayDeleteTargetName(target) : "liên kết này"} không? Thao tác này sẽ gọi API soft delete trong tài liệu mới.
+            Ban co chac muon xoa mem {target ? displayDeleteTargetName(target) : "lien ket nay"} khong? Backend se soft delete integration, cac page da lien ket va lich bot thuoc integration nay.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
-            Hủy
+            Huy
           </Button>
           <Button type="button" variant="danger" loading={loading} onClick={onConfirm}>
-            Xóa
+            Xoa
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
 function DetailReadOnlyField({
   label,
   value,
@@ -1214,71 +1512,93 @@ function DetailReadOnlyField({
   mono?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
-      <Label className="text-[11px] font-bold text-brand-800">
+    <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-center">
+      <Label className="text-brand-800">
         {label}
-        {required && <span className="ml-0.5 text-danger-fg">*</span>}
+        {required && <span className="ml-0.5 text-[#bb18b8]">*</span>}
       </Label>
       <Input
         value={value}
         readOnly
-        className={mono ? "h-8 bg-surface-2 font-mono text-xs" : "h-8 bg-surface-2 text-xs"}
+        className={[
+          "border-[#d6dce5] bg-[#f7f7f7] shadow-xs focus-visible:!border-[#2f63a8] focus-visible:!shadow-[0_0_0_3px_rgba(47,99,168,0.16)]",
+          mono ? "font-mono" : "",
+        ].join(" ")}
         aria-label={label}
       />
     </div>
   );
 }
 
-function BotSchedulePreview({ schedules }: { schedules?: SocialMediaPageSchedule[] | null }) {
-  const activeSchedules = (schedules ?? []).filter((schedule) => schedule.isActive !== false);
-  if (activeSchedules.length === 0) {
-    return (
-      <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
-        Chưa cấu hình thời gian hoạt động.
-      </div>
-    );
-  }
-
-  const isFullTime =
-    activeSchedules.length >= DAY_OPTIONS.length &&
-    DAY_OPTIONS.every((day) =>
-      activeSchedules.some(
-        (schedule) =>
-          normalizeDay(schedule.dayOfWeek) === day.value &&
-          schedule.startTime === FULL_TIME_START &&
-          schedule.endTime === FULL_TIME_END,
-      ),
-    );
-
-  if (isFullTime) {
-    return (
-      <div className="flex items-center gap-2 rounded-md border border-success-border bg-success-bg px-3 py-2 text-sm font-medium text-success-fg">
-        <CheckCircle className="size-5" weight="fill" aria-hidden />
-        Hoạt động toàn thời gian.
-      </div>
-    );
-  }
-
-  const firstSchedule = activeSchedules[0];
-  const dayLabels = activeSchedules
-    .map((schedule) => DAY_OPTIONS.find((day) => day.value === normalizeDay(schedule.dayOfWeek))?.shortLabel ?? schedule.dayOfWeek)
-    .join(", ");
-
+function DetailSelectField({
+  label,
+  value,
+  disabled,
+  businesses,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  disabled?: boolean;
+  businesses: BusinessPartner[];
+  onChange: (value: string) => void;
+}) {
   return (
-    <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary">
-      {dayLabels || "Part time"}: {firstSchedule?.startTime || "--:--"} - {firstSchedule?.endTime || "--:--"}
+    <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-center">
+      <Label className="text-brand-800">{label}</Label>
+      <Select value={value} disabled={disabled} onValueChange={onChange}>
+        <SelectTrigger className="border-[#d6dce5] bg-white shadow-xs focus:!ring-[#2f63a8]">
+          <SelectValue placeholder="Chọn doanh nghiệp" />
+        </SelectTrigger>
+        <SelectContent>
+          {businesses.map((business) => (
+            <SelectItem key={business.id} value={business.id}>
+              {business.brandName}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function DetailSecretField({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-center">
+      <Label htmlFor="manage_app_secret" className="text-brand-800">
+        App Secret <span className="ml-0.5 text-[#bb18b8]">*</span>
+      </Label>
+      <Input
+        id="manage_app_secret"
+        type="password"
+        value={value}
+        disabled={disabled}
+        placeholder="App Secret"
+        className="border-[#d6dce5] bg-white shadow-xs focus-visible:!border-[#2f63a8] focus-visible:!shadow-[0_0_0_3px_rgba(47,99,168,0.16)]"
+        autoComplete="new-password"
+        onFocus={(event) => {
+          if (event.currentTarget.value === APP_SECRET_MASK) event.currentTarget.select();
+        }}
+        onChange={(event) => onChange(event.target.value)}
+      />
     </div>
   );
 }
 
 function SocialMediaIntegrationsTable({
   rows,
-  canDelete,
   onManage,
   onDelete,
 }: {
   rows: SocialMediaTableRow[];
-  canDelete: boolean;
   onManage: (row: SocialMediaTableRow) => void;
   onDelete: (row: SocialMediaTableRow) => void;
 }) {
@@ -1298,7 +1618,6 @@ function SocialMediaIntegrationsTable({
           <IntegrationTableRow
             key={row.rowKey}
             row={row}
-            canDelete={canDelete}
             onManage={onManage}
             onDelete={onDelete}
           />
@@ -1310,12 +1629,10 @@ function SocialMediaIntegrationsTable({
 
 function IntegrationTableRow({
   row,
-  canDelete,
   onManage,
   onDelete,
 }: {
   row: SocialMediaTableRow;
-  canDelete: boolean;
   onManage: (row: SocialMediaTableRow) => void;
   onDelete: (row: SocialMediaTableRow) => void;
 }) {
@@ -1354,9 +1671,7 @@ function IntegrationTableRow({
             variant="ghost"
             size="icon"
             aria-label="Xóa liên kết"
-            title={!canDelete ? "Bạn không có quyền cập nhật liên kết Facebook." : undefined}
-            disabled={!canDelete}
-            className="size-9 border border-danger-border bg-danger-bg text-danger-fg shadow-xs hover:border-danger-base hover:bg-danger-base hover:text-white disabled:hover:border-danger-border disabled:hover:bg-danger-bg disabled:hover:text-danger-fg"
+            className="size-9 border border-danger-border bg-danger-bg text-danger-fg shadow-xs hover:border-danger-base hover:bg-danger-base hover:text-white"
             onClick={() => onDelete(row)}
           >
             <Trash className="size-4" aria-hidden />
@@ -1375,7 +1690,7 @@ function IntegrationStatusBadge({ status }: { status: string }) {
       : normalized === "authorized"
         ? { label: "Đã ủy quyền", tone: "success" }
         : normalized === "pendingauthorization"
-          ? { label: "Chờ ủy quyền", tone: "warning" }
+          ? { label: "ChềEủy quyền", tone: "warning" }
           : normalized === "active"
             ? { label: "Active", tone: "success" }
             : normalized === "inactive"
@@ -1427,8 +1742,7 @@ function displayPageName(page: SocialMediaLinkedPage | null, integration: Social
 }
 
 function displayDeleteTargetName(row: SocialMediaTableRow): string {
-  const pageName = displayPageName(row.page, row.integration);
-  return pageName === "Chưa chọn trang" ? row.business.brandName : `${row.business.brandName} / ${pageName}`;
+  return `${row.business.brandName} / ${providerCode(row.integration)}`;
 }
 
 function providerCode(integration: SocialMediaIntegrationSummary): string {
@@ -1441,6 +1755,18 @@ function isFacebookIntegration(integration: SocialMediaIntegrationSummary): bool
   return providerCode(integration) === "FACEBOOK";
 }
 
+function appSecretDisplayValue(integration: SocialMediaIntegrationSummary | null | undefined): string {
+  const appSecret = (integration as (SocialMediaIntegrationSummary & { appSecret?: string | null }) | null | undefined)
+    ?.appSecret
+    ?.trim();
+  return appSecret || APP_SECRET_MASK;
+}
+
+function isEditedAppSecret(value: string): boolean {
+  const trimmed = value.trim();
+  return !!trimmed && trimmed !== APP_SECRET_MASK;
+}
+
 function blankScheduleDraft(): PageScheduleDraft {
   return {
     mode: "full",
@@ -1451,38 +1777,12 @@ function blankScheduleDraft(): PageScheduleDraft {
   };
 }
 
-function blankCreatePageDraft(): SocialMediaCreatePageDraft {
-  return {
-    localId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    externalPageId: "",
-    pageName: "",
-    pageAvatarUrl: "",
-    pageImageUrl: "",
-    status: "Active",
-    schedule: blankScheduleDraft(),
-  };
-}
-
-function defaultCreateForm(businessPartnerId: string): SocialMediaCreateForm {
-  return {
-    businessPartnerId,
-    appId: "",
-    appSecret: "",
-    pages: [blankCreatePageDraft()],
-  };
-}
-
-function defaultEditPageForm(page: SocialMediaLinkedPage | null): SocialMediaPageEditForm {
-  return {
-    status: pageStatusForForm(page),
-    schedule: scheduleDraftFromPage(page),
-  };
-}
-
-function pageStatusForForm(page: SocialMediaLinkedPage | null): SocialMediaPageEditForm["status"] {
-  const normalized = page?.status?.trim().toLowerCase();
-  if (normalized === "inactive" || page?.isActive === false) return "Inactive";
-  return "Active";
+function manageBotModeFromPage(page: SocialMediaLinkedPage | null): ManageBotMode {
+  const normalizedStatus = page?.status?.trim().toLowerCase();
+  if (!page || normalizedStatus === "inactive" || page.isActive === false || page.isBotEnabled === false) {
+    return "inactive";
+  }
+  return scheduleDraftFromPage(page).mode === "full" ? "full" : "part";
 }
 
 function scheduleDraftFromPage(page: SocialMediaLinkedPage | null): PageScheduleDraft {
@@ -1504,44 +1804,16 @@ function scheduleDraftFromPage(page: SocialMediaLinkedPage | null): PageSchedule
   return {
     mode: "part",
     timezone: firstSchedule?.timeZoneId || DEFAULT_TIMEZONE,
-    workingDays: uniqueDays(schedules.map((schedule) => normalizeDay(schedule.dayOfWeek))).filter(Boolean),
+    workingDays: uniqueDays(schedules.map((schedule) => normalizeDay(schedule.dayOfWeek))),
     startTime: firstSchedule?.startTime || DEFAULT_PART_TIME_START,
     endTime: firstSchedule?.endTime || DEFAULT_PART_TIME_END,
   };
 }
 
-function uniqueDays(days: string[]): DayOfWeekName[] {
-  const result: DayOfWeekName[] = [];
-  for (const day of days) {
-    if (isDayOfWeekName(day) && !result.includes(day)) result.push(day);
-  }
-  return result;
-}
-
-function isDayOfWeekName(day: string): day is DayOfWeekName {
-  return DAY_OPTIONS.some((item) => item.value === day);
-}
-
-function normalizeDay(day: string): string {
-  const normalized = day.trim().toLowerCase();
-  return DAY_OPTIONS.find((item) => item.value.toLowerCase() === normalized || item.shortLabel.toLowerCase() === normalized)?.value ?? day;
-}
-
-function createPagePayload(page: SocialMediaCreatePageDraft): CreateSocialMediaIntegrationPageRequest {
+function managePagePayload(form: ManageConfigForm): UpdateSocialMediaPageRequest {
   return {
-    externalPageId: page.externalPageId.trim(),
-    pageName: page.pageName.trim(),
-    pageAvatarUrl: nullableTrim(page.pageAvatarUrl),
-    pageImageUrl: nullableTrim(page.pageImageUrl),
-    status: page.status,
-    botSchedule: botScheduleFromDraft(page.schedule),
-  };
-}
-
-function updatePagePayload(form: SocialMediaPageEditForm): UpdateSocialMediaPageRequest {
-  return {
-    status: form.status,
-    botSchedule: botScheduleFromDraft(form.schedule),
+    status: form.botMode === "inactive" ? "Inactive" : "Active",
+    botSchedule: botScheduleFromDraft(form.botMode === "full" ? blankScheduleDraft() : form.schedule),
   };
 }
 
@@ -1563,16 +1835,72 @@ function botScheduleFromDraft(draft: PageScheduleDraft): BotScheduleRequest {
   };
 }
 
+function uniqueDays(days: string[]): DayOfWeekName[] {
+  const result: DayOfWeekName[] = [];
+  for (const day of days) {
+    if (isDayOfWeekName(day) && !result.includes(day)) result.push(day);
+  }
+  return result;
+}
+
+function isDayOfWeekName(day: string): day is DayOfWeekName {
+  return DAY_OPTIONS.some((item) => item.value === day);
+}
+
+function createPageDraftFromManagedPage(page: FacebookManagedPage): SocialMediaCreatePageDraft {
+  const avatarUrl = page.pageAvatarUrl ?? page.avatarUrl ?? "";
+  return {
+    localId: page.externalPageId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    externalPageId: page.externalPageId,
+    pageName: page.pageName,
+    username: page.username ?? null,
+    pageAvatarUrl: avatarUrl,
+    pageImageUrl: "",
+    pageAccessToken: page.pageAccessToken,
+    status: "Active",
+    schedule: blankScheduleDraft(),
+  };
+}
+
+function defaultCreateForm(businessPartnerId: string): SocialMediaCreateForm {
+  return {
+    businessPartnerId,
+    appId: "",
+    appSecret: "",
+    pages: [],
+  };
+}
+
+function normalizeDay(day: string): string {
+  const normalized = day.trim().toLowerCase();
+  return DAY_OPTIONS.find((item) => item.value.toLowerCase() === normalized || item.shortLabel.toLowerCase() === normalized)?.value ?? day;
+}
+
+function schedulesFromDraft(draft: PageScheduleDraft): BotWorkingScheduleRequest[] {
+  if (draft.mode === "full") {
+    return DAY_OPTIONS.map((day) => ({
+      dayOfWeek: day.value,
+      startTime: FULL_TIME_START,
+      endTime: FULL_TIME_END,
+    }));
+  }
+
+  return draft.workingDays.map((dayOfWeek) => ({
+    dayOfWeek,
+    startTime: draft.startTime,
+    endTime: draft.endTime,
+  }));
+}
+
 function validateCreateUntilStep(form: SocialMediaCreateForm, nextStep: CreateStep): CreateFormErrors {
   if (nextStep === "config") return {};
   if (nextStep === "pages") return validateCreateConfig(form);
-  if (nextStep === "schedule") return { ...validateCreateConfig(form), ...validateCreatePages(form) };
+  if (nextStep === "schedule") return validateCreatePages(form);
   return validateCreateForm(form);
 }
 
 function validateCreateForm(form: SocialMediaCreateForm): CreateFormErrors {
   return {
-    ...validateCreateConfig(form),
     ...validateCreatePages(form),
     ...validateCreateSchedules(form),
   };
@@ -1592,8 +1920,9 @@ function validateCreatePages(form: SocialMediaCreateForm): CreateFormErrors {
     const label = `Page ${index + 1}`;
     if (!page.pageName.trim()) return { pages: `${label}: vui lòng nhập tên page.` };
     if (!page.externalPageId.trim()) return { pages: `${label}: vui lòng nhập ID page.` };
+    if (!page.pageAccessToken) return { pages: `${page.pageName || label}: chưa có quyền truy cập page hợp lềE` };
     const externalPageId = page.externalPageId.trim();
-    if (pageIds.has(externalPageId)) return { pages: `ID page ${externalPageId} bị trùng.` };
+    if (pageIds.has(externalPageId)) return { pages: `ID page ${externalPageId} bềEtrùng.` };
     pageIds.add(externalPageId);
   }
   return form.pages.length > 0 ? {} : { pages: "Vui lòng thêm ít nhất một page." };
@@ -1612,10 +1941,10 @@ function validateScheduleDraft(draft: PageScheduleDraft, pageName: string): stri
     return `${pageName}: vui lòng chọn ít nhất một ngày hoạt động.`;
   }
   if (!isValidScheduleTime(draft.startTime) || !isValidScheduleTime(draft.endTime)) {
-    return `${pageName}: giờ hoạt động phải đúng định dạng HH:mm.`;
+    return `${pageName}: giềEhoạt động phải đúng định dạng HH:mm.`;
   }
   if (draft.startTime === draft.endTime) {
-    return `${pageName}: giờ bắt đầu và giờ kết thúc không được trùng nhau.`;
+    return `${pageName}: giềEbắt đầu và giềEkết thúc không được trùng nhau.`;
   }
   return "";
 }
@@ -1649,6 +1978,16 @@ function facebookOAuthCallbackUrl(): string {
 }
 
 function apiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiRequestError) return errorMessage(error.body, fallback);
+  if (error instanceof ApiRequestError) {
+    const message = errorMessage(error.body, fallback);
+    return message === fallback ? `${fallback} (HTTP ${error.status})` : message;
+  }
   return fallback;
+}
+
+function deleteSocialMediaErrorMessage(error: unknown): string {
+  if (error instanceof ApiRequestError && error.status === 405) {
+    return "Backend hien chua bat DELETE /api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}. Endpoint nay la soft delete integration theo muc 5.8 DOCX.";
+  }
+  return apiErrorMessage(error, "Khong the xoa lien ket mang xa hoi.");
 }

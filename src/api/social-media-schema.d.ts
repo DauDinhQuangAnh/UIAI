@@ -78,10 +78,10 @@ type GetDeletePathItem<TGet = never, TDelete = never> = {
   trace?: never;
 };
 
-type PutDeletePathItem<TPut = never, TDelete = never> = {
+type PutPathItem<TPut = never> = {
   parameters: NoParams;
   put: TPut;
-  delete: TDelete;
+  delete?: never;
   get?: never;
   post?: never;
   patch?: never;
@@ -154,15 +154,11 @@ declare module "./schema" {
         responses: { 204: { headers: { [name: string]: unknown }; content?: never } };
       }
     >;
-    "/api/business-partners/{businessPartnerId}/social-media/pages/{pageId}": PutDeletePathItem<
+    "/api/business-partners/{businessPartnerId}/social-media/pages/{pageId}": PutPathItem<
       {
         parameters: PathParams<{ businessPartnerId: string; pageId: string }>;
         requestBody: { content: { "application/json": UpdateSocialMediaPageRequest } };
         responses: { 200: JsonResponse<UpdateSocialMediaPageResponse> };
-      },
-      {
-        parameters: PathParams<{ businessPartnerId: string; pageId: string }>;
-        responses: { 204: { headers: { [name: string]: unknown }; content?: never } };
       }
     >;
     "/api/business-partners/{businessPartnerId}/social-media/facebook/app-config": AppConfigPathItem<

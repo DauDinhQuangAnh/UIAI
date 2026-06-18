@@ -11,6 +11,7 @@ import { ApiRequestError, errorMessage } from "@/api/errors";
 import {
   clearFacebookOAuthContext,
   readFacebookOAuthContext,
+  storeFacebookOAuthContext,
 } from "@/lib/facebook-oauth-context";
 
 export const Route = createFileRoute("/business/social-media/oauth/callback")({
@@ -55,7 +56,17 @@ function FacebookOAuthCallbackScreen() {
   useEffect(() => {
     if (!callbackData?.success) return;
     const businessPartnerId = callbackData.businessPartnerId || storedContext?.businessPartnerId;
-    clearFacebookOAuthContext();
+    const integrationId = callbackData.integrationId || storedContext?.integrationId;
+    if (businessPartnerId && storedContext?.flow === "add-link") {
+      storeFacebookOAuthContext({
+        ...storedContext,
+        businessPartnerId,
+        integrationId,
+        resumePageSelection: true,
+      });
+    } else {
+      clearFacebookOAuthContext();
+    }
     toast.success("Đã ủy quyền Facebook thành công.");
     navigate({
       to: "/business/social-media",

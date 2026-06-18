@@ -3,6 +3,7 @@ export type FacebookOAuthFlow = "add-link" | "reauthorize";
 export interface FacebookOAuthContext {
   businessPartnerId: string;
   integrationId?: string;
+  appId?: string;
   state?: string;
   flow?: FacebookOAuthFlow;
   resumePageSelection?: boolean;
@@ -25,6 +26,7 @@ export function readFacebookOAuthContext(): FacebookOAuthContext | null {
     return {
       businessPartnerId: parsed.businessPartnerId,
       integrationId: parsed.integrationId,
+      appId: parsed.appId,
       state: parsed.state,
       flow: parsed.flow,
       resumePageSelection: parsed.resumePageSelection,

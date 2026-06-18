@@ -265,23 +265,6 @@ export function useDeleteSocialMediaIntegration() {
   });
 }
 
-export function useDeleteSocialMediaPage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ businessPartnerId, pageId }: { businessPartnerId: string; pageId: string }): Promise<void> => {
-      const { error, response } = await apiClient.DELETE(
-        "/api/business-partners/{businessPartnerId}/social-media/pages/{pageId}",
-        { params: { path: { businessPartnerId, pageId } } },
-      );
-      if (error || !response.ok) throw new ApiRequestError(response.status, error);
-    },
-    onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: socialMediaKeys.integrations(variables.businessPartnerId) });
-      queryClient.invalidateQueries({ queryKey: socialMediaKeys.all });
-    },
-  });
-}
-
 export async function completeFacebookOAuthCallback({
   code,
   state,
