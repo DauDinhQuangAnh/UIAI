@@ -16,7 +16,7 @@ function AnalyticsScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
-      <h1 className="font-display text-3xl font-semibold text-text-primary">Phân tích</h1>
+      <h1 className="font-display text-3xl font-semibold text-text-primary">Analytics</h1>
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -26,7 +26,7 @@ function AnalyticsScreen() {
         </div>
       ) : isError || !stats ? (
         <EmptyState
-          title="Không thể tải phân tích"
+          title="Không thể tải Analytics"
           description="Vui lòng thử lại."
           action={
             <Button variant="secondary" onClick={() => refetch()}>
@@ -37,12 +37,12 @@ function AnalyticsScreen() {
       ) : (
         <div className="flex flex-col gap-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <KpiCard label="Cuộc trò chuyện" value={stats.conversations} icon={ChatsCircle} />
-            <KpiCard label="Tin nhắn (30 ngày)" value={stats.messages_30d} icon={ChatText} />
-            <KpiCard label="Thực thể KG" value={stats.kg_entities} icon={Graph} />
-            <KpiCard label="Quan hệ KG" value={stats.kg_relations} icon={LinkSimple} />
+            <KpiCard label="Conversations" value={stats.conversations} icon={ChatsCircle} />
+            <KpiCard label="Messages (30 ngày)" value={stats.messages_30d} icon={ChatText} />
+            <KpiCard label="KG entities" value={stats.kg_entities} icon={Graph} />
+            <KpiCard label="KG relations" value={stats.kg_relations} icon={LinkSimple} />
             <KpiCard
-              label="Chờ loại bỏ trùng"
+              label="Pending dedupe"
               value={stats.pending_dedup}
               icon={GitMerge}
               hint={stats.pending_dedup ? "Ứng viên đang chờ xem xét" : undefined}
@@ -64,10 +64,10 @@ function DocumentsByStatus({ byStatus }: { byStatus: Record<string, number> | un
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 text-text-secondary">
         <FileText className="size-4" aria-hidden />
-        <h2 className="text-sm font-semibold">Tài liệu theo trạng thái</h2>
+        <h2 className="text-sm font-semibold">Documents by status</h2>
       </div>
       {entries.length === 0 ? (
-        <p className="text-sm text-text-dim">Chưa có tài liệu nào.</p>
+        <p className="text-sm text-text-dim">Chưa có Documents nào.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {entries.map(([status, count]) => (

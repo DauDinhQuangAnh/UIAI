@@ -13,7 +13,7 @@ export function ErrorFallback({ reset }: { reset?: () => void }) {
       <div className="flex flex-col gap-1">
         <h1 className="font-display text-2xl font-semibold text-text-primary">Đã xảy ra lỗi</h1>
         <p className="max-w-md text-sm text-text-secondary">
-          Đã xảy ra lỗi không mong muốn. Bạn có thể thử lại hoặc quay về danh sách tác nhân.
+          Đã xảy ra lỗi không mong muốn. Bạn có thể thử lại hoặc quay về danh sách Agents.
         </p>
       </div>
       <div className="flex gap-3">
@@ -23,7 +23,7 @@ export function ErrorFallback({ reset }: { reset?: () => void }) {
           </Button>
         )}
         <Button asChild>
-          <Link to="/agents">Quay lại danh sách tác nhân</Link>
+          <Link to="/agents">Quay lại danh sách Agents</Link>
         </Button>
       </div>
     </div>
@@ -44,7 +44,7 @@ export function NotFound() {
         </p>
       </div>
       <Button asChild>
-        <Link to="/agents">Quay lại danh sách tác nhân</Link>
+        <Link to="/agents">Quay lại danh sách Agents</Link>
       </Button>
     </div>
   );

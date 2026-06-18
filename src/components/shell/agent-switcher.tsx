@@ -27,12 +27,12 @@ export function AgentSwitcher() {
       <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface px-3 text-sm text-text-primary shadow-xs focus-visible:outline-none focus-visible:shadow-focus">
         <Robot className="size-4 text-brand-500" aria-hidden />
         <span className="max-w-[12rem] truncate font-medium">
-          {current?.display_name || current?.agent_ref || "Chọn tác nhân"}
+          {current?.display_name || current?.agent_ref || "Select Agent"}
         </span>
         <CaretUpDown className="size-4 text-text-dim" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>Đổi tác nhân</DropdownMenuLabel>
+        <DropdownMenuLabel>Switch Agent</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {isLoading && <div className="px-2 py-1.5 text-sm text-text-dim">Đang tải…</div>}
         {agents.map((a) => (

@@ -67,7 +67,7 @@ export function DocumentRow({
           <Button
             variant="ghost"
             size="icon"
-            aria-label={`Xóa ${doc.title || "tài liệu"}`}
+            aria-label={`Xóa ${doc.title || "Document"}`}
             onClick={() => onRequestDelete(doc)}
           >
             <Trash className="size-4 text-danger-base" aria-hidden />

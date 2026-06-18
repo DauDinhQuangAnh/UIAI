@@ -101,7 +101,7 @@ export function KgGraph({ agentId }: { agentId: string }) {
         <span className="flex size-12 items-center justify-center rounded-pill bg-danger-bg text-danger-fg">
           <Warning className="size-6" aria-hidden />
         </span>
-        <p className="text-sm text-text-secondary">Không thể tải đồ thị.</p>
+        <p className="text-sm text-text-secondary">Không thể tải Graph.</p>
         <button className="text-sm font-medium text-brand-700" onClick={() => query.refetch()}>
           Thử lại
         </button>
@@ -112,8 +112,8 @@ export function KgGraph({ agentId }: { agentId: string }) {
     return (
       <EmptyState
         icon={GraphIcon}
-        title="Chưa có đồ thị nào"
-        description="Bật KG grounding cho tác nhân này và nhập tài liệu để tạo đồ thị. Việc bật chỉ ảnh hưởng đến các tài liệu mới được nạp vào hệ thống."
+        title="Chưa có Graph nào"
+        description="Bật KG grounding cho Agent này và nhập Documents để tạo Graph. Việc bật chỉ ảnh hưởng đến các Documents mới được nạp vào hệ thống."
       />
     );
   }

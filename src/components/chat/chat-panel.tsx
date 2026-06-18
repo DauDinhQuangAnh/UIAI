@@ -106,7 +106,7 @@ export function ChatPanel({ agentId }: { agentId: string }) {
             Khu thử nghiệm
           </span>
           <span className="text-xs text-text-dim">
-            Dùng cấu hình đã lưu của tác nhân · không hiển thị trong Cuộc hội thoại
+            Dùng cấu hình đã lưu của Agent · không hiển thị trong Conversations
           </span>
         </div>
         <Button variant="secondary" size="sm" onClick={handleReset} loading={reset.isPending} disabled={pending}>
@@ -118,7 +118,7 @@ export function ChatPanel({ agentId }: { agentId: string }) {
         {!showThread ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-text-secondary">
             <Flask className="size-8 text-text-dim" aria-hidden />
-            <p className="text-sm">Gửi một tin nhắn để thử tác nhân với cấu hình hiện tại.</p>
+            <p className="text-sm">Gửi một tin nhắn để thử Agent với cấu hình hiện tại.</p>
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-3xl flex-col">

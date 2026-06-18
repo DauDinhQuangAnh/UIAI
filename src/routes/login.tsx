@@ -64,10 +64,10 @@ function LoginScreen() {
         </div>
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-4xl font-bold leading-tight">
-            Trợ lý khách hàng của bạn, dựa trên tri thức riêng của bạn.
+            Trợ lý khách hàng của bạn, dựa trên Knowledge riêng của bạn.
           </h1>
           <p className="max-w-md text-white/80">
-            Quản lý tác nhân, tài liệu và đồ thị tri thức để tạo phản hồi có nền tảng.
+            Quản lý Agents, Documents và Knowledge Graph để tạo phản hồi có nền tảng.
           </p>
         </div>
         <p className="text-sm text-white/60">Trợ lý hỗ trợ khách hàng</p>

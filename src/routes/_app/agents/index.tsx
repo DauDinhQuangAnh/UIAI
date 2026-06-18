@@ -33,11 +33,11 @@ function AgentsList() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 sm:p-8">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl font-semibold text-text-primary">Tác nhân</h1>
+        <h1 className="font-display text-3xl font-semibold text-text-primary">Agents</h1>
         {admin && (
           <Button asChild>
             <Link to="/agents/new">
-              <Plus className="size-4" aria-hidden /> Tạo tác nhân
+              <Plus className="size-4" aria-hidden /> Create Agent
             </Link>
           </Button>
         )}
@@ -55,17 +55,17 @@ function AgentsList() {
         empty={
           <EmptyState
             icon={Robot}
-            title="Chưa có tác nhân nào"
+            title="Chưa có Agent nào"
             description={
               admin
-                ? "Tạo tác nhân đầu tiên để bắt đầu xây dựng phản hồi dựa trên tri thức của bạn."
-                : "Quản trị viên chưa tạo tác nhân nào."
+                ? "Tạo Agent đầu tiên để bắt đầu xây dựng phản hồi dựa trên Knowledge của bạn."
+                : "Quản trị viên chưa tạo Agent nào."
             }
             action={
               admin ? (
                 <Button asChild>
                   <Link to="/agents/new">
-                    <Plus className="size-4" aria-hidden /> Tạo tác nhân đầu tiên
+                    <Plus className="size-4" aria-hidden /> Create first Agent
                   </Link>
                 </Button>
               ) : undefined
@@ -77,8 +77,8 @@ function AgentsList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tác nhân</TableHead>
-                <TableHead>Mã tham chiếu</TableHead>
+                <TableHead>Agent</TableHead>
+                <TableHead>Reference code</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Ngày tạo</TableHead>
               </TableRow>

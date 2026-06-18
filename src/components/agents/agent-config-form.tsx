@@ -83,7 +83,7 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
         // Flat {code,message} body -> form-level message keyed by code. The KG
         // infra-off case is the canonical instance: attach to the toggle inline.
         if (err instanceof ApiRequestError && err.code === "kg_infra_unavailable") {
-          setKgError("Không thể sử dụng grounding đồ thị tri thức trong workspace này lúc này.");
+          setKgError("Không thể sử dụng Knowledge Graph grounding trong workspace này lúc này.");
         } else {
           toast.error(err instanceof ApiRequestError ? `Không thể lưu (${err.code ?? "error"}).` : "Không thể lưu.");
         }
@@ -98,10 +98,10 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
           <CardTitle>Chung</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <TextField id="display_name" label="Tên hiển thị" disabled={readOnly} error={errors.display_name?.message} {...register("display_name")} />
-          <TextField id="model" label="Mô hình" disabled={readOnly} error={errors.model?.message} {...register("model")} />
+          <TextField id="display_name" label="Display name" disabled={readOnly} error={errors.display_name?.message} {...register("display_name")} />
+          <TextField id="model" label="Model" disabled={readOnly} error={errors.model?.message} {...register("model")} />
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="system_prompt">Prompt hệ thống</Label>
+            <Label htmlFor="system_prompt">System prompt</Label>
             <textarea
               id="system_prompt"
               rows={5}
@@ -138,8 +138,8 @@ export function AgentConfigForm({ agent, readOnly }: { agent: Agent; readOnly: b
 
       <Card>
         <CardHeader>
-          <CardTitle>Đồ thị tri thức</CardTitle>
-          <CardDescription>Dùng đồ thị thực thể để làm nền cho phản hồi.</CardDescription>
+          <CardTitle>Knowledge Graph</CardTitle>
+          <CardDescription>Dùng entity graph để làm nền cho phản hồi.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <Controller

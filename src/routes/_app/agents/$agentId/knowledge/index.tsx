@@ -43,9 +43,9 @@ function KnowledgeScreen() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl font-semibold text-text-primary">Tri thức</h1>
+        <h1 className="font-display text-3xl font-semibold text-text-primary">Knowledge</h1>
         <p className="text-sm text-text-secondary">
-          Xem lại các cặp thực thể mà đồ thị đánh dấu là có thể trùng lặp.
+          Xem lại các cặp thực thể mà Graph đánh dấu là có thể trùng lặp.
         </p>
         {!admin && <p className="text-sm text-text-dim">Chỉ đọc — cần vai trò quản trị để hợp nhất hoặc bỏ qua.</p>}
       </div>
@@ -92,7 +92,7 @@ function KnowledgeScreen() {
             }
             description={
               status === "pending"
-                ? "Đồ thị chưa chỉ ra bất kỳ thực thể trùng lặp nào cần xem xét."
+                ? "Graph chưa chỉ ra bất kỳ thực thể trùng lặp nào cần xem xét."
                 : "Chưa có nội dung nào ở đây."
             }
           />

@@ -33,11 +33,11 @@ function AgentDetail() {
     return (
       <div className="mx-auto w-full max-w-3xl p-6 sm:p-8">
         <EmptyState
-          title={notFound ? "Tác nhân không tồn tại" : "Không thể tải thông tin tác nhân"}
-          description={notFound ? "Có thể tác nhân đã bị xóa hoặc bạn không có quyền truy cập." : "Vui lòng thử lại."}
+          title={notFound ? "Agent không tồn tại" : "Không thể tải thông tin Agent"}
+          description={notFound ? "Có thể Agent đã bị xóa hoặc bạn không có quyền truy cập." : "Vui lòng thử lại."}
           action={
             <Button asChild variant="secondary">
-              <Link to="/agents">Quay lại danh sách tác nhân</Link>
+              <Link to="/agents">Quay lại danh sách Agents</Link>
             </Button>
           }
         />
@@ -49,7 +49,7 @@ function AgentDetail() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 sm:p-8">
       <div className="flex flex-col gap-1">
         <Link to="/agents" className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
-          <ArrowLeft className="size-4" aria-hidden /> Tác nhân
+          <ArrowLeft className="size-4" aria-hidden /> Agents
         </Link>
         <div className="flex items-center justify-between">
           <h1 className="font-display text-3xl font-semibold text-text-primary">

@@ -51,13 +51,13 @@ const PERMISSION_SECTION = {
 const BACKEND_PAGE_OVERRIDES: Record<string, BackendPageOverride> = {
   "/business-partner/profile": {
     icon: "briefcase",
-    label: "Thông tin doanh nghiệp",
+    label: "Business Information",
     sectionCode: "BUSINESS_PARTNER",
     sectionLabel: "Business Management",
   },
   "/social-media/facebook": {
     icon: "link",
-    label: "Liên kết mạng xã hội",
+    label: "Social Media",
     sectionCode: "BUSINESS_PARTNER",
     sectionLabel: "Business Management",
   },
@@ -155,13 +155,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <NavItem
             to="/business/information"
             icon={Buildings}
-            label="Thông tin doanh nghiệp"
+            label="Business Information"
             onNavigate={onNavigate}
           />
           <NavItem
             to="/business/social-media"
             icon={LinkSimple}
-            label="Liên kết mạng xã hội"
+            label="Social Media"
             onNavigate={onNavigate}
           />
         </NavSection>
@@ -169,13 +169,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <NavSection label="Agents">
         <NavItem to="/agents" icon={Robot} label="Agents" onNavigate={onNavigate} />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId" icon={SlidersHorizontal} label="Cấu hình" onNavigate={onNavigate} exact />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId/documents" icon={FileText} label="Tài liệu" onNavigate={onNavigate} />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId/knowledge" icon={Graph} label="Tri thức" onNavigate={onNavigate} />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId/graph" icon={ShareNetwork} label="Đồ thị" onNavigate={onNavigate} />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId/chat" icon={ChatTeardropDots} label="Trò chuyện" onNavigate={onNavigate} />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId/conversations" icon={ChatsCircle} label="Cuộc hội thoại" onNavigate={onNavigate} />
-        <AgentNavItem agentId={agentId} to="/agents/$agentId/analytics" icon={ChartBar} label="Phân tích" onNavigate={onNavigate} />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId" icon={SlidersHorizontal} label="Settings" onNavigate={onNavigate} exact />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId/documents" icon={FileText} label="Documents" onNavigate={onNavigate} />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId/knowledge" icon={Graph} label="Knowledge" onNavigate={onNavigate} />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId/graph" icon={ShareNetwork} label="Graph" onNavigate={onNavigate} />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId/chat" icon={ChatTeardropDots} label="Chat" onNavigate={onNavigate} />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId/conversations" icon={ChatsCircle} label="Conversations" onNavigate={onNavigate} />
+        <AgentNavItem agentId={agentId} to="/agents/$agentId/analytics" icon={ChartBar} label="Analytics" onNavigate={onNavigate} />
       </NavSection>
 
       </div>
@@ -291,13 +291,13 @@ function shouldOmitBackendPage(page: AuthMenuPage): boolean {
 function BackendNavItem({ page, onNavigate }: { page: AuthMenuPage; onNavigate?: () => void }) {
   const IconCmp = iconForPage(page);
   const route = routeForBackendPage(page.route);
-  const label = page.pageName ?? page.pageCode ?? "Trang";
+  const label = page.pageName ?? page.pageCode ?? "Page";
 
   if (!route) {
     return (
       <span
         className={cn(linkBase, "cursor-not-allowed text-text-dim opacity-60")}
-        title={`Chưa có màn hình FE cho route ${page.route ?? ""}`.trim()}
+        title={`Chưa có FE screen cho route ${page.route ?? ""}`.trim()}
       >
         <IconCmp className="size-5" aria-hidden />
         {label}
@@ -359,7 +359,7 @@ function AgentNavItem({
     return (
       <span
         className={cn(linkBase, "cursor-not-allowed text-text-dim opacity-60")}
-        title="Chọn hoặc tạo tác nhân trước"
+        title="Select or create an Agent first"
       >
         <IconCmp className="size-5" aria-hidden />
         {label}

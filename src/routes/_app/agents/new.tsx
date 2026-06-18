@@ -42,10 +42,10 @@ function CreateAgent() {
       <div className="mx-auto w-full max-w-xl p-6 sm:p-8">
         <EmptyState
           title="Chỉ dành cho quản trị viên"
-          description="Cần vai trò quản trị để tạo tác nhân."
+          description="Cần vai trò quản trị để tạo Agent."
           action={
             <Button asChild variant="secondary">
-              <Link to="/agents">Quay lại danh sách tác nhân</Link>
+              <Link to="/agents">Quay lại danh sách Agents</Link>
             </Button>
           }
         />
@@ -63,11 +63,11 @@ function CreateAgent() {
           // else is form-level keyed by error.code — the flat {code,message} body
           // has no field array, so 422s are never field-attributed.
           if (err instanceof ApiRequestError && err.status === 409) {
-            setError("agent_ref", { message: "Tác nhân với mã tham chiếu này đã tồn tại." });
+            setError("agent_ref", { message: "Agent với mã tham chiếu này đã tồn tại." });
           } else if (err instanceof ApiRequestError && err.status === 422) {
-            setError("root", { message: `Không thể tạo tác nhân (${err.code ?? "validation failed"}).` });
+            setError("root", { message: `Không thể tạo Agent (${err.code ?? "validation failed"}).` });
           } else {
-            setError("root", { message: "Không thể tạo tác nhân. Vui lòng thử lại." });
+            setError("root", { message: "Không thể tạo Agent. Vui lòng thử lại." });
           }
         },
       },
@@ -79,11 +79,11 @@ function CreateAgent() {
       <Link to="/agents" className="flex w-fit items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
         <ArrowLeft className="size-4" aria-hidden /> Agents
       </Link>
-      <h1 className="font-display text-3xl font-semibold text-text-primary">Tạo tác nhân</h1>
+      <h1 className="font-display text-3xl font-semibold text-text-primary">Create Agent</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Tác nhân mới</CardTitle>
+          <CardTitle>New Agent</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
@@ -92,17 +92,17 @@ function CreateAgent() {
                 {errors.root.message}
               </p>
             )}
-            <Field id="agent_ref" label="Mã tham chiếu tác nhân" hint="Mã ổn định, ví dụ acme-support" error={errors.agent_ref?.message}>
+            <Field id="agent_ref" label="Agent reference" hint="Mã ổn định, ví dụ acme-support" error={errors.agent_ref?.message}>
               <Input id="agent_ref" placeholder="acme-support" className="font-mono" invalid={!!errors.agent_ref} {...register("agent_ref")} />
             </Field>
-            <Field id="display_name" label="Tên hiển thị" error={errors.display_name?.message}>
+            <Field id="display_name" label="Display name" error={errors.display_name?.message}>
               <Input id="display_name" placeholder="Acme Support" invalid={!!errors.display_name} {...register("display_name")} />
             </Field>
-            <Field id="model" label="Mô hình" error={errors.model?.message}>
+            <Field id="model" label="Model" error={errors.model?.message}>
               <Input id="model" placeholder="gemini-2.5-flash" invalid={!!errors.model} {...register("model")} />
             </Field>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="system_prompt">Prompt hệ thống</Label>
+              <Label htmlFor="system_prompt">System prompt</Label>
               <textarea
                 id="system_prompt"
                 rows={4}
@@ -115,7 +115,7 @@ function CreateAgent() {
                 <Link to="/agents">Hủy</Link>
               </Button>
               <Button type="submit" loading={create.isPending}>
-                Tạo tác nhân
+                Create Agent
               </Button>
             </div>
           </form>

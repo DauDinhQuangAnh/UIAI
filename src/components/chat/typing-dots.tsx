@@ -4,7 +4,7 @@
 // to screen readers.
 export function TypingDots() {
   return (
-    <span role="status" aria-label="Tác nhân đang nhập" className="inline-flex items-center gap-1 py-1">
+    <span role="status" aria-label="Agent đang nhập" className="inline-flex items-center gap-1 py-1">
       {["0ms", "150ms", "300ms"].map((delay) => (
         <span
           key={delay}

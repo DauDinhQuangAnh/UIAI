@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 export function ChatComposer({
   onSend,
   disabled = false,
-  placeholder = "Nhắn tin với tác nhân này…",
+  placeholder = "Nhắn tin với Agent này...",
 }: {
   onSend: (text: string) => void;
   disabled?: boolean;

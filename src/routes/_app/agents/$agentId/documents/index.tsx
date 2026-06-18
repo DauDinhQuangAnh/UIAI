@@ -65,7 +65,7 @@ function DocumentsScreen() {
       onError: (err) => {
         if (!(err instanceof ApiRequestError)) return setUploadError("Tải lên thất bại. Vui lòng thử lại.");
         if (err.status === 400) setUploadError("Loại hoặc kích thước tệp không được hỗ trợ. Vui lòng kiểm tra và thử lại.");
-        else if (err.status === 409) setUploadError("Tài liệu này đã được tải lên trước đó.");
+        else if (err.status === 409) setUploadError("Document này đã được tải lên trước đó.");
         else if (err.status === 503) setUnavailable(true);
         else setUploadError("Tải lên thất bại. Vui lòng thử lại.");
       },
@@ -79,18 +79,18 @@ function DocumentsScreen() {
       onSuccess: () => {
         removeOptimistic(id); // stops that doc's poller (row unmounts)
         setDeleteTarget(null);
-        toast.success("Tài liệu đã bị xóa.");
+        toast.success("Document đã bị xóa.");
       },
       onError: () => {
         setDeleteTarget(null);
-        toast.error("Không thể xóa tài liệu.");
+        toast.error("Không thể xóa Document.");
       },
     });
   };
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
-      <h1 className="font-display text-3xl font-semibold text-text-primary">Tài liệu</h1>
+      <h1 className="font-display text-3xl font-semibold text-text-primary">Documents</h1>
 
       {unavailable && (
         <div className="flex items-center gap-2 rounded-md border border-warning-border bg-warning-bg px-3 py-2 text-sm text-warning-fg" role="alert">
@@ -113,8 +113,8 @@ function DocumentsScreen() {
         empty={
           <EmptyState
             icon={FileText}
-            title="Chưa có tài liệu nào"
-            description={admin ? "Tải lên một tệp để làm nền cho phản hồi của tác nhân." : "Chưa có tài liệu nào được tải lên."}
+            title="Chưa có Document nào"
+            description={admin ? "Tải lên một tệp để làm nền cho phản hồi của Agent." : "Chưa có Document nào được tải lên."}
           />
         }
       >
@@ -148,9 +148,9 @@ function DocumentsScreen() {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-          <DialogTitle>Xóa tài liệu</DialogTitle>
+          <DialogTitle>Xóa Document</DialogTitle>
           <DialogDescription>
-              Xóa “{deleteTarget?.title || "tài liệu này"}”? Hành động này không thể hoàn tác; để xử lý lại, bạn cần tải tệp lên lại.
+              Xóa “{deleteTarget?.title || "Document này"}”? Hành động này không thể hoàn tác; để xử lý lại, bạn cần tải tệp lên lại.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
