@@ -13,6 +13,11 @@ import {
   statusParam,
   type StatusFilterValue,
 } from "@/components/permissions/permission-ui";
+import {
+  nextDisplayOrder,
+  validateDuplicateDisplayOrder,
+  validatePositiveIntegerDisplayOrder,
+} from "@/components/permissions/display-order";
 import { FeatureDialog, type FeatureForm } from "@/components/permissions/features/feature-dialog";
 import { FeatureTable } from "@/components/permissions/features/feature-table";
 import {
@@ -115,7 +120,7 @@ function FeatureConfigScreen() {
             size="sm"
             disabled={!can(PERMISSIONS.features.create)}
             onClick={() => {
-              setForm({ ...EMPTY_FORM, displayOrder: nextFeatureDisplayOrder(allFeatureItems) });
+              setForm({ ...EMPTY_FORM, displayOrder: nextDisplayOrder(allFeatureItems) });
               setAddOrderUnlocked(false);
               setAddOpen(true);
             }}
@@ -235,12 +240,8 @@ function payloadFromForm(form: FeatureForm) {
   };
 }
 
-function nextFeatureDisplayOrder(features: Feature[]): number {
-  return Math.max(0, ...features.map((feature) => feature.displayOrder ?? 0)) + 1;
-}
-
 function displayOrderError(value: number, features: Feature[], currentFeatureId?: string): string | undefined {
-  if (!Number.isInteger(value) || value < 1) return "Thứ tự phải là số nguyên dương.";
-  const duplicate = features.some((feature) => feature.id !== currentFeatureId && (feature.displayOrder ?? 0) === value);
+  if (!validatePositiveIntegerDisplayOrder(value)) return "Thứ tự phải là số nguyên dương.";
+  const duplicate = validateDuplicateDisplayOrder(features, value, currentFeatureId);
   return duplicate ? "Thứ tự này đã được dùng bởi feature khác." : undefined;
 }

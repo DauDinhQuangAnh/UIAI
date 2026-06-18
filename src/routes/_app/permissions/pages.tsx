@@ -13,6 +13,11 @@ import {
   statusParam,
   type StatusFilterValue,
 } from "@/components/permissions/permission-ui";
+import {
+  nextDisplayOrderWithinGroup,
+  validateDuplicateDisplayOrderWithinGroup,
+  validatePositiveIntegerDisplayOrder,
+} from "@/components/permissions/display-order";
 import { FeatureSelect, PageDialog, type PageForm } from "@/components/permissions/pages/page-dialog";
 import { PageTable } from "@/components/permissions/pages/page-table";
 import { usePermissionFeatures } from "@/api/hooks/permission-features";
@@ -73,7 +78,10 @@ function PageConfigScreen() {
 
   useEffect(() => {
     if (!addOpen || addOrderUnlocked || !form.featureId) return;
-    setForm((current) => ({ ...current, displayOrder: nextPageDisplayOrder(allPageItems, current.featureId) }));
+    setForm((current) => ({
+      ...current,
+      displayOrder: nextDisplayOrderWithinGroup(allPageItems, current.featureId, (page) => page.featureId),
+    }));
   }, [addOpen, addOrderUnlocked, allPageItems, form.featureId]);
 
   const submitAdd = (event: FormEvent<HTMLFormElement>) => {
@@ -254,14 +262,15 @@ function payloadFromForm(form: PageForm) {
   };
 }
 
-function nextPageDisplayOrder(pages: Page[], featureId: string): number {
-  const pagesInFeature = pages.filter((page) => page.featureId === featureId);
-  return Math.max(0, ...pagesInFeature.map((page) => page.displayOrder ?? 0)) + 1;
-}
-
 function pageDisplayOrderError(value: number, pages: Page[], featureId: string, currentPageId?: string): string | undefined {
-  if (!Number.isInteger(value) || value < 1) return "Thứ tự phải là số nguyên dương.";
+  if (!validatePositiveIntegerDisplayOrder(value)) return "Thứ tự phải là số nguyên dương.";
   if (!featureId) return undefined;
-  const duplicate = pages.some((page) => page.id !== currentPageId && page.featureId === featureId && (page.displayOrder ?? 0) === value);
+  const duplicate = validateDuplicateDisplayOrderWithinGroup(
+    pages,
+    featureId,
+    value,
+    currentPageId,
+    (page) => page.featureId,
+  );
   return duplicate ? "Thứ tự này đã được dùng bởi page khác trong feature này." : undefined;
 }
