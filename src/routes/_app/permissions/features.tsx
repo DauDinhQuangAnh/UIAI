@@ -1,35 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type FormEvent, useMemo, useState } from "react";
-import { PencilSimple, PuzzlePiece, Plus } from "@phosphor-icons/react";
+import { PuzzlePiece, Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/common/empty-state";
 import {
-  ActiveBadge,
   DeletePermissionDialog,
-  PermissionActionButtons,
-  PermissionDataTable,
-  PermissionField,
-  PermissionHeadCell,
   PermissionPageShell,
   PermissionToolbar,
-  SystemBadge,
   apiErrorMessage,
   cleanOptional,
   statusParam,
   type StatusFilterValue,
 } from "@/components/permissions/permission-ui";
+import { FeatureDialog, type FeatureForm } from "@/components/permissions/features/feature-dialog";
+import { FeatureTable } from "@/components/permissions/features/feature-table";
 import {
   useCreatePermissionFeature,
   useDeletePermissionFeature,
@@ -39,14 +24,6 @@ import {
 import { useSystemModuleDefinitions } from "@/api/hooks/system-permission-definitions";
 import type { Feature } from "@/api/permission-types";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
-
-interface FeatureForm {
-  systemModuleDefinitionId: string;
-  name: string;
-  description: string;
-  displayOrder: number;
-  isActive: boolean;
-}
 
 const EMPTY_FORM: FeatureForm = {
   systemModuleDefinitionId: "",
@@ -166,59 +143,17 @@ function FeatureConfigScreen() {
         ) : items.length === 0 ? (
           <EmptyState icon={PuzzlePiece} title="Chưa có feature" description="Tạo feature từ system module definition để bắt đầu cấu hình menu." />
         ) : (
-          <PermissionDataTable>
-            <TableHeader className="bg-brand-700">
-              <TableRow className="hover:bg-brand-700">
-                <PermissionHeadCell className="w-[18%]">Tên</PermissionHeadCell>
-                <PermissionHeadCell className="w-[16%]">Mã</PermissionHeadCell>
-                <PermissionHeadCell>Mô tả</PermissionHeadCell>
-                <PermissionHeadCell className="w-[10%]">Thứ tự</PermissionHeadCell>
-                <PermissionHeadCell className="w-[12%]">Loại</PermissionHeadCell>
-                <PermissionHeadCell className="w-[12%]">Trạng thái</PermissionHeadCell>
-                <PermissionHeadCell className="w-24 text-right">Thao tác</PermissionHeadCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((feature) => (
-                <TableRow key={feature.id}>
-                  <TableCell className="font-medium text-text-primary">{feature.name}</TableCell>
-                  <TableCell className="font-mono text-xs text-text-secondary">{feature.code}</TableCell>
-                  <TableCell className="text-sm text-text-secondary">{feature.description || "-"}</TableCell>
-                  <TableCell className="font-mono text-sm">{feature.displayOrder}</TableCell>
-                  <TableCell><SystemBadge system={feature.isSystemDefined} /></TableCell>
-                  <TableCell><ActiveBadge active={feature.isActive} /></TableCell>
-                  <TableCell>
-                    <PermissionActionButtons
-                      editLabel={`Sửa ${feature.name}`}
-                      deleteLabel={`Xóa ${feature.name}`}
-                      editDisabled={!can(PERMISSIONS.features.update)}
-                      deleteDisabled={!can(PERMISSIONS.features.delete)}
-                      editTitle={
-                        !can(PERMISSIONS.features.update)
-                          ? "Bạn không có quyền cập nhật"
-                          : feature.isSystemDefined
-                            ? "Feature hệ thống có thể được backend bảo vệ."
-                            : undefined
-                      }
-                      deleteTitle={
-                        !can(PERMISSIONS.features.delete)
-                          ? "Bạn không có quyền xóa"
-                          : feature.isSystemDefined
-                            ? "Feature hệ thống có thể được backend bảo vệ."
-                            : undefined
-                      }
-                      onEdit={() => {
-                        setEditTarget(feature);
-                        setEditForm(formFromFeature(feature));
-                        setEditOrderUnlocked(false);
-                      }}
-                      onDelete={() => setDeleteTarget(feature)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </PermissionDataTable>
+          <FeatureTable
+            items={items}
+            canUpdate={can(PERMISSIONS.features.update)}
+            canDelete={can(PERMISSIONS.features.delete)}
+            onEdit={(feature) => {
+              setEditTarget(feature);
+              setEditForm(formFromFeature(feature));
+              setEditOrderUnlocked(false);
+            }}
+            onDelete={setDeleteTarget}
+          />
         )}
       </div>
 
@@ -278,117 +213,6 @@ function FeatureConfigScreen() {
         onConfirm={confirmDelete}
       />
     </PermissionPageShell>
-  );
-}
-
-function FeatureDialog({
-  open,
-  title,
-  description,
-  form,
-  modules,
-  loading,
-  submitLabel,
-  showStatus,
-  orderUnlocked,
-  orderError,
-  onUnlockOrder,
-  onOpenChange,
-  onFormChange,
-  onSubmit,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  form: FeatureForm;
-  modules: Array<{ id: string; name: string; code: string; isActive: boolean }>;
-  loading?: boolean;
-  submitLabel: string;
-  showStatus?: boolean;
-  orderUnlocked: boolean;
-  orderError?: string;
-  onUnlockOrder: () => void;
-  onOpenChange: (open: boolean) => void;
-  onFormChange: (form: FeatureForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
-          <PermissionField label="Module" htmlFor="feature_module" required>
-            <Select
-              value={form.systemModuleDefinitionId}
-              disabled={loading}
-              onValueChange={(value) => {
-                const module = modules.find((item) => item.id === value);
-                onFormChange({ ...form, systemModuleDefinitionId: value, name: form.name || module?.name || "" });
-              }}
-            >
-              <SelectTrigger id="feature_module">
-                <SelectValue placeholder="Chọn module" />
-              </SelectTrigger>
-              <SelectContent>
-                {modules.filter((item) => item.isActive).map((item) => (
-                  <SelectItem key={item.id} value={item.id}>{item.name} ({item.code})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </PermissionField>
-          <PermissionField label="Tên feature" htmlFor="feature_name" required>
-            <Input id="feature_name" value={form.name} disabled={loading} onChange={(event) => onFormChange({ ...form, name: event.target.value })} required />
-          </PermissionField>
-          <PermissionField label="Mô tả" htmlFor="feature_description">
-            <Input id="feature_description" value={form.description} disabled={loading} onChange={(event) => onFormChange({ ...form, description: event.target.value })} />
-          </PermissionField>
-          <PermissionField label="Thứ tự" htmlFor="feature_order" required>
-            <div className="grid gap-1">
-              <div className="grid grid-cols-[1fr_auto] gap-2">
-                <Input
-                  id="feature_order"
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={form.displayOrder}
-                  readOnly={!orderUnlocked}
-                  disabled={loading}
-                  invalid={!!orderError}
-                  onChange={(event) => onFormChange({ ...form, displayOrder: Number(event.target.value) })}
-                  required
-                />
-                <Button type="button" variant="secondary" size="sm" disabled={loading || orderUnlocked} onClick={onUnlockOrder}>
-                  <PencilSimple className="size-4" aria-hidden />
-                  Chỉnh
-                </Button>
-              </div>
-              <p className="text-xs text-text-secondary">
-                Hệ thống tự đề xuất thứ tự tiếp theo. Bấm Chỉnh nếu muốn thay đổi.
-              </p>
-              {orderError && <p className="text-xs font-medium text-danger-fg">{orderError}</p>}
-            </div>
-          </PermissionField>
-          {showStatus && (
-            <PermissionField label="Trạng thái" htmlFor="feature_status">
-              <Select value={String(form.isActive)} disabled={loading} onValueChange={(value) => onFormChange({ ...form, isActive: value === "true" })}>
-                <SelectTrigger id="feature_status"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Hoạt động</SelectItem>
-                  <SelectItem value="false">Không hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
-            </PermissionField>
-          )}
-          <DialogFooter className="mt-3">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Hủy</Button>
-            <Button type="submit" loading={loading} disabled={!!orderError}>{submitLabel}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 

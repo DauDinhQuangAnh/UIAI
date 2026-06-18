@@ -3,33 +3,18 @@ import { type FormEvent, useMemo, useState } from "react";
 import { Lightning, Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/common/empty-state";
 import {
-  ActiveBadge,
   DeletePermissionDialog,
-  PermissionActionButtons,
-  PermissionDataTable,
-  PermissionField,
-  PermissionHeadCell,
   PermissionPageShell,
   PermissionToolbar,
-  SystemBadge,
   apiErrorMessage,
   cleanOptional,
   statusParam,
   type StatusFilterValue,
 } from "@/components/permissions/permission-ui";
+import { ActionDialog, type ActionForm } from "@/components/permissions/actions/action-dialog";
+import { ActionTable } from "@/components/permissions/actions/action-table";
 import {
   useCreatePermissionAction,
   useDeletePermissionAction,
@@ -37,15 +22,8 @@ import {
   useUpdatePermissionAction,
 } from "@/api/hooks/permission-actions";
 import { useSystemActionDefinitions } from "@/api/hooks/system-permission-definitions";
-import type { PermissionAction, SystemActionDefinition } from "@/api/permission-types";
+import type { PermissionAction } from "@/api/permission-types";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
-
-interface ActionForm {
-  systemActionDefinitionId: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-}
 
 const EMPTY_FORM: ActionForm = {
   systemActionDefinitionId: "",
@@ -136,56 +114,16 @@ function ActionConfigScreen() {
         ) : items.length === 0 ? (
           <EmptyState icon={Lightning} title="Chưa có action" description="Tạo action từ system action definition để cấu hình permission code." />
         ) : (
-          <PermissionDataTable className="min-w-[900px]">
-            <TableHeader className="bg-brand-700">
-              <TableRow className="hover:bg-brand-700">
-                <PermissionHeadCell className="w-[22%]">Tên</PermissionHeadCell>
-                <PermissionHeadCell className="w-[18%]">Mã</PermissionHeadCell>
-                <PermissionHeadCell>Mô tả</PermissionHeadCell>
-                <PermissionHeadCell className="w-[12%]">Loại</PermissionHeadCell>
-                <PermissionHeadCell className="w-[12%]">Trạng thái</PermissionHeadCell>
-                <PermissionHeadCell className="w-24 text-right">Thao tác</PermissionHeadCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((action) => (
-                <TableRow key={action.id}>
-                  <TableCell className="font-medium text-text-primary">{action.name}</TableCell>
-                  <TableCell className="font-mono text-xs text-text-secondary">{action.code}</TableCell>
-                  <TableCell className="text-sm text-text-secondary">{action.description || "-"}</TableCell>
-                  <TableCell><SystemBadge system={action.isSystemDefined} /></TableCell>
-                  <TableCell><ActiveBadge active={action.isActive} /></TableCell>
-                  <TableCell>
-                    <PermissionActionButtons
-                      editLabel={`Sửa ${action.name}`}
-                      deleteLabel={`Xóa ${action.name}`}
-                      editDisabled={!can(PERMISSIONS.actions.update)}
-                      deleteDisabled={!can(PERMISSIONS.actions.delete)}
-                      editTitle={
-                        !can(PERMISSIONS.actions.update)
-                          ? "Bạn không có quyền cập nhật"
-                          : action.isSystemDefined
-                            ? "Action hệ thống có thể được backend bảo vệ."
-                            : undefined
-                      }
-                      deleteTitle={
-                        !can(PERMISSIONS.actions.delete)
-                          ? "Bạn không có quyền xóa"
-                          : action.isSystemDefined
-                            ? "Action hệ thống có thể được backend bảo vệ."
-                            : undefined
-                      }
-                      onEdit={() => {
-                        setEditTarget(action);
-                        setEditForm(formFromAction(action));
-                      }}
-                      onDelete={() => setDeleteTarget(action)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </PermissionDataTable>
+          <ActionTable
+            items={items}
+            canUpdate={can(PERMISSIONS.actions.update)}
+            canDelete={can(PERMISSIONS.actions.delete)}
+            onEdit={(action) => {
+              setEditTarget(action);
+              setEditForm(formFromAction(action));
+            }}
+            onDelete={setDeleteTarget}
+          />
         )}
       </div>
       <ActionDialog
@@ -234,83 +172,6 @@ function ActionConfigScreen() {
         onConfirm={confirmDelete}
       />
     </PermissionPageShell>
-  );
-}
-
-function ActionDialog({
-  open,
-  title,
-  description,
-  form,
-  definitions,
-  loading,
-  submitLabel,
-  showStatus,
-  onOpenChange,
-  onFormChange,
-  onSubmit,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  form: ActionForm;
-  definitions: SystemActionDefinition[];
-  loading?: boolean;
-  submitLabel: string;
-  showStatus?: boolean;
-  onOpenChange: (open: boolean) => void;
-  onFormChange: (form: ActionForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
-          <PermissionField label="Action definition" htmlFor="action_definition" required>
-            <Select
-              value={form.systemActionDefinitionId}
-              disabled={loading}
-              onValueChange={(value) => {
-                const definition = definitions.find((item) => item.id === value);
-                onFormChange({ ...form, systemActionDefinitionId: value, name: form.name || definition?.name || "" });
-              }}
-            >
-              <SelectTrigger id="action_definition"><SelectValue placeholder="Chọn action definition" /></SelectTrigger>
-              <SelectContent>
-                {definitions.filter((item) => item.isActive).map((item) => (
-                  <SelectItem key={item.id} value={item.id}>{item.name} ({item.code})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </PermissionField>
-          <PermissionField label="Tên action" htmlFor="action_name" required>
-            <Input id="action_name" value={form.name} disabled={loading} onChange={(event) => onFormChange({ ...form, name: event.target.value })} required />
-          </PermissionField>
-          <PermissionField label="Mô tả" htmlFor="action_description">
-            <Input id="action_description" value={form.description} disabled={loading} onChange={(event) => onFormChange({ ...form, description: event.target.value })} />
-          </PermissionField>
-          {showStatus && (
-            <PermissionField label="Trạng thái" htmlFor="action_status">
-              <Select value={String(form.isActive)} disabled={loading} onValueChange={(value) => onFormChange({ ...form, isActive: value === "true" })}>
-                <SelectTrigger id="action_status"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Hoạt động</SelectItem>
-                  <SelectItem value="false">Không hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
-            </PermissionField>
-          )}
-          <DialogFooter className="mt-3">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Hủy</Button>
-            <Button type="submit" loading={loading}>{submitLabel}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 

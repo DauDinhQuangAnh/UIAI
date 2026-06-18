@@ -1,48 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useMemo, useState } from "react";
-import { Key, Plus, ShieldCheck } from "@phosphor-icons/react";
+import { Plus, ShieldCheck } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/common/empty-state";
 import {
-  ActiveBadge,
   DeletePermissionDialog,
-  PermissionActionButtons,
-  PermissionDataTable,
-  PermissionField,
-  PermissionHeadCell,
   PermissionPageShell,
   PermissionToolbar,
   apiErrorMessage,
   cleanOptional,
-  formatDate,
   statusParam,
   type StatusFilterValue,
-  SystemBadge,
 } from "@/components/permissions/permission-ui";
+import { RoleDialog, type RoleForm } from "@/components/permissions/roles/role-dialog";
+import { RoleTable } from "@/components/permissions/roles/role-table";
 import { useCreateRole, useDeleteRole, useRoles, useUpdateRole } from "@/api/hooks/roles";
 import type { Role } from "@/api/permission-types";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
 
 const PAGE_SIZE = 20;
-
-interface RoleForm {
-  name: string;
-  code: string;
-  description: string;
-  isActive: boolean;
-}
 
 const EMPTY_FORM: RoleForm = {
   name: "",
@@ -182,72 +159,15 @@ function RoleListScreen() {
           <EmptyState icon={ShieldCheck} title="Chưa có vai trò" description="Tạo vai trò đầu tiên để gán quyền cho người dùng." />
         ) : (
           <>
-            <PermissionDataTable>
-              <TableHeader className="bg-brand-700">
-                <TableRow className="hover:bg-brand-700">
-                  <PermissionHeadCell className="w-[18%]">Tên</PermissionHeadCell>
-                  <PermissionHeadCell className="w-[16%]">Mã</PermissionHeadCell>
-                  <PermissionHeadCell>Mô tả</PermissionHeadCell>
-                  <PermissionHeadCell className="w-[12%]">Loại</PermissionHeadCell>
-                  <PermissionHeadCell className="w-[12%]">Trạng thái</PermissionHeadCell>
-                  <PermissionHeadCell className="w-[12%]">Ngày tạo</PermissionHeadCell>
-                  <PermissionHeadCell className="w-32 text-right">Thao tác</PermissionHeadCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((role) => (
-                  <TableRow key={role.id}>
-                    <TableCell className="font-medium text-text-primary">{role.name}</TableCell>
-                    <TableCell className="font-mono text-xs text-text-secondary">{role.code}</TableCell>
-                    <TableCell className="text-sm text-text-secondary">{role.description || "-"}</TableCell>
-                    <TableCell>
-                      <SystemBadge system={role.isSystemRole} label="System role" />
-                    </TableCell>
-                    <TableCell>
-                      <ActiveBadge active={role.isActive} />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-text-secondary">{formatDate(role.createdAt)}</TableCell>
-                    <TableCell>
-                      <PermissionActionButtons
-                        editLabel={`Sửa ${role.name}`}
-                        deleteLabel={`Xóa ${role.name}`}
-                        editDisabled={!can(PERMISSIONS.roles.update)}
-                        deleteDisabled={!can(PERMISSIONS.roles.delete)}
-                        editTitle={
-                          !can(PERMISSIONS.roles.update)
-                            ? "Bạn không có quyền cập nhật"
-                            : role.isSystemRole
-                              ? "Vai trò hệ thống có thể được backend bảo vệ."
-                              : undefined
-                        }
-                        deleteTitle={
-                          !can(PERMISSIONS.roles.delete)
-                            ? "Bạn không có quyền xóa"
-                            : role.isSystemRole
-                              ? "Vai trò hệ thống có thể được backend bảo vệ."
-                              : undefined
-                        }
-                        onEdit={() => openEdit(role)}
-                        onDelete={() => setDeleteTarget(role)}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Phân quyền ${role.name}`}
-                          className="size-8 border border-info-border bg-info-bg text-info-fg shadow-xs hover:border-info-base hover:bg-info-base hover:text-white"
-                          disabled={!can(PERMISSIONS.rolePermissions.view)}
-                          onClick={() => navigate({ to: "/permissions/role-permissions", search: { roleId: role.id } })}
-                        >
-                          <Key className="size-4" aria-hidden />
-                        </Button>
-                      </PermissionActionButtons>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </PermissionDataTable>
-            <div className="flex items-center justify-between gap-3 text-sm text-text-secondary">
+            <RoleTable
+              items={items}
+              canUpdate={can(PERMISSIONS.roles.update)}
+              canDelete={can(PERMISSIONS.roles.delete)}
+              canViewRolePermissions={can(PERMISSIONS.rolePermissions.view)}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+              onPermissions={(role) => navigate({ to: "/permissions/role-permissions", search: { roleId: role.id } })}
+            />            <div className="flex items-center justify-between gap-3 text-sm text-text-secondary">
               <span>
                 Trang {currentPage} / {totalPages}
               </span>
@@ -309,81 +229,6 @@ function RoleListScreen() {
         onConfirm={confirmDelete}
       />
     </PermissionPageShell>
-  );
-}
-
-function RoleDialog({
-  open,
-  title,
-  description,
-  form,
-  loading,
-  submitLabel,
-  showStatus,
-  lockCode,
-  onOpenChange,
-  onFormChange,
-  onSubmit,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  form: RoleForm;
-  loading?: boolean;
-  submitLabel: string;
-  showStatus?: boolean;
-  lockCode?: boolean;
-  onOpenChange: (open: boolean) => void;
-  onFormChange: (form: RoleForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader className="items-center text-center">
-          <DialogTitle className="text-brand-800">{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
-          <PermissionField label="Tên vai trò" htmlFor="role_name" required>
-            <Input id="role_name" value={form.name} disabled={loading} onChange={(event) => onFormChange({ ...form, name: event.target.value })} required />
-          </PermissionField>
-          <PermissionField label="Mã vai trò" htmlFor="role_code" required>
-            <Input
-              id="role_code"
-              value={form.code}
-              disabled={loading || lockCode}
-              onChange={(event) => onFormChange({ ...form, code: event.target.value })}
-              required
-            />
-          </PermissionField>
-          <PermissionField label="Mô tả" htmlFor="role_description">
-            <Input id="role_description" value={form.description} disabled={loading} onChange={(event) => onFormChange({ ...form, description: event.target.value })} />
-          </PermissionField>
-          {showStatus && (
-            <PermissionField label="Trạng thái" htmlFor="role_status">
-              <Select value={String(form.isActive)} disabled={loading} onValueChange={(value) => onFormChange({ ...form, isActive: value === "true" })}>
-                <SelectTrigger id="role_status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Hoạt động</SelectItem>
-                  <SelectItem value="false">Không hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
-            </PermissionField>
-          )}
-          <DialogFooter className="mt-3">
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Hủy
-            </Button>
-            <Button type="submit" loading={loading}>
-              {submitLabel}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
