@@ -61,7 +61,7 @@ function FacebookOAuthCallbackScreen() {
       to: "/business/social-media",
       search: { businessPartnerId },
     });
-  }, [callbackData, navigate, storedContext?.businessPartnerId]);
+  }, [callbackData, navigate, storedContext]);
 
   const backToSocialMedia = () => {
     const businessPartnerId = storedContext?.businessPartnerId;

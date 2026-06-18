@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { Buildings, MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { Buildings, MagnifyingGlass, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import {
   useUpdateBusinessPartner,
 } from "@/api/hooks/business-partners";
 import { ApiRequestError, errorMessage } from "@/api/errors";
+import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
 
 const PAGE_SIZE = 20;
 
@@ -37,6 +38,41 @@ export const Route = createFileRoute("/_app/business/information")({
 });
 
 function BusinessInformationScreen() {
+  const hasPermission = usePermissionSet();
+  const canView = hasPermission(PERMISSIONS.businessPartners.view);
+  const canCreate = hasPermission(PERMISSIONS.businessPartners.create);
+  const canUpdate = hasPermission(PERMISSIONS.businessPartners.update);
+  const canDelete = hasPermission(PERMISSIONS.businessPartners.delete);
+
+  if (!canView) {
+    return (
+      <BusinessPageShell
+        title="Thông tin doanh nghiệp"
+        description="Quản lý business partners, tài khoản đại diện và thông tin liên hệ theo SAR Platform API."
+        icon={Buildings}
+        className="max-w-7xl"
+      >
+        <EmptyState
+          icon={ShieldWarning}
+          title="Bạn không có quyền xem thông tin doanh nghiệp"
+          description="Cần quyền BUSINESS_PARTNER.PROFILE.VIEW để truy cập màn hình này."
+        />
+      </BusinessPageShell>
+    );
+  }
+
+  return <BusinessInformationContent canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} />;
+}
+
+function BusinessInformationContent({
+  canCreate,
+  canUpdate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+}) {
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [pageNumber, setPageNumber] = useState(1);
@@ -69,6 +105,7 @@ function BusinessInformationScreen() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const openEdit = (business: BusinessPartner) => {
+    if (!canUpdate) return;
     setEditTargetId(business.id);
     setEditTarget(business);
     setEditForm(formFromBusinessPartner(business));
@@ -89,6 +126,7 @@ function BusinessInformationScreen() {
   }, [editBusinessDetail.error, editTargetId]);
 
   const onConfirmDelete = () => {
+    if (!canDelete) return;
     if (!deleteTarget) return;
     deleteBusiness.mutate(deleteTarget.id, {
       onSuccess: () => {
@@ -101,6 +139,7 @@ function BusinessInformationScreen() {
 
   const onSubmitAdd = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canCreate) return;
     createBusiness.mutate(createPayloadFromForm(form), {
       onSuccess: (partner) => {
         toast.success(createSuccessMessage(partner));
@@ -116,6 +155,7 @@ function BusinessInformationScreen() {
 
   const onSubmitEdit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canUpdate) return;
     if (!editTarget) return;
     updateBusiness.mutate(
       { id: editTarget.id, body: updatePayloadFromForm(editForm) },
@@ -155,7 +195,13 @@ function BusinessInformationScreen() {
               {totalCount} business partner phù hợp với bộ lọc hiện tại.
             </p>
           </div>
-          <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!canCreate}
+            title={!canCreate ? "Bạn không có quyền tạo doanh nghiệp" : undefined}
+            onClick={() => setAddOpen(true)}
+          >
             <Plus className="size-4" aria-hidden />
             Thêm doanh nghiệp
           </Button>
@@ -204,7 +250,12 @@ function BusinessInformationScreen() {
             title="Chưa có doanh nghiệp"
             description="Tạo business partner đầu tiên để cấu hình đại diện và các kênh social."
             action={
-              <Button type="button" onClick={() => setAddOpen(true)}>
+              <Button
+                type="button"
+                disabled={!canCreate}
+                title={!canCreate ? "Bạn không có quyền tạo doanh nghiệp" : undefined}
+                onClick={() => setAddOpen(true)}
+              >
                 <Plus className="size-4" aria-hidden />
                 Thêm doanh nghiệp
               </Button>
@@ -212,7 +263,13 @@ function BusinessInformationScreen() {
           />
         ) : (
           <>
-            <BusinessInformationTable businesses={businesses} onEdit={openEdit} onDelete={setDeleteTarget} />
+            <BusinessInformationTable
+              businesses={businesses}
+              canEdit={canUpdate}
+              canDelete={canDelete}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
             <div className="flex items-center justify-between gap-3 text-sm text-text-secondary">
               <span>
                 Trang {currentPage} / {totalPages}

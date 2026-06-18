@@ -1,6 +1,12 @@
 import { useSession } from "./session-store";
 
 export const PERMISSIONS = {
+  businessPartners: {
+    view: "BUSINESS_PARTNER.PROFILE.VIEW",
+    create: "BUSINESS_PARTNER.PROFILE.CREATE",
+    update: "BUSINESS_PARTNER.PROFILE.UPDATE",
+    delete: "BUSINESS_PARTNER.PROFILE.DELETE",
+  },
   roles: {
     view: "ROLE_MANAGEMENT.ROLE_LIST.VIEW",
     create: "ROLE_MANAGEMENT.ROLE_LIST.CREATE",

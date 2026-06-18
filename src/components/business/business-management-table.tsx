@@ -26,11 +26,19 @@ export function BusinessHeadCell({
 export function BusinessActionButtons({
   editLabel,
   deleteLabel,
+  editDisabled,
+  deleteDisabled,
+  editTitle,
+  deleteTitle,
   onEdit,
   onDelete,
 }: {
   editLabel: string;
   deleteLabel: string;
+  editDisabled?: boolean;
+  deleteDisabled?: boolean;
+  editTitle?: string;
+  deleteTitle?: string;
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
@@ -41,6 +49,8 @@ export function BusinessActionButtons({
         variant="ghost"
         size="icon"
         aria-label={editLabel}
+        title={editTitle}
+        disabled={editDisabled}
         className="size-8 border border-brand-100 bg-brand-50 text-brand-700 shadow-xs hover:border-brand-300 hover:bg-brand-100 hover:text-brand-900"
         onClick={onEdit}
       >
@@ -51,6 +61,8 @@ export function BusinessActionButtons({
         variant="ghost"
         size="icon"
         aria-label={deleteLabel}
+        title={deleteTitle}
+        disabled={deleteDisabled}
         className="size-8 border border-danger-border bg-danger-bg text-danger-fg shadow-xs hover:border-danger-base hover:bg-danger-base hover:text-white"
         onClick={onDelete}
       >

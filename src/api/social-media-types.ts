@@ -12,6 +12,10 @@ export interface SocialMediaIntegrationSummary {
   appId: string;
   status: string;
   authorizedAt?: string | null;
+  businessPartnerId?: string | null;
+  lastSyncedAt?: string | null;
+  externalUserId?: string | null;
+  externalUserName?: string | null;
   pagesCount: number;
   activeBotPagesCount: number;
   pages?: SocialMediaLinkedPage[];
@@ -24,10 +28,77 @@ export interface SocialMediaIntegrationDetail extends SocialMediaIntegrationSumm
 }
 
 export interface SocialMediaLinkedPage {
+  id?: string;
   externalPageId: string;
   pageName: string;
   username?: string | null;
+  pageAvatarUrl?: string | null;
+  isBotEnabled?: boolean;
+  isActive?: boolean;
   status?: string | null;
+  schedules?: SocialMediaPageSchedule[] | null;
+}
+
+export interface SocialMediaPageSchedule {
+  id?: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  timeZoneId?: string | null;
+  isActive?: boolean;
+}
+
+export interface BotScheduleRequest {
+  timezone?: string | null;
+  workingDays: string[];
+  startTime: string;
+  endTime: string;
+}
+
+export interface CreateSocialMediaIntegrationPageRequest {
+  externalPageId: string;
+  pageName: string;
+  pageAvatarUrl?: string | null;
+  pageImageUrl?: string | null;
+  status?: string | null;
+  botSchedule: BotScheduleRequest;
+}
+
+export interface CreateSocialMediaIntegrationRequest {
+  provider: string;
+  appId: string;
+  appSecret: string;
+  pages: CreateSocialMediaIntegrationPageRequest[];
+}
+
+export interface CreateSocialMediaIntegrationPageResponse {
+  id: string;
+  externalPageId: string;
+  pageName: string;
+  isBotEnabled: boolean;
+  isActive: boolean;
+  schedulesCount: number;
+}
+
+export interface CreateSocialMediaIntegrationResponse {
+  businessPartnerId: string;
+  integrationId: string;
+  providerCode: string;
+  appId: string;
+  status: string;
+  pages: CreateSocialMediaIntegrationPageResponse[];
+  message?: string | null;
+}
+
+export interface UpdateSocialMediaPageRequest {
+  status: string;
+  botSchedule: BotScheduleRequest;
+}
+
+export interface UpdateSocialMediaPageResponse {
+  pageId: string;
+  status: string;
+  schedules: SocialMediaPageSchedule[];
 }
 
 export interface FacebookAppConfigRequest {
@@ -60,12 +131,21 @@ export interface FacebookOAuthCallbackResponse {
   message?: string | null;
 }
 
+export interface BotWorkingScheduleRequest {
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+}
+
 export interface FacebookManagedPage {
   externalPageId: string;
   pageName: string;
   username?: string | null;
   avatarUrl?: string | null;
+  pageAvatarUrl?: string | null;
   pageAccessToken: string;
+  isSelected?: boolean;
+  isBotEnabled?: boolean;
 }
 
 export interface FacebookPagesResponse {
@@ -73,8 +153,16 @@ export interface FacebookPagesResponse {
   pages: FacebookManagedPage[];
 }
 
+export interface SaveFacebookPageRequest {
+  externalPageId: string;
+  pageName: string;
+  pageAvatarUrl?: string | null;
+  pageAccessToken: string;
+  schedules?: BotWorkingScheduleRequest[];
+}
+
 export interface SaveFacebookPagesRequest {
-  pages: FacebookManagedPage[];
+  pages: SaveFacebookPageRequest[];
 }
 
 export interface SaveFacebookPagesResponse {

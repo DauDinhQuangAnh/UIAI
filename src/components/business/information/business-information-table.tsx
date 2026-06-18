@@ -9,10 +9,14 @@ import type { BusinessPartner } from "./business-information-data";
 
 export function BusinessInformationTable({
   businesses,
+  canEdit = true,
+  canDelete = true,
   onEdit,
   onDelete,
 }: {
   businesses: BusinessPartner[];
+  canEdit?: boolean;
+  canDelete?: boolean;
   onEdit: (business: BusinessPartner) => void;
   onDelete: (business: BusinessPartner) => void;
 }) {
@@ -54,6 +58,10 @@ export function BusinessInformationTable({
               <BusinessActionButtons
                 editLabel={`Chỉnh sửa ${business.brandName}`}
                 deleteLabel={`Xóa ${business.brandName}`}
+                editDisabled={!canEdit}
+                deleteDisabled={!canDelete}
+                editTitle={!canEdit ? "Bạn không có quyền cập nhật" : undefined}
+                deleteTitle={!canDelete ? "Bạn không có quyền xóa" : undefined}
                 onEdit={() => onEdit(business)}
                 onDelete={() => onDelete(business)}
               />

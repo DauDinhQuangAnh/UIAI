@@ -1,7 +1,11 @@
+export type FacebookOAuthFlow = "add-link" | "reauthorize";
+
 export interface FacebookOAuthContext {
   businessPartnerId: string;
   integrationId?: string;
   state?: string;
+  flow?: FacebookOAuthFlow;
+  resumePageSelection?: boolean;
 }
 
 const FACEBOOK_OAUTH_CONTEXT_KEY = "social-ai.facebook-oauth-context";
@@ -22,6 +26,8 @@ export function readFacebookOAuthContext(): FacebookOAuthContext | null {
       businessPartnerId: parsed.businessPartnerId,
       integrationId: parsed.integrationId,
       state: parsed.state,
+      flow: parsed.flow,
+      resumePageSelection: parsed.resumePageSelection,
     };
   } catch {
     return null;

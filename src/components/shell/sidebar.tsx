@@ -73,6 +73,9 @@ const BACKEND_PAGE_OVERRIDES: Record<string, BackendPageOverride> = {
   "/permissions/role-permissions": {
     omit: true,
   },
+  "/permissions/page-actions": {
+    omit: true,
+  },
   "/conversations": {
     omit: true,
   },
@@ -96,6 +99,7 @@ const BACKEND_PAGE_OVERRIDES: Record<string, BackendPageOverride> = {
 const OMIT_BACKEND_PAGE_CODES = new Set([
   "CONVERSATION_LIST",
   "MESSAGE_HISTORY",
+  "PAGE_ACTION_CONFIG",
   "ROLE_PERMISSION_CONFIG",
   "USER_LIST",
 ]);
@@ -103,6 +107,8 @@ const OMIT_BACKEND_PAGE_CODES = new Set([
 const OMIT_BACKEND_PAGE_NAMES = new Set([
   "conversation list",
   "message history",
+  "page action config",
+  "page actions",
   "role permission config",
   "user list",
 ]);
