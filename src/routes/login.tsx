@@ -56,21 +56,24 @@ function LoginScreen() {
 
   return (
     <div className="grid min-h-[100dvh] lg:grid-cols-2">
-      {/* Brand panel (left) — warm coral gradient, hidden on small screens. */}
+      {/* Brand panel (left) - warm coral gradient, hidden on small screens. */}
       <aside className="relative hidden flex-col justify-between bg-gradient-to-br from-brand-500 to-brand-700 p-12 text-white lg:flex">
-        <div className="flex items-center gap-2 font-display text-lg font-semibold">
+        <div className="flex items-center gap-3 font-display">
           <Sparkle weight="fill" className="size-6" aria-hidden />
-          social-ai
+          <span className="flex flex-col leading-tight">
+            <span className="text-lg font-semibold">REO - AI</span>
+            <span className="text-xs font-medium text-white/70">reply enterprise operation</span>
+          </span>
         </div>
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-4xl font-bold leading-tight">
-            Trợ lý khách hàng của bạn, dựa trên Knowledge riêng của bạn.
+            REO - reply enterprise operation cho đội ngũ vận hành của bạn.
           </h1>
           <p className="max-w-md text-white/80">
             Quản lý Agents, Documents và Knowledge Graph để tạo phản hồi có nền tảng.
           </p>
         </div>
-        <p className="text-sm text-white/60">Trợ lý hỗ trợ khách hàng</p>
+        <p className="text-sm text-white/60">Phản hồi nhanh hơn, nhất quán hơn, dựa trên tri thức doanh nghiệp.</p>
       </aside>
 
       {/* Form panel (right). */}

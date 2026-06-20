@@ -1,6 +1,6 @@
-# social-ai Console (web/)
+# REO - AI - reply enterprise operation (web/)
 
-Customer Dashboard frontend (Phase 5b — Milestone 2 complete) — a **Vite + TanStack Router** SPA over the
+REO - AI (reply enterprise operation) customer dashboard frontend (Phase 5b — Milestone 2 complete) — a **Vite + TanStack Router** SPA over the
 authenticated Dashboard API (`/api/*`). Light-mode, bold brand-forward, Vietnamese-capable. Includes 8 screens
 (agents CRUD, documents + async ingest polling, knowledge graph dedup review, conversations + transcript, analytics KPIs)
 with **Vitest unit tests** (7 files, 30 tests) and **Playwright e2e** (happy-path login, axe a11y).
