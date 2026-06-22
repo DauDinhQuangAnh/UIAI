@@ -21,7 +21,6 @@ import { DeleteSocialMediaIntegrationDialog } from "@/components/business/social
 import { SocialMediaIntegrationsTable } from "@/components/business/social-media/social-media-table";
 import { SocialMediaCreateDialog } from "@/components/business/social-media/social-media-create-dialog";
 import { SocialMediaIntegrationManageDialog } from "@/components/business/social-media/social-media-manage-dialog";
-import { RefreshSocialMediaTokenDialog } from "@/components/business/social-media/social-media-refresh-token-dialog";
 
 const BUSINESS_PAGE_SIZE = 100;
 
@@ -37,7 +36,6 @@ function SocialMediaLinksScreen() {
   const canView = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.view);
   const canCreate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.create);
   const canUpdate = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.update);
-  const canReauthorize = hasPermission(PERMISSIONS.socialMedia.facebookIntegration.reauthorize);
 
   if (!canView) {
     return (
@@ -56,17 +54,15 @@ function SocialMediaLinksScreen() {
     );
   }
 
-  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} canReauthorize={canReauthorize} />;
+  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} />;
 }
 
 function SocialMediaLinksContent({
   canCreate,
   canUpdate,
-  canReauthorize,
 }: {
   canCreate: boolean;
   canUpdate: boolean;
-  canReauthorize: boolean;
 }) {
   const search = Route.useSearch();
   const [providerFilter, setProviderFilter] = useState<ProviderFilter>("FACEBOOK");
@@ -89,10 +85,6 @@ function SocialMediaLinksContent({
   const createFlow = useCreateIntegrationFlow({
     businesses,
     defaultBusinessId,
-    integrationsLoading,
-    isLoadingBusinesses: businessPartners.isLoading,
-    isFetchingBusinesses: businessPartners.isFetching,
-    onResumeOAuth: () => setProviderFilter("FACEBOOK"),
   });
 
   const manageFlow = useManageIntegrationFlow();
@@ -242,14 +234,10 @@ function SocialMediaLinksContent({
         form={createFlow.form}
         errors={createFlow.errors}
         businesses={businesses}
-        managedPages={createFlow.facebookPages.data?.pages ?? []}
-        pagesLoading={createFlow.facebookPages.isLoading || createFlow.facebookPages.isFetching}
-        pagesError={createFlow.facebookPages.error}
         loading={createFlow.submitting}
         onOpenChange={(open) => { if (!open) createFlow.closeCreate(); }}
         onStepChange={createFlow.goToStep}
         onFormChange={createFlow.setForm}
-        onRetryPages={() => createFlow.facebookPages.refetch()}
         onSubmit={createFlow.submit}
       />
 
@@ -257,19 +245,9 @@ function SocialMediaLinksContent({
         row={manageFlow.manageTarget}
         businesses={businesses}
         canUpdate={canUpdate}
-        canReauthorize={canReauthorize}
         saving={manageFlow.saving}
         onOpenChange={(open) => { if (!open) manageFlow.setManageTarget(null); }}
         onSaveConfig={manageFlow.saveConfig}
-        onRefreshToken={manageFlow.openRefreshToken}
-      />
-
-      <RefreshSocialMediaTokenDialog
-        target={manageFlow.refreshTarget}
-        businesses={businesses}
-        loading={manageFlow.saving}
-        onOpenChange={(open) => { if (!open) manageFlow.setRefreshTarget(null); }}
-        onSubmit={manageFlow.saveRefreshToken}
       />
 
       <DeleteSocialMediaIntegrationDialog

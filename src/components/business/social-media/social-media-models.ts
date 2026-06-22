@@ -22,7 +22,6 @@ export interface SocialMediaCreatePageDraft {
   username?: string | null;
   pageAvatarUrl: string;
   pageImageUrl: string;
-  pageAccessToken: string;
   status: "Active" | "Inactive";
   schedule: PageScheduleDraft;
 }
@@ -36,14 +35,8 @@ export interface SocialMediaCreateForm {
 
 export interface ManageConfigForm {
   businessPartnerId: string;
-  appSecret: string;
   botMode: ManageBotMode;
   schedule: PageScheduleDraft;
-}
-
-export interface RefreshTokenForm {
-  businessPartnerId: string;
-  appSecret: string;
 }
 
 export type CreateFormErrors = Partial<Record<"businessPartnerId" | "appId" | "appSecret" | "pages" | "schedule", string>>;
@@ -57,4 +50,3 @@ export interface SocialMediaTableRow extends SocialMediaIntegrationRow {
   page: SocialMediaLinkedPage | null;
   rowKey: string;
 }
-

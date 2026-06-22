@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode } from "react";
-import { CheckCircle, LinkSimple } from "@phosphor-icons/react";
+import { Plus, Trash } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,17 +13,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/common/empty-state";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
-import type { FacebookManagedPage } from "@/api/social-media-types";
 import type {
   CreateFormErrors,
   CreateStep,
   SocialMediaCreateForm,
   SocialMediaCreatePageDraft,
 } from "./social-media-models";
-import { apiErrorMessage, createPageDraftFromManagedPage, pageInitials } from "./social-media-utils";
+import { createBlankPageDraft, pageInitials } from "./social-media-utils";
 import { ScheduleEditor } from "./schedule-editor";
 
 export function SocialMediaCreateDialog({
@@ -32,14 +29,10 @@ export function SocialMediaCreateDialog({
   form,
   errors,
   businesses,
-  managedPages,
-  pagesLoading,
-  pagesError,
   loading,
   onOpenChange,
   onStepChange,
   onFormChange,
-  onRetryPages,
   onSubmit,
 }: {
   open: boolean;
@@ -47,25 +40,15 @@ export function SocialMediaCreateDialog({
   form: SocialMediaCreateForm;
   errors: CreateFormErrors;
   businesses: BusinessPartner[];
-  managedPages: FacebookManagedPage[];
-  pagesLoading: boolean;
-  pagesError: unknown;
   loading: boolean;
   onOpenChange: (open: boolean) => void;
   onStepChange: (step: CreateStep) => void;
   onFormChange: (form: SocialMediaCreateForm) => void;
-  onRetryPages: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const submitLabel = step === "schedule" ? "Xác nhận" : "Tiếp tục";
-  const submitDisabled =
-    step === "pages" && (pagesLoading || !!pagesError || form.pages.length === 0 || managedPages.length === 0);
-  const submitTitle =
-    step === "pages" && form.pages.length === 0
-      ? "Vui lòng chọn ít nhất một page."
-      : step === "pages" && pagesError
-        ? "Cần tải được danh sách page trước khi tiếp tục."
-        : undefined;
+  const submitDisabled = step === "pages" && form.pages.length === 0;
+  const submitTitle = submitDisabled ? "Vui lòng thêm ít nhất một page." : undefined;
 
   const updatePageDraft = (localId: string, patch: Partial<SocialMediaCreatePageDraft>) => {
     onFormChange({
@@ -74,15 +57,9 @@ export function SocialMediaCreateDialog({
     });
   };
 
-  const toggleManagedPage = (managedPage: FacebookManagedPage) => {
-    const selected = form.pages.some((page) => page.externalPageId === managedPage.externalPageId);
-    onFormChange({
-      ...form,
-      pages: selected
-        ? form.pages.filter((page) => page.externalPageId !== managedPage.externalPageId)
-        : [...form.pages, createPageDraftFromManagedPage(managedPage)],
-    });
-  };
+  const addPageDraft = () => onFormChange({ ...form, pages: [...form.pages, createBlankPageDraft()] });
+  const removePageDraft = (localId: string) =>
+    onFormChange({ ...form, pages: form.pages.filter((page) => page.localId !== localId) });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,7 +67,7 @@ export function SocialMediaCreateDialog({
         <DialogHeader className="items-center text-center">
           <DialogTitle className="text-brand-800">Thêm liên kết mạng xã hội</DialogTitle>
           <DialogDescription>
-            Nhập cấu hình Facebook App, đăng nhập Facebook, chọn page quản lý và cấu hình lịch hoạt động bot.
+            Nhập cấu hình Facebook App, page quản lý và lịch hoạt động bot.
           </DialogDescription>
         </DialogHeader>
 
@@ -147,75 +124,99 @@ export function SocialMediaCreateDialog({
             <div className="grid gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-text-primary">Chọn trang muốn liên kết</h3>
-                  <p className="text-sm text-text-secondary">Danh sách này được lấy từ tài khoản Facebook vừa ủy quyền.</p>
+                  <h3 className="text-sm font-semibold text-text-primary">Page liên kết</h3>
+                  <p className="text-sm text-text-secondary">API mới tạo integration, pages và bot schedule trong một lần lưu.</p>
                 </div>
-                <Badge tone="info">{form.pages.length} page đã chọn</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge tone="info">{form.pages.length} page</Badge>
+                  <Button type="button" size="sm" variant="secondary" disabled={loading} onClick={addPageDraft}>
+                    <Plus className="size-4" aria-hidden />
+                    Thêm page
+                  </Button>
+                </div>
               </div>
 
               {errors.pages && <p className="text-sm font-medium text-danger-fg">{errors.pages}</p>}
 
-              {pagesLoading ? (
-                <div className="grid gap-3">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : pagesError ? (
-                <EmptyState
-                  icon={LinkSimple}
-                  title="Không tải được danh sách trang Facebook"
-                  description={apiErrorMessage(pagesError, "Vui lòng thử lại sau.")}
-                  className="py-10"
-                  action={
-                    <Button type="button" variant="secondary" onClick={onRetryPages}>
-                      Tải lại
-                    </Button>
-                  }
-                />
-              ) : managedPages.length === 0 ? (
-                <EmptyState
-                  icon={LinkSimple}
-                  title="Không tìm thấy trang Facebook nào"
-                  description="Hãy kiểm tra tài khoản vừa ủy quyền có quyền quản lý page hay chưa."
-                  className="py-10"
-                />
-              ) : (
-                <div className="grid max-h-[56vh] gap-2 overflow-y-auto pr-1">
-                  {managedPages.map((page) => {
-                    const selected = form.pages.some((selectedPage) => selectedPage.externalPageId === page.externalPageId);
-                    return (
-                      <button
-                        key={page.externalPageId}
+              <div className="grid max-h-[58vh] gap-3 overflow-y-auto pr-1">
+                {form.pages.map((page, index) => (
+                  <div key={page.localId} className="rounded-md border border-border bg-surface p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="grid grid-cols-[auto_1fr] items-center gap-3">
+                        <PageAvatar name={page.pageName || `Page ${index + 1}`} url={page.pageAvatarUrl || page.pageImageUrl} />
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold text-text-primary">{page.pageName || `Page ${index + 1}`}</div>
+                          <div className="truncate font-mono text-xs text-text-secondary">{page.externalPageId || "-"}</div>
+                        </div>
+                      </div>
+                      <Button
                         type="button"
-                        className={[
-                          "grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border bg-surface p-3 text-left transition-colors",
-                          selected
-                            ? "border-brand-300 bg-brand-50 text-brand-900"
-                            : "border-border hover:border-brand-200 hover:bg-surface-2",
-                        ].join(" ")}
-                        onClick={() => toggleManagedPage(page)}
-                        aria-pressed={selected}
+                        variant="ghost"
+                        size="icon"
+                        disabled={loading || form.pages.length <= 1}
+                        title={form.pages.length <= 1 ? "Cần ít nhất một page." : "Xóa page"}
+                        onClick={() => removePageDraft(page.localId)}
                       >
-                        <PageAvatar name={page.pageName || "Facebook Page"} url={page.pageAvatarUrl ?? page.avatarUrl} />
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold text-text-primary">{page.pageName || "Facebook Page"}</span>
-                          <span className="block truncate text-sm text-text-secondary">{page.username || page.externalPageId}</span>
-                        </span>
-                        <span
-                          className={[
-                            "flex size-6 items-center justify-center rounded-pill border",
-                            selected ? "border-brand-600 bg-brand-600 text-white" : "border-border-strong text-transparent",
-                          ].join(" ")}
-                          aria-hidden
+                        <Trash className="size-4" aria-hidden />
+                      </Button>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <SocialConfigField label="Page ID" htmlFor={`page_external_id_${page.localId}`} required>
+                        <Input
+                          id={`page_external_id_${page.localId}`}
+                          value={page.externalPageId}
+                          disabled={loading}
+                          placeholder="123456789"
+                          onChange={(event) => updatePageDraft(page.localId, { externalPageId: event.target.value })}
+                        />
+                      </SocialConfigField>
+                      <SocialConfigField label="Tên page" htmlFor={`page_name_${page.localId}`} required>
+                        <Input
+                          id={`page_name_${page.localId}`}
+                          value={page.pageName}
+                          disabled={loading}
+                          placeholder="SAR Demo Page"
+                          onChange={(event) => updatePageDraft(page.localId, { pageName: event.target.value })}
+                        />
+                      </SocialConfigField>
+                      <SocialConfigField label="Avatar URL" htmlFor={`page_avatar_${page.localId}`}>
+                        <Input
+                          id={`page_avatar_${page.localId}`}
+                          value={page.pageAvatarUrl}
+                          disabled={loading}
+                          placeholder="https://example.com/avatar.png"
+                          onChange={(event) => updatePageDraft(page.localId, { pageAvatarUrl: event.target.value })}
+                        />
+                      </SocialConfigField>
+                      <SocialConfigField label="Image URL" htmlFor={`page_image_${page.localId}`}>
+                        <Input
+                          id={`page_image_${page.localId}`}
+                          value={page.pageImageUrl}
+                          disabled={loading}
+                          placeholder="https://example.com/page.png"
+                          onChange={(event) => updatePageDraft(page.localId, { pageImageUrl: event.target.value })}
+                        />
+                      </SocialConfigField>
+                      <SocialConfigField label="Trạng thái" htmlFor={`page_status_${page.localId}`}>
+                        <Select
+                          value={page.status}
+                          disabled={loading}
+                          onValueChange={(status) => updatePageDraft(page.localId, { status: status as "Active" | "Inactive" })}
                         >
-                          <CheckCircle className="size-5" weight="fill" />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                          <SelectTrigger id={`page_status_${page.localId}`} aria-label="Chọn trạng thái page">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </SocialConfigField>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -230,7 +231,7 @@ export function SocialMediaCreateDialog({
                 {form.pages.map((page) => (
                   <div key={page.localId} className="rounded-md border border-border bg-surface p-3">
                     <div className="mb-3 grid grid-cols-[auto_1fr] items-center gap-3">
-                      <PageAvatar name={page.pageName || "Facebook Page"} url={page.pageAvatarUrl} />
+                      <PageAvatar name={page.pageName || "Facebook Page"} url={page.pageAvatarUrl || page.pageImageUrl} />
                       <div className="min-w-0">
                         <div className="truncate font-semibold text-text-primary">{page.pageName || "Facebook Page"}</div>
                         <div className="truncate font-mono text-xs text-text-secondary">{page.externalPageId || "-"}</div>
@@ -251,13 +252,13 @@ export function SocialMediaCreateDialog({
             <Button type="button" variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
+            {step === "pages" && (
+              <Button type="button" variant="secondary" disabled={loading} onClick={() => onStepChange("config")}>
+                Quay lại
+              </Button>
+            )}
             {step === "schedule" && (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={loading}
-                onClick={() => onStepChange("pages")}
-              >
+              <Button type="button" variant="secondary" disabled={loading} onClick={() => onStepChange("pages")}>
                 Quay lại
               </Button>
             )}
@@ -312,8 +313,8 @@ function SocialConfigField({
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-start">
-      <Label htmlFor={htmlFor} className="pt-2 text-brand-800">
+    <div className="grid gap-2">
+      <Label htmlFor={htmlFor} className="text-brand-800">
         {label}
         {required && <span className="ml-1 text-danger-fg">*</span>}
       </Label>
@@ -343,4 +344,3 @@ function PageAvatar({ name, url }: { name: string; url?: string | null }) {
     </span>
   );
 }
-

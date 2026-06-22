@@ -1,9 +1,8 @@
 import { ApiRequestError, errorMessage } from "@/api/errors";
 import type {
   BotScheduleRequest,
-  BotWorkingScheduleRequest,
-  FacebookManagedPage,
-  SaveFacebookPageRequest,
+  CreateSocialMediaIntegrationRequest,
+  CreateSocialMediaPageRequest,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   UpdateSocialMediaPageRequest,
@@ -20,13 +19,23 @@ import type {
   SocialMediaTableRow,
 } from "./social-media-models";
 
-export function saveFacebookPagePayload(page: SocialMediaCreatePageDraft): SaveFacebookPageRequest {
+export function createSocialMediaIntegrationPayload(form: SocialMediaCreateForm): CreateSocialMediaIntegrationRequest {
   return {
-    externalPageId: page.externalPageId,
-    pageName: page.pageName,
+    provider: "Facebook",
+    appId: form.appId.trim(),
+    appSecret: form.appSecret.trim(),
+    pages: form.pages.map(createSocialMediaPagePayload),
+  };
+}
+
+function createSocialMediaPagePayload(page: SocialMediaCreatePageDraft): CreateSocialMediaPageRequest {
+  return {
+    externalPageId: page.externalPageId.trim(),
+    pageName: page.pageName.trim(),
     pageAvatarUrl: nullableTrim(page.pageAvatarUrl),
-    pageAccessToken: page.pageAccessToken,
-    schedules: schedulesFromDraft(page.schedule),
+    pageImageUrl: nullableTrim(page.pageImageUrl),
+    status: page.status,
+    botSchedule: botScheduleFromDraft(page.schedule),
   };
 }
 
@@ -87,18 +96,6 @@ export function providerCode(integration: SocialMediaIntegrationSummary): string
 
 export function isFacebookIntegration(integration: SocialMediaIntegrationSummary): boolean {
   return providerCode(integration) === "FACEBOOK";
-}
-
-export function appSecretDisplayValue(integration: SocialMediaIntegrationSummary | null | undefined): string {
-  const appSecret = (integration as (SocialMediaIntegrationSummary & { appSecret?: string | null }) | null | undefined)
-    ?.appSecret
-    ?.trim();
-  return appSecret || APP_SECRET_MASK;
-}
-
-export function isEditedAppSecret(value: string): boolean {
-  const trimmed = value.trim();
-  return !!trimmed && trimmed !== APP_SECRET_MASK;
 }
 
 export function blankScheduleDraft(): PageScheduleDraft {
@@ -181,16 +178,14 @@ export function isDayOfWeekName(day: string): day is DayOfWeekName {
   return DAY_OPTIONS.some((item) => item.value === day);
 }
 
-export function createPageDraftFromManagedPage(page: FacebookManagedPage): SocialMediaCreatePageDraft {
-  const avatarUrl = page.pageAvatarUrl ?? page.avatarUrl ?? "";
+export function createBlankPageDraft(): SocialMediaCreatePageDraft {
   return {
-    localId: page.externalPageId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    externalPageId: page.externalPageId,
-    pageName: page.pageName,
-    username: page.username ?? null,
-    pageAvatarUrl: avatarUrl,
+    localId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    externalPageId: "",
+    pageName: "",
+    username: null,
+    pageAvatarUrl: "",
     pageImageUrl: "",
-    pageAccessToken: page.pageAccessToken,
     status: "Active",
     schedule: blankScheduleDraft(),
   };
@@ -208,25 +203,6 @@ export function defaultCreateForm(businessPartnerId: string): SocialMediaCreateF
 export function normalizeDay(day: string): string {
   const normalized = day.trim().toLowerCase();
   return DAY_OPTIONS.find((item) => item.value.toLowerCase() === normalized || item.shortLabel.toLowerCase() === normalized)?.value ?? day;
-}
-
-export function schedulesFromDraft(draft: PageScheduleDraft): BotWorkingScheduleRequest[] {
-  const timezone = draft.timezone.trim() || DEFAULT_TIMEZONE;
-  if (draft.mode === "full") {
-    return DAY_OPTIONS.map((day) => ({
-      dayOfWeek: day.value,
-      startTime: FULL_TIME_START,
-      endTime: FULL_TIME_END,
-      timezone,
-    }));
-  }
-
-  return draft.workingDays.map((dayOfWeek) => ({
-    dayOfWeek,
-    startTime: draft.startTime,
-    endTime: draft.endTime,
-    timezone,
-  }));
 }
 
 export function validateCreateUntilStep(form: SocialMediaCreateForm, nextStep: string): CreateFormErrors {
@@ -257,7 +233,6 @@ export function validateCreatePages(form: SocialMediaCreateForm): CreateFormErro
     const label = `Page ${index + 1}`;
     if (!page.pageName.trim()) return { pages: `${label}: vui lòng nhập tên page.` };
     if (!page.externalPageId.trim()) return { pages: `${label}: vui lòng nhập ID page.` };
-    if (!page.pageAccessToken) return { pages: `${page.pageName || label}: chưa có quyền truy cập page hợp lệ.` };
     const externalPageId = page.externalPageId.trim();
     if (pageIds.has(externalPageId)) return { pages: `ID page ${externalPageId} bị trùng.` };
     pageIds.add(externalPageId);
@@ -308,12 +283,6 @@ export function pageInitials(name: string): string {
     .join("");
 }
 
-export function facebookOAuthCallbackUrl(): string {
-  const configured = import.meta.env.VITE_FACEBOOK_OAUTH_CALLBACK_URL?.trim();
-  if (configured) return configured;
-  return `${window.location.origin}/business/social-media/oauth/callback`;
-}
-
 export function apiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiRequestError) {
     const message = errorMessage(error.body, fallback);
@@ -328,4 +297,3 @@ export function deleteSocialMediaErrorMessage(error: unknown): string {
   }
   return apiErrorMessage(error, "Không thể xóa liên kết mạng xã hội.");
 }
-

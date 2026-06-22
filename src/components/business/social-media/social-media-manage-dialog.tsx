@@ -10,10 +10,8 @@ import {
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
 import type { ManageConfigForm, SocialMediaTableRow } from "./social-media-models";
 import { ManageBotStatusEditor } from "./bot-status-editor";
-import { DetailReadOnlyField, DetailSecretField, DetailSelectField } from "./social-media-detail-fields";
+import { DetailReadOnlyField, DetailSelectField } from "./social-media-detail-fields";
 import {
-  APP_SECRET_MASK,
-  appSecretDisplayValue,
   blankScheduleDraft,
   displayPageName,
   isFacebookIntegration,
@@ -27,27 +25,22 @@ export function SocialMediaIntegrationManageDialog({
   row,
   businesses,
   canUpdate,
-  canReauthorize,
   saving,
   onOpenChange,
   onSaveConfig,
-  onRefreshToken,
 }: {
   row: SocialMediaTableRow | null;
   businesses: BusinessPartner[];
   canUpdate: boolean;
-  canReauthorize: boolean;
   saving: boolean;
   onOpenChange: (open: boolean) => void;
   onSaveConfig: (row: SocialMediaTableRow, form: ManageConfigForm) => void;
-  onRefreshToken: (row: SocialMediaTableRow) => void;
 }) {
   const integration = row?.integration;
   const page = row?.page ?? null;
   const isFacebook = integration ? isFacebookIntegration(integration) : false;
   const [form, setForm] = useState<ManageConfigForm>({
     businessPartnerId: "",
-    appSecret: APP_SECRET_MASK,
     botMode: "inactive",
     schedule: blankScheduleDraft(),
   });
@@ -55,11 +48,10 @@ export function SocialMediaIntegrationManageDialog({
   useEffect(() => {
     setForm({
       businessPartnerId: row?.business.id ?? "",
-      appSecret: appSecretDisplayValue(integration),
       botMode: manageBotModeFromPage(page),
       schedule: scheduleDraftFromPage(page),
     });
-  }, [row?.business.id, row?.integration.id, integration, page]);
+  }, [row?.business.id, row?.integration.id, page]);
 
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
@@ -87,16 +79,11 @@ export function SocialMediaIntegrationManageDialog({
             <DetailSelectField
               label="Doanh nghiệp"
               value={form.businessPartnerId}
-              disabled={saving || !canUpdate}
+              disabled
               businesses={businesses}
               onChange={(businessPartnerId) => setForm((current) => ({ ...current, businessPartnerId }))}
             />
             <DetailReadOnlyField label="App ID" value={integration.appId || "-"} required mono />
-            <DetailSecretField
-              value={form.appSecret}
-              disabled={saving || !canUpdate}
-              onChange={(appSecret) => setForm((current) => ({ ...current, appSecret }))}
-            />
             <DetailReadOnlyField label="Trang" value={displayPageName(page, integration)} />
             <DetailReadOnlyField label="ID Trang" value={page?.externalPageId || "-"} mono />
 
@@ -107,22 +94,7 @@ export function SocialMediaIntegrationManageDialog({
               onModeChange={(botMode) => setForm((current) => ({ ...current, botMode }))}
               onScheduleChange={(schedule) => setForm((current) => ({ ...current, schedule }))}
             />
-            <div className="mt-4 flex items-center justify-between gap-4">
-              <Button
-                type="button"
-                disabled={!isFacebook || !canReauthorize || saving}
-                title={
-                  !isFacebook
-                    ? "Làm mới token provider này sẽ được triển khai ở phase sau."
-                    : !canReauthorize
-                      ? "Bạn không có quyền ủy quyền Facebook."
-                      : undefined
-                }
-                onClick={() => onRefreshToken(row)}
-                className="bg-purple-600 text-white hover:bg-purple-700"
-              >
-                Làm mới token liên kết
-              </Button>
+            <div className="mt-4 flex justify-end">
               <Button
                 type="submit"
                 loading={saving}
@@ -166,4 +138,3 @@ function ManageDialogAvatar({
     </span>
   );
 }
-
