@@ -26,6 +26,14 @@ export interface SocialMediaCreatePageDraft {
   schedule: PageScheduleDraft;
 }
 
+export interface SocialMediaSelectablePage {
+  externalPageId: string;
+  pageName: string;
+  username?: string | null;
+  pageAvatarUrl?: string | null;
+  pageImageUrl?: string | null;
+}
+
 export interface SocialMediaCreateForm {
   businessPartnerId: string;
   appId: string;

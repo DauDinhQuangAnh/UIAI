@@ -234,6 +234,7 @@ function SocialMediaLinksContent({
         form={createFlow.form}
         errors={createFlow.errors}
         businesses={businesses}
+        availablePages={createFlow.availablePages}
         loading={createFlow.submitting}
         onOpenChange={(open) => { if (!open) createFlow.closeCreate(); }}
         onStepChange={createFlow.goToStep}

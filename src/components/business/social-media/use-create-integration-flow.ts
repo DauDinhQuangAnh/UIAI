@@ -2,10 +2,9 @@ import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
 import { useCreateSocialMediaIntegration } from "@/api/hooks/social-media-integrations";
-import type { CreateFormErrors, CreateStep, SocialMediaCreateForm } from "./social-media-models";
+import type { CreateFormErrors, CreateStep, SocialMediaCreateForm, SocialMediaSelectablePage } from "./social-media-models";
 import {
   apiErrorMessage,
-  createBlankPageDraft,
   createSocialMediaIntegrationPayload,
   defaultCreateForm,
   hasErrors,
@@ -13,6 +12,29 @@ import {
   validateCreateForm,
   validateCreateUntilStep,
 } from "./social-media-utils";
+
+const TEMP_AVAILABLE_PAGES: SocialMediaSelectablePage[] = [
+  {
+    externalPageId: "657000124932010",
+    pageName: "Shah hoa Lyny Tr",
+    username: "@657000124932010",
+  },
+  {
+    externalPageId: "689000124823419",
+    pageName: "Cửa Lò hội Lữ hành MT",
+    username: "Type travel",
+  },
+  {
+    externalPageId: "104678999810204",
+    pageName: "Hội Kiên Giang",
+    username: "@kiengiang",
+  },
+  {
+    externalPageId: "874010932817501",
+    pageName: "Xí Kho Online An Hội & Nt",
+    username: "Xí Kho Queen Lotus",
+  },
+];
 
 export function useCreateIntegrationFlow({
   defaultBusinessId,
@@ -63,9 +85,7 @@ export function useCreateIntegrationFlow({
       setFormState((current) => ({
         ...current,
         businessPartnerId: current.businessPartnerId,
-        appId: current.appId.trim(),
-        appSecret: current.appSecret.trim(),
-        pages: current.pages.length > 0 ? current.pages : [createBlankPageDraft()],
+        pages: [],
       }));
       setStep("pages");
       return;
@@ -79,6 +99,11 @@ export function useCreateIntegrationFlow({
     const nextErrors = validateCreateForm(form);
     setErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
+
+    if (!form.appId.trim() || !form.appSecret.trim()) {
+      toast.error("Chưa có nguồn App ID/App Secret để gửi API tạo liên kết. Cần nối API lấy cấu hình trước khi submit thật.");
+      return;
+    }
 
     createIntegration.mutate(
       { businessPartnerId: form.businessPartnerId, body: createSocialMediaIntegrationPayload(form) },
@@ -97,6 +122,7 @@ export function useCreateIntegrationFlow({
     step,
     form,
     errors,
+    availablePages: TEMP_AVAILABLE_PAGES,
     submitting: createIntegration.isPending,
     openCreate,
     closeCreate,

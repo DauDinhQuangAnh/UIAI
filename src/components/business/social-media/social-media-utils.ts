@@ -16,6 +16,7 @@ import type {
   SocialMediaCreateForm,
   SocialMediaCreatePageDraft,
   SocialMediaIntegrationRow,
+  SocialMediaSelectablePage,
   SocialMediaTableRow,
 } from "./social-media-models";
 
@@ -178,14 +179,14 @@ export function isDayOfWeekName(day: string): day is DayOfWeekName {
   return DAY_OPTIONS.some((item) => item.value === day);
 }
 
-export function createBlankPageDraft(): SocialMediaCreatePageDraft {
+export function createPageDraftFromSelectablePage(page: SocialMediaSelectablePage): SocialMediaCreatePageDraft {
   return {
-    localId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    externalPageId: "",
-    pageName: "",
-    username: null,
-    pageAvatarUrl: "",
-    pageImageUrl: "",
+    localId: page.externalPageId || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    externalPageId: page.externalPageId,
+    pageName: page.pageName,
+    username: page.username ?? null,
+    pageAvatarUrl: page.pageAvatarUrl ?? "",
+    pageImageUrl: page.pageImageUrl ?? "",
     status: "Active",
     schedule: blankScheduleDraft(),
   };
@@ -222,8 +223,6 @@ export function validateCreateForm(form: SocialMediaCreateForm): CreateFormError
 export function validateCreateConfig(form: SocialMediaCreateForm): CreateFormErrors {
   const errors: CreateFormErrors = {};
   if (!form.businessPartnerId) errors.businessPartnerId = "Vui lòng chọn doanh nghiệp.";
-  if (!form.appId.trim()) errors.appId = "Vui lòng nhập App ID.";
-  if (!form.appSecret.trim()) errors.appSecret = "Vui lòng nhập App Secret.";
   return errors;
 }
 
