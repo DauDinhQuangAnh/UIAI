@@ -82,3 +82,60 @@
   --shadow-lg: 0 12px 32px rgba(28, 26, 34, 0.12), 0 4px 8px rgba(28, 26, 34, 0.06);
   --shadow-focus: 0 0 0 3px rgba(240, 101, 60, 0.32);
 }
+
+/* ─── Dark mode token overrides ──────────────────────────────────────────────
+ * Applied when <html class="dark"> is set by the ThemeToggle.
+ * All semantic aliases (--background, --card, etc.) reference these base vars,
+ * so components require zero changes — the variables do the switching.
+ */
+.dark {
+  /* Backgrounds — warm purple-black */
+  --bg: #0f0e14;
+  --surface: #171520;
+  --surface-2: #1e1b28;
+  --border-token: #2b2836;
+  --border-strong: #3a3647;
+
+  /* Text */
+  --text: #ede9f5;
+  --text-secondary: #9b95ab;
+  --text-dim: #6c6779;
+
+  /* Brand tints — inverted so light-on-dark reads correctly.
+   * brand-50/100/200 become dark coral tints (used for subtle backgrounds).
+   * brand-800 flips to a light coral for text on those dark tints. */
+  --brand-50: #1f1512;
+  --brand-100: #2e1e16;
+  --brand-200: #472d20;
+  --brand-800: #ffaa86;
+
+  /* Semantic: success */
+  --success-fg: #52e0a4;
+  --success-bg: #0a2319;
+  --success-border: #112f22;
+  --success-base: #1ec97e;
+
+  /* Semantic: warning */
+  --warning-fg: #f0c64a;
+  --warning-bg: #1e1809;
+  --warning-border: #31280f;
+  --warning-base: #d4a21a;
+
+  /* Semantic: danger */
+  --danger-fg: #f97086;
+  --danger-bg: #1e0d12;
+  --danger-border: #391420;
+  --danger-base: #e8334a;
+
+  /* Semantic: info */
+  --info-fg: #5da8ff;
+  --info-bg: #0c1728;
+  --info-border: #142644;
+  --info-base: #3a81e8;
+
+  /* Shadows — deeper on dark to keep elevation visible */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.20);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.20);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.25);
+}

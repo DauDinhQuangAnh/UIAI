@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { List, UserCircle, SignOut, Gear } from "@phosphor-icons/react";
+import { ThemeToggle } from "./theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,8 @@ export function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
 
       <AgentSwitcher />
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-pill px-2 py-1 text-sm text-text-secondary hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus">
             <UserCircle className="size-6 text-text-dim" aria-hidden />
