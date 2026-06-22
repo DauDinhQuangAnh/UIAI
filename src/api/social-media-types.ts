@@ -56,18 +56,30 @@ export interface BotScheduleRequest {
   endTime: string;
 }
 
-export interface FetchAvailableSocialMediaPagesRequest {
-  provider: string;
+export interface FacebookAppConfigRequest {
   appId: string;
   appSecret: string;
 }
 
-export interface AvailableSocialMediaPage {
+export interface FacebookAppConfigResponse {
+  integrationId: string;
+  businessPartnerId: string;
+  providerCode: string;
+  appId: string;
+  status: string;
+}
+
+export interface FacebookManagedPage {
   externalPageId: string;
   pageName: string;
   username?: string | null;
-  pageAvatarUrl?: string | null;
-  pageImageUrl?: string | null;
+  avatarUrl?: string | null;
+  pageAccessToken?: string | null;
+}
+
+export interface FacebookPagesResponse {
+  integrationId: string;
+  pages: FacebookManagedPage[];
 }
 
 export interface UpdateSocialMediaPageRequest {

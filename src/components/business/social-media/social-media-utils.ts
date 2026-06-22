@@ -22,7 +22,7 @@ import type {
 
 export function createSocialMediaIntegrationPayload(form: SocialMediaCreateForm): CreateSocialMediaIntegrationRequest {
   return {
-    provider: "Facebook",
+    provider: "FACEBOOK",
     appId: form.appId.trim(),
     appSecret: form.appSecret.trim(),
     pages: form.pages.map(createSocialMediaPagePayload),

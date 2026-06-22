@@ -2,10 +2,12 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { apiClient } from "../client";
 import { ApiRequestError, unwrap } from "../errors";
 import type {
-  AvailableSocialMediaPage,
   CreateSocialMediaIntegrationRequest,
   CreateSocialMediaIntegrationResponse,
-  FetchAvailableSocialMediaPagesRequest,
+  FacebookAppConfigRequest,
+  FacebookAppConfigResponse,
+  FacebookManagedPage,
+  FacebookPagesResponse,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   SocialMediaPageSchedule,
@@ -17,8 +19,8 @@ import type {
 export const socialMediaKeys = {
   all: ["social-media"] as const,
   providers: () => [...socialMediaKeys.all, "providers"] as const,
-  availablePages: (businessPartnerId: string | undefined, appId: string | undefined) =>
-    [...socialMediaKeys.all, "available-pages", businessPartnerId ?? "missing", appId ?? "missing"] as const,
+  facebookPages: (businessPartnerId: string | undefined) =>
+    [...socialMediaKeys.all, "facebook-pages", businessPartnerId ?? "missing"] as const,
   integrations: (businessPartnerId: string | undefined) =>
     [...socialMediaKeys.all, "integrations", businessPartnerId ?? "missing"] as const,
   integrationDetail: (businessPartnerId: string | undefined, integrationId: string | undefined) =>
@@ -77,23 +79,44 @@ export function useCreateSocialMediaIntegration() {
   });
 }
 
-export function useFetchAvailableSocialMediaPages() {
+export function useCreateFacebookAppConfig() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       businessPartnerId,
       body,
     }: {
       businessPartnerId: string;
-      body: FetchAvailableSocialMediaPagesRequest;
-    }): Promise<AvailableSocialMediaPage[]> =>
-      (
+      body: FacebookAppConfigRequest;
+    }): Promise<FacebookAppConfigResponse> =>
+      normalizeFacebookAppConfigResponse(
         unwrap(
-          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/pages/available", {
+          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/facebook/app-config", {
             params: { path: { businessPartnerId } },
             body,
           }),
-        ) ?? []
-      ).map(normalizeAvailablePage),
+        ),
+      ),
+    onSuccess: (result, variables) => {
+      invalidateIntegrationQueries(queryClient, variables.businessPartnerId, result.integrationId);
+    },
+  });
+}
+
+export function useFetchFacebookPages() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ businessPartnerId }: { businessPartnerId: string }): Promise<FacebookPagesResponse> =>
+      normalizeFacebookPagesResponse(
+        unwrap(
+          await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/facebook/pages", {
+            params: { path: { businessPartnerId } },
+          }),
+        ),
+      ),
+    onSuccess: (result, variables) => {
+      queryClient.setQueryData(socialMediaKeys.facebookPages(variables.businessPartnerId), result);
+    },
   });
 }
 
@@ -158,16 +181,6 @@ export function useDeleteSocialMediaPage() {
   });
 }
 
-function normalizeAvailablePage(page: AvailableSocialMediaPage): AvailableSocialMediaPage {
-  return {
-    externalPageId: page.externalPageId ?? "",
-    pageName: page.pageName ?? page.username ?? page.externalPageId ?? "Facebook Page",
-    username: page.username ?? null,
-    pageAvatarUrl: page.pageAvatarUrl ?? null,
-    pageImageUrl: page.pageImageUrl ?? null,
-  };
-}
-
 function normalizeProvider(provider: SocialMediaProvider): SocialMediaProvider {
   return {
     id: provider.id ?? "",
@@ -216,6 +229,33 @@ function normalizeCreateSocialMediaIntegrationResponse(
       schedulesCount: page.schedulesCount ?? 0,
     })),
     message: response.message ?? null,
+  };
+}
+
+function normalizeFacebookAppConfigResponse(response: FacebookAppConfigResponse): FacebookAppConfigResponse {
+  return {
+    integrationId: response.integrationId ?? "",
+    businessPartnerId: response.businessPartnerId ?? "",
+    providerCode: response.providerCode ?? "FACEBOOK",
+    appId: response.appId ?? "",
+    status: response.status ?? "Configured",
+  };
+}
+
+function normalizeFacebookPagesResponse(response: FacebookPagesResponse): FacebookPagesResponse {
+  return {
+    integrationId: response.integrationId ?? "",
+    pages: (response.pages ?? []).map(normalizeFacebookManagedPage),
+  };
+}
+
+function normalizeFacebookManagedPage(page: FacebookManagedPage): FacebookManagedPage {
+  return {
+    externalPageId: page.externalPageId ?? "",
+    pageName: page.pageName ?? page.username ?? page.externalPageId ?? "Facebook Page",
+    username: page.username ?? null,
+    avatarUrl: page.avatarUrl ?? null,
+    pageAccessToken: page.pageAccessToken ?? null,
   };
 }
 

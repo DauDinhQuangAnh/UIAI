@@ -1,8 +1,9 @@
 import type {
-  AvailableSocialMediaPage,
   CreateSocialMediaIntegrationRequest,
   CreateSocialMediaIntegrationResponse,
-  FetchAvailableSocialMediaPagesRequest,
+  FacebookAppConfigRequest,
+  FacebookAppConfigResponse,
+  FacebookPagesResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -65,11 +66,11 @@ type GetDeletePathItem<TGet = never, TDelete = never> = {
   trace?: never;
 };
 
-type PostPathItem<TPost = never> = {
+type AppConfigPathItem<TPost = never, TPut = never> = {
   parameters: NoParams;
-  post: TPost;
   get?: never;
-  put?: never;
+  post: TPost;
+  put: TPut;
   delete?: never;
   patch?: never;
   options?: never;
@@ -116,10 +117,21 @@ declare module "./schema" {
         responses: { 204: { headers: { [name: string]: unknown }; content?: never } };
       }
     >;
-    "/api/business-partners/{businessPartnerId}/social-media/pages/available": PostPathItem<{
+    "/api/business-partners/{businessPartnerId}/social-media/facebook/app-config": AppConfigPathItem<
+      {
+        parameters: PathParams<{ businessPartnerId: string }>;
+        requestBody: { content: { "application/json": FacebookAppConfigRequest } };
+        responses: { 200: JsonResponse<FacebookAppConfigResponse>; 201: JsonResponse<FacebookAppConfigResponse> };
+      },
+      {
+        parameters: PathParams<{ businessPartnerId: string }>;
+        requestBody: { content: { "application/json": FacebookAppConfigRequest } };
+        responses: { 200: JsonResponse<FacebookAppConfigResponse> };
+      }
+    >;
+    "/api/business-partners/{businessPartnerId}/social-media/facebook/pages": PathItem<{
       parameters: PathParams<{ businessPartnerId: string }>;
-      requestBody: { content: { "application/json": FetchAvailableSocialMediaPagesRequest } };
-      responses: { 200: JsonResponse<AvailableSocialMediaPage[]> };
+      responses: { 200: JsonResponse<FacebookPagesResponse> };
     }>;
     "/api/business-partners/{businessPartnerId}/social-media/pages/{pageId}": PutDeletePathItem<
       {
