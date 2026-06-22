@@ -1,9 +1,9 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
-import { Sparkle } from "@phosphor-icons/react";
+import { ArrowLeft, Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,6 @@ export const Route = createFileRoute("/login")({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
   beforeLoad: () => {
-    // Already signed in -> skip the login screen.
     if (useSession.getState().accessToken) throw redirect({ to: "/agents" });
   },
   component: LoginScreen,
@@ -43,8 +42,6 @@ function LoginScreen() {
     login.mutate(values, {
       onSuccess: () => navigate({ to: redirectTo ?? "/agents" }),
       onError: (err) => {
-        // 401 must be ONE generic message (never field-attributed) to preserve the
-        // server's anti-enumeration design; 400 = malformed input.
         if (err instanceof AuthRequestError && err.status === 400) {
           setFormError("Vui lòng kiểm tra thông tin và thử lại.");
         } else {
@@ -55,70 +52,81 @@ function LoginScreen() {
   });
 
   return (
-    <div className="grid min-h-[100dvh] lg:grid-cols-2">
-      {/* Brand panel (left) - warm coral gradient, hidden on small screens. */}
-      <aside className="relative hidden flex-col justify-between bg-gradient-to-br from-brand-500 to-brand-700 p-12 text-white lg:flex">
-        <div className="flex items-center gap-3 font-display">
-          <Sparkle weight="fill" className="size-6" aria-hidden />
-          <span className="flex flex-col leading-tight">
-            <span className="text-lg font-semibold">REO - AI</span>
-            <span className="text-xs font-medium text-white/70">reply enterprise operation</span>
-          </span>
-        </div>
-        <div className="flex flex-col gap-3">
-          <h1 className="font-display text-4xl font-bold leading-tight">
-            REO - reply enterprise operation cho đội ngũ vận hành của bạn.
-          </h1>
-          <p className="max-w-md text-white/80">
-            Quản lý Agents, Documents và Knowledge Graph để tạo phản hồi có nền tảng.
-          </p>
-        </div>
-        <p className="text-sm text-white/60">Phản hồi nhanh hơn, nhất quán hơn, dựa trên tri thức doanh nghiệp.</p>
-      </aside>
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[#0a090f] px-4 py-12">
+      {/* Blobs */}
+      <div className="animate-blob absolute left-[10%] top-[15%] size-[460px] rounded-full bg-brand-500/[0.12] blur-[110px]" />
+      <div
+        className="animate-blob-slow absolute bottom-[10%] right-[5%] size-[380px] rounded-full bg-brand-600/[0.10] blur-[130px]"
+        style={{ animationDelay: "4s" }}
+      />
 
-      {/* Form panel (right). */}
-      <main className="flex items-center justify-center p-6 sm:p-12">
-        <div className="flex w-full max-w-sm flex-col gap-6">
-          <div className="flex flex-col gap-1.5">
-            <h2 className="font-display text-2xl font-semibold text-text-primary">Đăng nhập</h2>
-          <p className="text-sm text-text-secondary">Nhập tài khoản SAR Platform của bạn.</p>
+      {/* Dot grid */}
+      <div className="absolute inset-0 [background-image:radial-gradient(circle,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:28px_28px]" />
+
+      {/* Back to landing */}
+      <Link
+        to="/"
+        className="absolute left-6 top-6 flex items-center gap-1.5 text-sm text-white/40 transition-colors hover:text-white/70"
+      >
+        <ArrowLeft className="size-4" aria-hidden />
+        Trang chủ
+      </Link>
+
+      {/* Card */}
+      <div className="animate-fade-up relative z-10 w-full max-w-sm rounded-2xl border border-white/[0.09] bg-white/[0.03] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+        {/* Logo */}
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-brand-500/20">
+            <Sparkle weight="fill" className="size-5 text-brand-400" aria-hidden />
           </div>
-
-          {formError && (
-            <div
-              role="alert"
-              aria-live="assertive"
-              className="rounded-md border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger-fg"
-            >
-              {formError}
-            </div>
-          )}
-
-          <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-            <Field label="Tài khoản hoặc email" htmlFor="usernameOrEmail" error={errors.usernameOrEmail?.message}>
-              <Input
-                id="usernameOrEmail"
-                autoComplete="username"
-                placeholder="admin"
-                invalid={!!errors.usernameOrEmail}
-                {...register("usernameOrEmail")}
-              />
-            </Field>
-            <Field label="Mật khẩu" htmlFor="password" error={errors.password?.message}>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                invalid={!!errors.password}
-                {...register("password")}
-              />
-            </Field>
-            <Button type="submit" className="mt-2 w-full" loading={login.isPending}>
-              Đăng nhập
-            </Button>
-          </form>
+          <div className="text-center">
+            <p className="font-display text-base font-semibold text-white">REO – AI</p>
+            <p className="text-xs text-white/40">reply enterprise operation</p>
+          </div>
         </div>
-      </main>
+
+        {/* Heading */}
+        <div className="mb-6 flex flex-col gap-1">
+          <h1 className="font-display text-xl font-semibold text-white">Đăng nhập</h1>
+          <p className="text-sm text-white/40">Nhập tài khoản SAR Platform của bạn.</p>
+        </div>
+
+        {formError && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-5 rounded-lg border border-red-500/20 bg-red-500/[0.08] px-3 py-2.5 text-sm text-red-300"
+          >
+            {formError}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+          <Field label="Tài khoản hoặc email" htmlFor="usernameOrEmail" error={errors.usernameOrEmail?.message}>
+            <Input
+              id="usernameOrEmail"
+              autoComplete="username"
+              placeholder="admin"
+              invalid={!!errors.usernameOrEmail}
+              className="border-white/[0.12] bg-white/[0.05] text-white placeholder:text-white/25 focus:border-brand-500/60"
+              {...register("usernameOrEmail")}
+            />
+          </Field>
+          <Field label="Mật khẩu" htmlFor="password" error={errors.password?.message}>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              invalid={!!errors.password}
+              className="border-white/[0.12] bg-white/[0.05] text-white placeholder:text-white/25 focus:border-brand-500/60"
+              {...register("password")}
+            />
+          </Field>
+          <Button type="submit" className="mt-2 w-full" loading={login.isPending}>
+            Đăng nhập
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -136,10 +144,12 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor} className="text-white/70">
+        {label}
+      </Label>
       {children}
       {error && (
-        <p className="text-xs text-danger-fg" aria-live="polite">
+        <p className="text-xs text-red-400" aria-live="polite">
           {error}
         </p>
       )}

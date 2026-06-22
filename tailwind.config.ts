@@ -84,9 +84,27 @@ const config: Config = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.4" },
         },
+        blob: {
+          "0%, 100%": { transform: "translate(0,0) scale(1)" },
+          "33%": { transform: "translate(30px,-20px) scale(1.05)" },
+          "66%": { transform: "translate(-20px,14px) scale(0.96)" },
+        },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(22px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "pulse-dot": "pulse-dot 1.4s ease-in-out infinite",
+        blob: "blob 9s ease-in-out infinite",
+        "blob-slow": "blob 13s ease-in-out infinite",
+        "blob-slower": "blob 17s ease-in-out infinite",
+        "fade-up": "fade-up 0.55s ease-out forwards",
+        "fade-in": "fade-in 0.4s ease-out forwards",
       },
     },
   },
