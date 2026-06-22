@@ -56,30 +56,32 @@ export interface BotScheduleRequest {
   endTime: string;
 }
 
-export interface FacebookAppConfigRequest {
-  appId: string;
-  appSecret: string;
+export interface MetaLoginUrlResponse {
+  loginUrl: string;
+  state: string;
+  expiresAt?: string | null;
 }
 
-export interface FacebookAppConfigResponse {
-  integrationId: string;
-  businessPartnerId: string;
-  providerCode: string;
-  appId: string;
-  status: string;
+export interface MetaOAuthCallbackRequest {
+  redirectUrl: string;
+  code?: string | null;
+  state?: string | null;
+  error?: string | null;
+  errorReason?: string | null;
+  errorDescription?: string | null;
 }
 
-export interface FacebookManagedPage {
-  externalPageId: string;
+export interface MetaOAuthPage {
+  pageId: string;
   pageName: string;
-  username?: string | null;
   avatarUrl?: string | null;
-  pageAccessToken?: string | null;
+  hasAccessToken: boolean;
 }
 
-export interface FacebookPagesResponse {
-  integrationId: string;
-  pages: FacebookManagedPage[];
+export interface MetaOAuthCallbackResponse {
+  success: boolean;
+  message?: string | null;
+  pages: MetaOAuthPage[];
 }
 
 export interface UpdateSocialMediaPageRequest {

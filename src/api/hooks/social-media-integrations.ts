@@ -4,10 +4,10 @@ import { ApiRequestError, unwrap } from "../errors";
 import type {
   CreateSocialMediaIntegrationRequest,
   CreateSocialMediaIntegrationResponse,
-  FacebookAppConfigRequest,
-  FacebookAppConfigResponse,
-  FacebookManagedPage,
-  FacebookPagesResponse,
+  MetaLoginUrlResponse,
+  MetaOAuthCallbackRequest,
+  MetaOAuthCallbackResponse,
+  MetaOAuthPage,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   SocialMediaPageSchedule,
@@ -19,8 +19,6 @@ import type {
 export const socialMediaKeys = {
   all: ["social-media"] as const,
   providers: () => [...socialMediaKeys.all, "providers"] as const,
-  facebookPages: (businessPartnerId: string | undefined) =>
-    [...socialMediaKeys.all, "facebook-pages", businessPartnerId ?? "missing"] as const,
   integrations: (businessPartnerId: string | undefined) =>
     [...socialMediaKeys.all, "integrations", businessPartnerId ?? "missing"] as const,
   integrationDetail: (businessPartnerId: string | undefined, integrationId: string | undefined) =>
@@ -79,45 +77,35 @@ export function useCreateSocialMediaIntegration() {
   });
 }
 
-export function useCreateFacebookAppConfig() {
-  const queryClient = useQueryClient();
+export function useCreateMetaLoginUrl() {
   return useMutation({
     mutationFn: async ({
-      businessPartnerId,
-      body,
+      appId,
+      redirectUrl,
+      forceRerequest = false,
     }: {
-      businessPartnerId: string;
-      body: FacebookAppConfigRequest;
-    }): Promise<FacebookAppConfigResponse> =>
-      normalizeFacebookAppConfigResponse(
+      appId: string;
+      redirectUrl: string;
+      forceRerequest?: boolean;
+    }): Promise<MetaLoginUrlResponse> =>
+      normalizeMetaLoginUrlResponse(
         unwrap(
-          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/facebook/app-config", {
-            params: { path: { businessPartnerId } },
-            body,
+          await apiClient.GET("/api/integrations/meta/login-url", {
+            params: { query: { appId, redirectUrl, forceRerequest } },
           }),
         ),
       ),
-    onSuccess: (result, variables) => {
-      invalidateIntegrationQueries(queryClient, variables.businessPartnerId, result.integrationId);
-    },
   });
 }
 
-export function useFetchFacebookPages() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ businessPartnerId }: { businessPartnerId: string }): Promise<FacebookPagesResponse> =>
-      normalizeFacebookPagesResponse(
-        unwrap(
-          await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/facebook/pages", {
-            params: { path: { businessPartnerId } },
-          }),
-        ),
-      ),
-    onSuccess: (result, variables) => {
-      queryClient.setQueryData(socialMediaKeys.facebookPages(variables.businessPartnerId), result);
-    },
-  });
+export async function completeMetaOAuthCallback(body: MetaOAuthCallbackRequest): Promise<MetaOAuthCallbackResponse> {
+  return normalizeMetaOAuthCallbackResponse(
+    unwrap(
+      await apiClient.POST("/api/integrations/meta/oauth/callback", {
+        body,
+      }),
+    ),
+  );
 }
 
 export function useUpdateSocialMediaPage() {
@@ -232,30 +220,28 @@ function normalizeCreateSocialMediaIntegrationResponse(
   };
 }
 
-function normalizeFacebookAppConfigResponse(response: FacebookAppConfigResponse): FacebookAppConfigResponse {
+function normalizeMetaLoginUrlResponse(response: MetaLoginUrlResponse): MetaLoginUrlResponse {
   return {
-    integrationId: response.integrationId ?? "",
-    businessPartnerId: response.businessPartnerId ?? "",
-    providerCode: response.providerCode ?? "FACEBOOK",
-    appId: response.appId ?? "",
-    status: response.status ?? "Configured",
+    loginUrl: response.loginUrl ?? "",
+    state: response.state ?? "",
+    expiresAt: response.expiresAt ?? null,
   };
 }
 
-function normalizeFacebookPagesResponse(response: FacebookPagesResponse): FacebookPagesResponse {
+function normalizeMetaOAuthCallbackResponse(response: MetaOAuthCallbackResponse): MetaOAuthCallbackResponse {
   return {
-    integrationId: response.integrationId ?? "",
-    pages: (response.pages ?? []).map(normalizeFacebookManagedPage),
+    success: response.success ?? false,
+    message: response.message ?? null,
+    pages: (response.pages ?? []).map(normalizeMetaOAuthPage),
   };
 }
 
-function normalizeFacebookManagedPage(page: FacebookManagedPage): FacebookManagedPage {
+function normalizeMetaOAuthPage(page: MetaOAuthPage): MetaOAuthPage {
   return {
-    externalPageId: page.externalPageId ?? "",
-    pageName: page.pageName ?? page.username ?? page.externalPageId ?? "Facebook Page",
-    username: page.username ?? null,
+    pageId: page.pageId ?? "",
+    pageName: page.pageName ?? page.pageId ?? "Facebook Page",
     avatarUrl: page.avatarUrl ?? null,
-    pageAccessToken: page.pageAccessToken ?? null,
+    hasAccessToken: page.hasAccessToken ?? false,
   };
 }
 

@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
@@ -100,29 +99,6 @@ export function SocialMediaCreateDialog({
                     ))}
                   </SelectContent>
                 </Select>
-              </SocialConfigField>
-              <SocialConfigField label="App ID" htmlFor="facebook_create_app_id" error={errors.appId}>
-                <Input
-                  id="facebook_create_app_id"
-                  value={form.appId}
-                  disabled={loading}
-                  invalid={!!errors.appId}
-                  placeholder="Nhập App ID"
-                  autoComplete="off"
-                  onChange={(event) => onFormChange({ ...form, appId: event.target.value })}
-                />
-              </SocialConfigField>
-              <SocialConfigField label="App Secret" htmlFor="facebook_create_app_secret" error={errors.appSecret}>
-                <Input
-                  id="facebook_create_app_secret"
-                  type="password"
-                  value={form.appSecret}
-                  disabled={loading}
-                  invalid={!!errors.appSecret}
-                  placeholder="Nhập App Secret"
-                  autoComplete="off"
-                  onChange={(event) => onFormChange({ ...form, appSecret: event.target.value })}
-                />
               </SocialConfigField>
             </div>
           )}

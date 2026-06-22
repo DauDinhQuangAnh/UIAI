@@ -1,12 +1,10 @@
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
+import { META_APP_ID, META_OAUTH_CALLBACK_PATH } from "@/api/config";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
-import {
-  useCreateFacebookAppConfig,
-  useCreateSocialMediaIntegration,
-  useFetchFacebookPages,
-} from "@/api/hooks/social-media-integrations";
-import type { FacebookManagedPage } from "@/api/social-media-types";
+import { useCreateMetaLoginUrl, useCreateSocialMediaIntegration } from "@/api/hooks/social-media-integrations";
+import type { MetaOAuthPage } from "@/api/social-media-types";
+import { storeMetaCreatePendingContext } from "@/lib/meta-oauth-create-context";
 import type { CreateFormErrors, CreateStep, SocialMediaCreateForm, SocialMediaSelectablePage } from "./social-media-models";
 import {
   apiErrorMessage,
@@ -31,8 +29,7 @@ export function useCreateIntegrationFlow({
   const [availablePages, setAvailablePages] = useState<SocialMediaSelectablePage[]>([]);
 
   const createIntegration = useCreateSocialMediaIntegration();
-  const createFacebookAppConfig = useCreateFacebookAppConfig();
-  const fetchFacebookPages = useFetchFacebookPages();
+  const createMetaLoginUrl = useCreateMetaLoginUrl();
 
   const openCreate = () => {
     setStep("config");
@@ -61,35 +58,19 @@ export function useCreateIntegrationFlow({
     setErrors({});
   };
 
-  const loadFacebookPages = (currentForm: SocialMediaCreateForm) => {
-    createFacebookAppConfig.mutate(
-      {
-        businessPartnerId: currentForm.businessPartnerId,
-        body: {
-          appId: currentForm.appId.trim(),
-          appSecret: currentForm.appSecret.trim(),
-        },
-      },
-      {
-        onSuccess: () => {
-          fetchFacebookPages.mutate(
-            { businessPartnerId: currentForm.businessPartnerId },
-            {
-              onSuccess: (result) => {
-                const pages = result.pages.map(selectablePageFromFacebookPage);
-                setAvailablePages(pages);
-                setFormState((current) => ({ ...current, pages: [] }));
-                setStep("pages");
-                if (pages.length === 0) toast.warning("Không tìm thấy page Facebook nào từ cấu hình hiện tại.");
-              },
-              onError: (error) =>
-                toast.error(apiErrorMessage(error, "Không thể lấy danh sách page Facebook từ API legacy.")),
-            },
-          );
-        },
-        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu cấu hình Facebook App.")),
-      },
-    );
+  const resumeFromMetaOAuth = ({
+    businessPartnerId,
+    pages,
+  }: {
+    businessPartnerId: string;
+    pages: MetaOAuthPage[];
+  }) => {
+    setStep("pages");
+    setErrors({});
+    setAvailablePages(pages.map(selectablePageFromMetaPage));
+    setFormState(defaultCreateForm(businessPartnerId));
+    setOpen(true);
+    if (pages.length === 0) toast.warning("Không tìm thấy page Facebook nào từ tài khoản đã cấp quyền.");
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -100,9 +81,26 @@ export function useCreateIntegrationFlow({
       setErrors(nextErrors);
       if (hasErrors(nextErrors)) return;
 
-      setAvailablePages([]);
-      setFormState((current) => ({ ...current, pages: [] }));
-      loadFacebookPages(form);
+      if (!META_APP_ID) {
+        toast.error("Chưa cấu hình VITE_META_APP_ID để tạo Meta Login URL.");
+        return;
+      }
+
+      const redirectUrl = metaOAuthRedirectUrl();
+      storeMetaCreatePendingContext({ businessPartnerId: form.businessPartnerId, appId: META_APP_ID });
+      createMetaLoginUrl.mutate(
+        { appId: META_APP_ID, redirectUrl },
+        {
+          onSuccess: (result) => {
+            if (!result.loginUrl) {
+              toast.error("API không trả về Meta Login URL.");
+              return;
+            }
+            window.location.href = result.loginUrl;
+          },
+          onError: (error) => toast.error(apiErrorMessage(error, "Không thể tạo Meta Login URL.")),
+        },
+      );
       return;
     }
 
@@ -114,6 +112,11 @@ export function useCreateIntegrationFlow({
     const nextErrors = validateCreateForm(form);
     setErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
+
+    if (!form.appId.trim() || !form.appSecret.trim()) {
+      toast.error("Chưa cấu hình Meta App ID/App Secret để tạo integration.");
+      return;
+    }
 
     createIntegration.mutate(
       { businessPartnerId: form.businessPartnerId, body: createSocialMediaIntegrationPayload(form) },
@@ -133,21 +136,28 @@ export function useCreateIntegrationFlow({
     form,
     errors,
     availablePages,
-    submitting: createIntegration.isPending || createFacebookAppConfig.isPending || fetchFacebookPages.isPending,
+    submitting: createIntegration.isPending || createMetaLoginUrl.isPending,
     openCreate,
     closeCreate,
     goToStep,
     setForm,
+    resumeFromMetaOAuth,
     submit,
   };
 }
 
-function selectablePageFromFacebookPage(page: FacebookManagedPage): SocialMediaSelectablePage {
+function selectablePageFromMetaPage(page: MetaOAuthPage): SocialMediaSelectablePage {
   return {
-    externalPageId: page.externalPageId,
+    externalPageId: page.pageId,
     pageName: page.pageName,
-    username: page.username,
+    username: page.pageId,
     pageAvatarUrl: page.avatarUrl,
     pageImageUrl: page.avatarUrl,
   };
+}
+
+function metaOAuthRedirectUrl(): string {
+  const configured = import.meta.env.VITE_FACEBOOK_OAUTH_CALLBACK_URL?.trim();
+  if (configured) return configured;
+  return `${window.location.origin}${META_OAUTH_CALLBACK_PATH}`;
 }

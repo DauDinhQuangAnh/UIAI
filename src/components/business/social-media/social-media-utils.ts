@@ -1,4 +1,5 @@
 import { ApiRequestError, errorMessage } from "@/api/errors";
+import { META_APP_ID, META_APP_SECRET } from "@/api/config";
 import type {
   BotScheduleRequest,
   CreateSocialMediaIntegrationRequest,
@@ -195,8 +196,8 @@ export function createPageDraftFromSelectablePage(page: SocialMediaSelectablePag
 export function defaultCreateForm(businessPartnerId: string): SocialMediaCreateForm {
   return {
     businessPartnerId,
-    appId: "",
-    appSecret: "",
+    appId: META_APP_ID,
+    appSecret: META_APP_SECRET,
     pages: [],
   };
 }
@@ -223,8 +224,6 @@ export function validateCreateForm(form: SocialMediaCreateForm): CreateFormError
 
 export function validateCreateConfig(form: SocialMediaCreateForm): CreateFormErrors {
   const errors: CreateFormErrors = {};
-  if (!form.appId.trim()) errors.appId = "Vui lòng nhập App ID.";
-  if (!form.appSecret.trim()) errors.appSecret = "Vui lòng nhập App Secret.";
   if (!form.businessPartnerId) errors.businessPartnerId = "Vui lòng chọn doanh nghiệp.";
   return errors;
 }

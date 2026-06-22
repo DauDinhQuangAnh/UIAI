@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LinkSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { DeleteSocialMediaIntegrationDialog } from "@/components/business/social
 import { SocialMediaIntegrationsTable } from "@/components/business/social-media/social-media-table";
 import { SocialMediaCreateDialog } from "@/components/business/social-media/social-media-create-dialog";
 import { SocialMediaIntegrationManageDialog } from "@/components/business/social-media/social-media-manage-dialog";
+import { consumeMetaCreateOAuthResult } from "@/lib/meta-oauth-create-context";
 
 const BUSINESS_PAGE_SIZE = 100;
 
@@ -86,6 +87,15 @@ function SocialMediaLinksContent({
     businesses,
     defaultBusinessId,
   });
+
+  useEffect(() => {
+    const result = consumeMetaCreateOAuthResult();
+    if (!result) return;
+    createFlow.resumeFromMetaOAuth({
+      businessPartnerId: result.businessPartnerId,
+      pages: result.pages,
+    });
+  }, [createFlow]);
 
   const manageFlow = useManageIntegrationFlow();
 
