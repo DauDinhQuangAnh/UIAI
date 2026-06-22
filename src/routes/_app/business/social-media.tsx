@@ -158,7 +158,6 @@ function SocialMediaLinksContent({
   const facebookCount = integrationRows.filter((row) => providerCode(row.integration) === "FACEBOOK").length;
   const tiktokCount = integrationRows.filter((row) => providerCode(row.integration) === "TIKTOK").length;
   const integrationsLoading = integrationQueries.some((query) => query.isLoading);
-  const integrationsFetching = integrationQueries.some((query) => query.isFetching);
   const integrationsError = integrationQueries.find((query) => query.isError)?.error;
   const deleteSubmitting = deleteIntegration.isPending;
   const manageConfigSubmitting = updateFacebookConfig.isPending || updatePage.isPending;
@@ -366,6 +365,7 @@ function SocialMediaLinksContent({
       setManageTarget(null);
       integrationQueries.forEach((query) => query.refetch());
     } catch (error) {
+      integrationQueries.forEach((query) => query.refetch());
       toast.error(apiErrorMessage(error, "Khong the cap nhat lien ket social media."));
     }
   };
@@ -483,7 +483,7 @@ function SocialMediaLinksContent({
             title="Chưa có doanh nghiệp đềEliên kết mạng xã hội."
             description="Hãy tạo business partner trước khi cấu hình các kênh social."
           />
-        ) : integrationsLoading || integrationsFetching ? (
+        ) : integrationsLoading ? (
           <SocialMediaLoadingState />
         ) : integrationsError ? (
           <EmptyState

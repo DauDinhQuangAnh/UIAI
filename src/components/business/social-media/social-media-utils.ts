@@ -200,11 +200,13 @@ export function normalizeDay(day: string): string {
 }
 
 export function schedulesFromDraft(draft: PageScheduleDraft): BotWorkingScheduleRequest[] {
+  const timezone = draft.timezone.trim() || DEFAULT_TIMEZONE;
   if (draft.mode === "full") {
     return DAY_OPTIONS.map((day) => ({
       dayOfWeek: day.value,
       startTime: FULL_TIME_START,
       endTime: FULL_TIME_END,
+      timezone,
     }));
   }
 
@@ -212,6 +214,7 @@ export function schedulesFromDraft(draft: PageScheduleDraft): BotWorkingSchedule
     dayOfWeek,
     startTime: draft.startTime,
     endTime: draft.endTime,
+    timezone,
   }));
 }
 

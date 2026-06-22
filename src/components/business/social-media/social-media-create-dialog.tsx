@@ -251,12 +251,12 @@ export function SocialMediaCreateDialog({
             <Button type="button" variant="secondary" disabled={loading} onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
-            {step !== "config" && (
+            {step === "schedule" && (
               <Button
                 type="button"
                 variant="secondary"
                 disabled={loading}
-                onClick={() => onStepChange(step === "schedule" ? "pages" : "config")}
+                onClick={() => onStepChange("pages")}
               >
                 Quay lại
               </Button>

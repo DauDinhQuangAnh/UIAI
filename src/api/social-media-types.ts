@@ -135,6 +135,7 @@ export interface BotWorkingScheduleRequest {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
+  timezone?: string;
 }
 
 export interface FacebookManagedPage {
