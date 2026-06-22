@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
-import { META_APP_ID, META_OAUTH_CALLBACK_PATH } from "@/api/config";
+import { META_APP_ID, META_OAUTH_CALLBACK_PATH, META_OAUTH_CALLBACK_URL } from "@/api/config";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
 import { useCreateMetaLoginUrl, useCreateSocialMediaIntegration } from "@/api/hooks/social-media-integrations";
 import type { MetaOAuthPage } from "@/api/social-media-types";
@@ -157,7 +157,7 @@ function selectablePageFromMetaPage(page: MetaOAuthPage): SocialMediaSelectableP
 }
 
 function metaOAuthRedirectUrl(): string {
-  const configured = import.meta.env.VITE_FACEBOOK_OAUTH_CALLBACK_URL?.trim();
+  const configured = META_OAUTH_CALLBACK_URL.trim() || import.meta.env.VITE_FACEBOOK_OAUTH_CALLBACK_URL?.trim();
   if (configured) return configured;
   return `${window.location.origin}${META_OAUTH_CALLBACK_PATH}`;
 }

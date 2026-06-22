@@ -13,6 +13,7 @@ import { Route as StyleguideRouteImport } from './routes/styleguide'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MetaCallbackRouteImport } from './routes/meta/callback'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppRolesIndexRouteImport } from './routes/_app/roles/index'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
@@ -51,6 +52,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetaCallbackRoute = MetaCallbackRouteImport.update({
+  id: '/meta/callback',
+  path: '/meta/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAccountRoute = AppAccountRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/styleguide': typeof StyleguideRoute
   '/account': typeof AppAccountRoute
+  '/meta/callback': typeof MetaCallbackRoute
   '/agents/new': typeof AppAgentsNewRoute
   '/business/information': typeof AppBusinessInformationRoute
   '/business/social-media': typeof AppBusinessSocialMediaRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/styleguide': typeof StyleguideRoute
   '/account': typeof AppAccountRoute
+  '/meta/callback': typeof MetaCallbackRoute
   '/agents/new': typeof AppAgentsNewRoute
   '/business/information': typeof AppBusinessInformationRoute
   '/business/social-media': typeof AppBusinessSocialMediaRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/styleguide': typeof StyleguideRoute
   '/_app/account': typeof AppAccountRoute
+  '/meta/callback': typeof MetaCallbackRoute
   '/_app/agents/new': typeof AppAgentsNewRoute
   '/_app/business/information': typeof AppBusinessInformationRoute
   '/_app/business/social-media': typeof AppBusinessSocialMediaRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/styleguide'
     | '/account'
+    | '/meta/callback'
     | '/agents/new'
     | '/business/information'
     | '/business/social-media'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/styleguide'
     | '/account'
+    | '/meta/callback'
     | '/agents/new'
     | '/business/information'
     | '/business/social-media'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/styleguide'
     | '/_app/account'
+    | '/meta/callback'
     | '/_app/agents/new'
     | '/_app/business/information'
     | '/_app/business/social-media'
@@ -325,6 +337,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   StyleguideRoute: typeof StyleguideRoute
+  MetaCallbackRoute: typeof MetaCallbackRoute
   BusinessSocialMediaMetaCallbackRoute: typeof BusinessSocialMediaMetaCallbackRoute
 }
 
@@ -356,6 +369,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meta/callback': {
+      id: '/meta/callback'
+      path: '/meta/callback'
+      fullPath: '/meta/callback'
+      preLoaderRoute: typeof MetaCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/account': {
@@ -554,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   StyleguideRoute: StyleguideRoute,
+  MetaCallbackRoute: MetaCallbackRoute,
   BusinessSocialMediaMetaCallbackRoute: BusinessSocialMediaMetaCallbackRoute,
 }
 export const routeTree = rootRouteImport

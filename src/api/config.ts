@@ -8,4 +8,5 @@ export const AUTH_LOGOUT_PATH = "/api/auth/logout";
 
 export const META_APP_ID = import.meta.env.VITE_META_APP_ID ?? "";
 export const META_APP_SECRET = import.meta.env.VITE_META_APP_SECRET ?? "";
-export const META_OAUTH_CALLBACK_PATH = "/business/social-media/meta/callback";
+export const META_OAUTH_CALLBACK_URL = import.meta.env.VITE_META_OAUTH_CALLBACK_URL ?? "";
+export const META_OAUTH_CALLBACK_PATH = "/meta/callback";

@@ -14,7 +14,7 @@ import {
   storeMetaCreateOAuthResult,
 } from "@/lib/meta-oauth-create-context";
 
-export const Route = createFileRoute("/business/social-media/meta/callback")({
+export const Route = createFileRoute("/meta/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
     code: typeof search.code === "string" ? search.code : undefined,
     state: typeof search.state === "string" ? search.state : undefined,
