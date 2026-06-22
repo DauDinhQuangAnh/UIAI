@@ -62,8 +62,8 @@ const config: Config = {
         focus: "var(--shadow-focus)",
       },
       fontFamily: {
-        display: ["Bricolage Grotesque", "ui-sans-serif", "system-ui", "sans-serif"],
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Be Vietnam Pro", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["Geist Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       fontSize: {
