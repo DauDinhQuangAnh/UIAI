@@ -63,7 +63,7 @@ export function SocialMediaIntegrationManageDialog({
 
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-[760px] overflow-y-auto rounded-md border border-[#d7e3f4] bg-white p-6 shadow-xl">
+      <DialogContent className="max-h-[92vh] max-w-[760px] overflow-y-auto rounded-md border border-brand-100 bg-card p-6 shadow-xl">
         <DialogHeader className="grid grid-cols-[4rem_1fr_4rem] items-start gap-3 text-center">
           <div className="justify-self-start">
             <ManageDialogAvatar
@@ -72,7 +72,7 @@ export function SocialMediaIntegrationManageDialog({
               fallback={isFacebook ? "FB" : integration ? providerCode(integration).slice(0, 2) || "SM" : "SM"}
             />
           </div>
-          <DialogTitle className="pt-2 text-base font-bold uppercase tracking-wide text-[#24589a]">
+          <DialogTitle className="pt-2 text-base font-bold uppercase tracking-wide text-brand-800">
             Thông tin liên kết social media
           </DialogTitle>
           <span aria-hidden />
@@ -119,7 +119,7 @@ export function SocialMediaIntegrationManageDialog({
                       : undefined
                 }
                 onClick={() => onRefreshToken(row)}
-                className="bg-[#bb18b8] text-white hover:bg-[#9f139d]"
+                className="bg-purple-600 text-white hover:bg-purple-700"
               >
                 Làm mới token liên kết
               </Button>
@@ -128,7 +128,7 @@ export function SocialMediaIntegrationManageDialog({
                 loading={saving}
                 disabled={!canUpdate}
                 title={!canUpdate ? "Bạn không có quyền cập nhật liên kết Facebook." : undefined}
-                className="min-w-28 bg-[#2f63a8] text-white hover:bg-[#24589a]"
+                className="min-w-28 bg-brand-700 text-white hover:bg-brand-800"
               >
                 Lưu
               </Button>
@@ -154,14 +154,14 @@ function ManageDialogAvatar({
       <img
         src={url}
         alt=""
-        className="size-16 rounded-pill border border-[#2f63a8] bg-white object-cover p-0.5 shadow-xs"
+        className="size-16 rounded-pill border border-brand-700 bg-white object-cover p-0.5 shadow-xs"
         referrerPolicy="no-referrer"
       />
     );
   }
 
   return (
-    <span className="flex size-16 items-center justify-center rounded-pill border border-[#bdd0ea] bg-[#eef5ff] text-sm font-bold text-[#24589a] shadow-xs">
+    <span className="flex size-16 items-center justify-center rounded-pill border border-brand-200 bg-brand-50 text-sm font-bold text-brand-800 shadow-xs">
       {fallback || pageInitials(name)}
     </span>
   );

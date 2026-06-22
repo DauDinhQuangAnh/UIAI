@@ -2,8 +2,6 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { apiClient } from "../client";
 import { ApiRequestError, unwrap } from "../errors";
 import type {
-  CreateSocialMediaIntegrationRequest,
-  CreateSocialMediaIntegrationResponse,
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
   FacebookManagedPage,
@@ -13,18 +11,15 @@ import type {
   FacebookPagesResponse,
   SaveFacebookPagesRequest,
   SaveFacebookPagesResponse,
-  SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   SocialMediaPageSchedule,
-  SocialMediaProvider,
   UpdateSocialMediaPageRequest,
   UpdateSocialMediaPageResponse,
 } from "../social-media-types";
 
 export const socialMediaKeys = {
   all: ["social-media"] as const,
-  providers: () => [...socialMediaKeys.all, "providers"] as const,
   integrations: (businessPartnerId: string | undefined) =>
     [...socialMediaKeys.all, "integrations", businessPartnerId ?? "missing"] as const,
   integrationDetail: (businessPartnerId: string | undefined, integrationId: string | undefined) =>
@@ -32,22 +27,6 @@ export const socialMediaKeys = {
   facebookPages: (businessPartnerId: string | undefined) =>
     [...socialMediaKeys.all, "facebook-pages", businessPartnerId ?? "missing"] as const,
 };
-
-export function useSocialMediaProviders() {
-  return useQuery({
-    queryKey: socialMediaKeys.providers(),
-    queryFn: async (): Promise<SocialMediaProvider[]> =>
-      (unwrap(await apiClient.GET("/api/social-media/providers")) ?? []).map(normalizeProvider),
-  });
-}
-
-export function useBusinessPartnerIntegrations(businessPartnerId: string | undefined) {
-  return useQuery({
-    queryKey: socialMediaKeys.integrations(businessPartnerId),
-    enabled: !!businessPartnerId,
-    queryFn: () => fetchBusinessPartnerIntegrations(businessPartnerId!),
-  });
-}
 
 export function useBusinessPartnersIntegrations(businessPartnerIds: string[], enabled = true) {
   return useQueries({
@@ -67,49 +46,6 @@ export async function fetchBusinessPartnerIntegrations(businessPartnerId: string
       }),
     ) ?? []
   ).map(normalizeIntegration);
-}
-
-export function useCreateSocialMediaIntegration() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      businessPartnerId,
-      body,
-    }: {
-      businessPartnerId: string;
-      body: CreateSocialMediaIntegrationRequest;
-    }): Promise<CreateSocialMediaIntegrationResponse> =>
-      normalizeCreateIntegrationResponse(
-        unwrap(
-          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/integrations", {
-            params: { path: { businessPartnerId } },
-            body,
-          }),
-        ),
-      ),
-    onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: socialMediaKeys.integrations(variables.businessPartnerId) });
-      queryClient.invalidateQueries({ queryKey: socialMediaKeys.all });
-    },
-  });
-}
-
-export function useBusinessPartnerIntegrationDetail(
-  businessPartnerId: string | undefined,
-  integrationId: string | undefined,
-) {
-  return useQuery({
-    queryKey: socialMediaKeys.integrationDetail(businessPartnerId, integrationId),
-    enabled: !!businessPartnerId && !!integrationId,
-    queryFn: async (): Promise<SocialMediaIntegrationDetail> =>
-      normalizeIntegrationDetail(
-        unwrap(
-          await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}", {
-            params: { path: { businessPartnerId: businessPartnerId!, integrationId: integrationId! } },
-          }),
-        ),
-      ),
-  });
 }
 
 export function useCreateFacebookAppConfig() {
@@ -281,15 +217,6 @@ export async function completeFacebookOAuthCallback({
   );
 }
 
-function normalizeProvider(provider: SocialMediaProvider): SocialMediaProvider {
-  return {
-    id: provider.id ?? provider.code ?? "",
-    code: provider.code ?? "",
-    name: provider.name ?? provider.code ?? "Provider",
-    isActive: provider.isActive ?? true,
-  };
-}
-
 function normalizeIntegration(integration: SocialMediaIntegrationSummary): SocialMediaIntegrationSummary {
   const provider = (integration as SocialMediaIntegrationSummary & { provider?: { name?: string; code?: string } | null }).provider;
   return {
@@ -307,14 +234,6 @@ function normalizeIntegration(integration: SocialMediaIntegrationSummary): Socia
     activeBotPagesCount: integration.activeBotPagesCount ?? 0,
     pages: normalizeLinkedPages(integration.pages),
     selectedPages: normalizeLinkedPages(integration.selectedPages),
-  };
-}
-
-function normalizeIntegrationDetail(integration: SocialMediaIntegrationDetail): SocialMediaIntegrationDetail {
-  return {
-    ...normalizeIntegration(integration),
-    createdAt: integration.createdAt ?? null,
-    updatedAt: integration.updatedAt ?? null,
   };
 }
 
@@ -391,27 +310,6 @@ function normalizeSchedules(schedules: SocialMediaPageSchedule[] | null | undefi
     timeZoneId: schedule.timeZoneId ?? null,
     isActive: schedule.isActive ?? true,
   }));
-}
-
-function normalizeCreateIntegrationResponse(
-  response: CreateSocialMediaIntegrationResponse,
-): CreateSocialMediaIntegrationResponse {
-  return {
-    businessPartnerId: response.businessPartnerId ?? "",
-    integrationId: response.integrationId ?? "",
-    providerCode: response.providerCode ?? "FACEBOOK",
-    appId: response.appId ?? "",
-    status: response.status ?? "",
-    pages: (response.pages ?? []).map((page) => ({
-      id: page.id ?? "",
-      externalPageId: page.externalPageId ?? "",
-      pageName: page.pageName ?? "",
-      isBotEnabled: page.isBotEnabled ?? false,
-      isActive: page.isActive ?? true,
-      schedulesCount: page.schedulesCount ?? 0,
-    })),
-    message: response.message ?? null,
-  };
 }
 
 function normalizeUpdateSocialMediaPageResponse(response: UpdateSocialMediaPageResponse): UpdateSocialMediaPageResponse {

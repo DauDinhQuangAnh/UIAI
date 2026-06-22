@@ -55,40 +55,6 @@ export interface BotScheduleRequest {
   endTime: string;
 }
 
-export interface CreateSocialMediaIntegrationPageRequest {
-  externalPageId: string;
-  pageName: string;
-  pageAvatarUrl?: string | null;
-  pageImageUrl?: string | null;
-  status?: string | null;
-  botSchedule: BotScheduleRequest;
-}
-
-export interface CreateSocialMediaIntegrationRequest {
-  provider: string;
-  appId: string;
-  appSecret: string;
-  pages: CreateSocialMediaIntegrationPageRequest[];
-}
-
-export interface CreateSocialMediaIntegrationPageResponse {
-  id: string;
-  externalPageId: string;
-  pageName: string;
-  isBotEnabled: boolean;
-  isActive: boolean;
-  schedulesCount: number;
-}
-
-export interface CreateSocialMediaIntegrationResponse {
-  businessPartnerId: string;
-  integrationId: string;
-  providerCode: string;
-  appId: string;
-  status: string;
-  pages: CreateSocialMediaIntegrationPageResponse[];
-  message?: string | null;
-}
 
 export interface UpdateSocialMediaPageRequest {
   status: string;

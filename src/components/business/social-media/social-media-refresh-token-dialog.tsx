@@ -33,9 +33,9 @@ export function RefreshSocialMediaTokenDialog({
 
   return (
     <Dialog open={!!target} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl rounded-md border border-[#d7e3f4] bg-white p-6 shadow-xl">
+      <DialogContent className="max-w-xl rounded-md border border-brand-100 bg-card p-6 shadow-xl">
         <DialogHeader className="text-center">
-          <DialogTitle className="text-base font-bold uppercase tracking-wide text-[#24589a]">
+          <DialogTitle className="text-base font-bold uppercase tracking-wide text-brand-800">
             Làm mới liên kết social media
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -65,7 +65,7 @@ export function RefreshSocialMediaTokenDialog({
               onChange={(appSecret) => setForm((current) => ({ ...current, appSecret }))}
             />
             <div className="flex justify-center pt-2">
-              <Button type="submit" loading={loading} className="min-w-32 bg-[#2f63a8] text-white hover:bg-[#24589a]">
+              <Button type="submit" loading={loading} className="min-w-32 bg-brand-700 text-white hover:bg-brand-800">
                 Tiếp tục
               </Button>
             </div>

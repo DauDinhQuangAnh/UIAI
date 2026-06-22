@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { LinkSimple, Plus, ShieldWarning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,49 +10,13 @@ import { EmptyState } from "@/components/common/empty-state";
 import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
   useBusinessPartnersIntegrations,
-  useCreateFacebookAppConfig,
   useDeleteSocialMediaIntegration,
-  useFacebookPages,
-  useSaveFacebookPages,
-  useStartFacebookOAuth,
-  useUpdateFacebookAppConfig,
-  useUpdateSocialMediaPage,
-  socialMediaKeys,
 } from "@/api/hooks/social-media-integrations";
 import { PERMISSIONS, usePermissionSet } from "@/auth/permissions";
-import {
-  clearFacebookOAuthContext,
-  readFacebookOAuthContext,
-  storeFacebookOAuthContext,
-} from "@/lib/facebook-oauth-context";
-import type {
-  CreateFormErrors,
-  CreateStep,
-  ManageConfigForm,
-  ProviderFilter,
-  RefreshTokenForm,
-  SocialMediaCreateForm,
-  SocialMediaIntegrationRow,
-  SocialMediaTableRow,
-} from "@/components/business/social-media/social-media-models";
-import {
-  apiErrorMessage,
-  buildSocialMediaTableRows,
-  defaultCreateForm,
-  deleteSocialMediaErrorMessage,
-  displayPageName,
-  facebookOAuthCallbackUrl,
-  hasErrors,
-  isEditedAppSecret,
-  managePagePayload,
-  nullableTrim,
-  providerCode,
-  schedulesFromDraft,
-  validateCreateConfig,
-  validateCreateForm,
-  validateCreateUntilStep,
-  validateScheduleDraft,
-} from "@/components/business/social-media/social-media-utils";
+import type { ProviderFilter, SocialMediaIntegrationRow, SocialMediaTableRow } from "@/components/business/social-media/social-media-models";
+import { apiErrorMessage, buildSocialMediaTableRows, deleteSocialMediaErrorMessage, providerCode } from "@/components/business/social-media/social-media-utils";
+import { useCreateIntegrationFlow } from "@/components/business/social-media/use-create-integration-flow";
+import { useManageIntegrationFlow } from "@/components/business/social-media/use-manage-integration-flow";
 import { DeleteSocialMediaIntegrationDialog } from "@/components/business/social-media/social-media-delete-dialog";
 import { SocialMediaIntegrationsTable } from "@/components/business/social-media/social-media-table";
 import { SocialMediaCreateDialog } from "@/components/business/social-media/social-media-create-dialog";
@@ -93,13 +56,7 @@ function SocialMediaLinksScreen() {
     );
   }
 
-  return (
-    <SocialMediaLinksContent
-      canCreate={canCreate}
-      canUpdate={canUpdate}
-      canReauthorize={canReauthorize}
-    />
-  );
+  return <SocialMediaLinksContent canCreate={canCreate} canUpdate={canUpdate} canReauthorize={canReauthorize} />;
 }
 
 function SocialMediaLinksContent({
@@ -111,38 +68,35 @@ function SocialMediaLinksContent({
   canUpdate: boolean;
   canReauthorize: boolean;
 }) {
-  const queryClient = useQueryClient();
   const search = Route.useSearch();
   const [providerFilter, setProviderFilter] = useState<ProviderFilter>("FACEBOOK");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createStep, setCreateStep] = useState<CreateStep>("config");
-  const [createForm, setCreateForm] = useState<SocialMediaCreateForm>(() => defaultCreateForm(""));
-  const [createErrors, setCreateErrors] = useState<CreateFormErrors>({});
-  const [manageTarget, setManageTarget] = useState<SocialMediaTableRow | null>(null);
-  const [refreshTarget, setRefreshTarget] = useState<SocialMediaTableRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SocialMediaTableRow | null>(null);
-  const [oauthResumeHandled, setOauthResumeHandled] = useState(false);
 
-  const businessPartners = useBusinessPartners({
-    isActive: true,
-    pageNumber: 1,
-    pageSize: BUSINESS_PAGE_SIZE,
-  });
+  const businessPartners = useBusinessPartners({ isActive: true, pageNumber: 1, pageSize: BUSINESS_PAGE_SIZE });
   const businesses = businessPartners.data?.items ?? [];
-  const businessIds = useMemo(() => businesses.map((business) => business.id), [businesses]);
+  const businessIds = useMemo(() => businesses.map((b) => b.id), [businesses]);
   const integrationQueries = useBusinessPartnersIntegrations(businessIds, !businessPartners.isLoading && !businessPartners.isError);
-  const createFacebookConfig = useCreateFacebookAppConfig();
-  const updateFacebookConfig = useUpdateFacebookAppConfig();
-  const updatePage = useUpdateSocialMediaPage();
   const deleteIntegration = useDeleteSocialMediaIntegration();
-  const startFacebookOAuth = useStartFacebookOAuth();
-  const facebookPages = useFacebookPages(createForm.businessPartnerId, createOpen && createStep === "pages");
-  const saveFacebookPages = useSaveFacebookPages();
 
   const defaultBusinessId =
-    search.businessPartnerId && businesses.some((business) => business.id === search.businessPartnerId)
+    search.businessPartnerId && businesses.some((b) => b.id === search.businessPartnerId)
       ? search.businessPartnerId
       : businesses[0]?.id ?? "";
+
+  const integrationsLoading = integrationQueries.some((q) => q.isLoading);
+  const integrationsError = integrationQueries.find((q) => q.isError)?.error;
+
+  const createFlow = useCreateIntegrationFlow({
+    businesses,
+    defaultBusinessId,
+    integrationsLoading,
+    isLoadingBusinesses: businessPartners.isLoading,
+    isFetchingBusinesses: businessPartners.isFetching,
+    onResumeOAuth: () => setProviderFilter("FACEBOOK"),
+  });
+
+  const manageFlow = useManageIntegrationFlow();
+
   const integrationRows = useMemo<SocialMediaIntegrationRow[]>(
     () =>
       businesses.flatMap((business, index) =>
@@ -150,18 +104,14 @@ function SocialMediaLinksContent({
       ),
     [businesses, integrationQueries],
   );
-  const filteredIntegrationRows = useMemo(
+  const filteredRows = useMemo(
     () => integrationRows.filter((row) => providerCode(row.integration) === providerFilter),
     [integrationRows, providerFilter],
   );
-  const tableRows = useMemo(() => buildSocialMediaTableRows(filteredIntegrationRows), [filteredIntegrationRows]);
+  const tableRows = useMemo(() => buildSocialMediaTableRows(filteredRows), [filteredRows]);
   const facebookCount = integrationRows.filter((row) => providerCode(row.integration) === "FACEBOOK").length;
   const tiktokCount = integrationRows.filter((row) => providerCode(row.integration) === "TIKTOK").length;
-  const integrationsLoading = integrationQueries.some((query) => query.isLoading);
-  const integrationsError = integrationQueries.find((query) => query.isError)?.error;
-  const deleteSubmitting = deleteIntegration.isPending;
-  const manageConfigSubmitting = updateFacebookConfig.isPending || updatePage.isPending;
-  const createSubmitting = createFacebookConfig.isPending || startFacebookOAuth.isPending || saveFacebookPages.isPending;
+
   const createDisabled = !defaultBusinessId || providerFilter !== "FACEBOOK";
   const createDisabledTitle = !defaultBusinessId
     ? "Chưa có doanh nghiệp để thêm liên kết."
@@ -169,256 +119,17 @@ function SocialMediaLinksContent({
       ? "Thêm liên kết TikTok sẽ được triển khai ở phase sau."
       : undefined;
 
-  useEffect(() => {
-    if (oauthResumeHandled || businessPartners.isLoading || integrationsLoading) return;
-    const context = readFacebookOAuthContext();
-    if (!context?.resumePageSelection || context.flow !== "add-link") return;
-
-    const businessExists = businesses.some((business) => business.id === context.businessPartnerId);
-    if (!businessExists) {
-      if (!businessPartners.isFetching) {
-        toast.error("Không tìm thấy doanh nghiệp để tiếp tục chọn trang Facebook.");
-        clearFacebookOAuthContext();
-        setOauthResumeHandled(true);
-      }
-      return;
-    }
-
-    setProviderFilter("FACEBOOK");
-    setCreateStep("pages");
-    setCreateForm({
-      ...defaultCreateForm(context.businessPartnerId),
-      appId: context.appId ?? "",
-      appSecret: "",
-      pages: [],
-    });
-    setCreateErrors({});
-    setCreateOpen(true);
-    setOauthResumeHandled(true);
-  }, [
-    businesses,
-    businessPartners.isFetching,
-    businessPartners.isLoading,
-    integrationsLoading,
-    oauthResumeHandled,
-  ]);
-
-  const openCreate = () => {
-    if (createDisabled) return;
-    setCreateStep("config");
-    setCreateForm(defaultCreateForm(defaultBusinessId));
-    setCreateErrors({});
-    setCreateOpen(true);
-  };
-
-  const closeCreate = () => {
-    const businessPartnerId = createForm.businessPartnerId;
-    setCreateOpen(false);
-    setCreateStep("config");
-    setCreateErrors({});
-    setCreateForm(defaultCreateForm(defaultBusinessId));
-    clearFacebookOAuthContext();
-    queryClient.removeQueries({ queryKey: socialMediaKeys.facebookPages(businessPartnerId) });
-  };
-
-  const goToCreateStep = (nextStep: CreateStep) => {
-    const nextErrors = validateCreateUntilStep(createForm, nextStep);
-    setCreateErrors(nextErrors);
-    if (hasErrors(nextErrors)) return;
-    setCreateStep(nextStep);
-  };
-
-  const submitCreate = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (createStep === "config") {
-      const nextErrors = validateCreateConfig(createForm);
-      setCreateErrors(nextErrors);
-      if (hasErrors(nextErrors)) return;
-
-      const nextForm = {
-        businessPartnerId: createForm.businessPartnerId,
-        appId: createForm.appId.trim(),
-        appSecret: createForm.appSecret.trim(),
-      };
-
-      createFacebookConfig.mutate(
-        {
-          businessPartnerId: nextForm.businessPartnerId,
-          body: {
-            appId: nextForm.appId,
-            appSecret: nextForm.appSecret,
-          },
-        },
-        {
-          onSuccess: (configResult) => {
-            startFacebookOAuth.mutate(
-              {
-                businessPartnerId: nextForm.businessPartnerId,
-                body: { redirectUri: facebookOAuthCallbackUrl() },
-              },
-              {
-                onSuccess: (oauthResult) => {
-                  if (!oauthResult.authorizationUrl) {
-                    toast.error("Không nhận được đường dẫn đăng nhập Facebook.");
-                    return;
-                  }
-                  storeFacebookOAuthContext({
-                    businessPartnerId: nextForm.businessPartnerId,
-                    integrationId: configResult.integrationId,
-                    appId: nextForm.appId,
-                    state: oauthResult.state,
-                    flow: "add-link",
-                    resumePageSelection: false,
-                  });
-                  toast.info("Đang chuyển sang Facebook để đăng nhập...");
-                  setCreateOpen(false);
-                  window.location.href = oauthResult.authorizationUrl;
-                },
-                onError: (error) => {
-                  toast.error(apiErrorMessage(error, "Không thể bắt đầu ủy quyền Facebook."));
-                  setCreateForm((current) => ({ ...current, appSecret: "" }));
-                },
-              },
-            );
-          },
-          onError: (error) => {
-            toast.error(apiErrorMessage(error, "Không thể lưu cấu hình Facebook App."));
-            setCreateForm((current) => ({ ...current, appSecret: "" }));
-          },
-        },
-      );
-      return;
-    }
-
-    if (createStep === "pages") {
-      goToCreateStep("schedule");
-      return;
-    }
-
-    const nextErrors = validateCreateForm(createForm);
-    setCreateErrors(nextErrors);
-    if (hasErrors(nextErrors)) return;
-
-    saveFacebookPages.mutate(
-      {
-        businessPartnerId: createForm.businessPartnerId,
-        body: {
-          pages: createForm.pages.map((page) => ({
-            externalPageId: page.externalPageId,
-            pageName: page.pageName,
-            pageAvatarUrl: nullableTrim(page.pageAvatarUrl),
-            pageAccessToken: page.pageAccessToken,
-            schedules: schedulesFromDraft(page.schedule),
-          })),
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success("Đã lưu page Facebook và lịch hoạt động.");
-          closeCreate();
-        },
-        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu page Facebook và lịch hoạt động.")),
-      },
-    );
-  };
-
-  const saveManageConfig = async (row: SocialMediaTableRow, form: ManageConfigForm) => {
-    const appSecret = form.appSecret.trim();
-    if (!form.businessPartnerId) {
-      toast.error("Vui lòng chọn doanh nghiệp.");
-      return;
-    }
-
-    const shouldUpdateAppConfig = isEditedAppSecret(appSecret);
-    const shouldUpdatePage = !!row.page?.id;
-    if (!shouldUpdateAppConfig && !shouldUpdatePage) {
-      toast.error("Liên kết này chưa có page để cập nhật trạng thái bot.");
-      return;
-    }
-
-    const validationError = form.botMode === "part"
-      ? validateScheduleDraft({ ...form.schedule, mode: "part" }, displayPageName(row.page, row.integration))
-      : "";
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-
-    try {
-      if (shouldUpdateAppConfig) {
-        await updateFacebookConfig.mutateAsync({
-          businessPartnerId: form.businessPartnerId,
-          body: {
-            appId: row.integration.appId,
-            appSecret,
-          },
-        });
-      }
-      if (shouldUpdatePage && row.page?.id) {
-        await updatePage.mutateAsync({
-          businessPartnerId: row.business.id,
-          pageId: row.page.id,
-          body: managePagePayload(form),
-        });
-      }
-      toast.success("Đã cập nhật liên kết social media.");
-      setManageTarget(null);
-      integrationQueries.forEach((query) => query.refetch());
-    } catch (error) {
-      integrationQueries.forEach((query) => query.refetch());
-      toast.error(apiErrorMessage(error, "Không thể cập nhật liên kết social media."));
-    }
-  };
   const confirmDelete = () => {
     if (!deleteTarget) return;
     deleteIntegration.mutate(
+      { businessPartnerId: deleteTarget.business.id, integrationId: deleteTarget.integration.id },
       {
-        businessPartnerId: deleteTarget.business.id,
-        integrationId: deleteTarget.integration.id,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Đã xóa mềm liên kết mạng xã hội.");
-          setDeleteTarget(null);
-        },
+        onSuccess: () => { toast.success("Đã xóa liên kết mạng xã hội."); setDeleteTarget(null); },
         onError: (error) => toast.error(deleteSocialMediaErrorMessage(error)),
       },
     );
   };
-  const openRefreshToken = (row: SocialMediaTableRow) => {
-    setManageTarget(null);
-    setRefreshTarget(row);
-  };
 
-  const saveRefreshTokenConfig = (row: SocialMediaTableRow, form: RefreshTokenForm) => {
-    const appSecret = form.appSecret.trim();
-    if (!form.businessPartnerId) {
-      toast.error("Vui lòng chọn doanh nghiệp.");
-      return;
-    }
-    if (!isEditedAppSecret(appSecret)) {
-      toast.error("Vui lòng nhập App Secret mới nếu muốn cập nhật cấu hình.");
-      return;
-    }
-
-    updateFacebookConfig.mutate(
-      {
-        businessPartnerId: form.businessPartnerId,
-        body: {
-          appId: row.integration.appId,
-          appSecret,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success("Đã lưu cấu hình làm mới liên kết social media.");
-          setRefreshTarget(null);
-          integrationQueries.forEach((query) => query.refetch());
-        },
-        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu cấu hình làm mới liên kết social media.")),
-      },
-    );
-  };
   return (
     <BusinessPageShell
       title="Liên kết mạng xã hội"
@@ -454,7 +165,7 @@ function SocialMediaLinksContent({
                 size="sm"
                 disabled={createDisabled}
                 title={createDisabledTitle}
-                onClick={openCreate}
+                onClick={createFlow.openCreate}
                 className="uppercase"
               >
                 <Plus className="size-4" aria-hidden />
@@ -491,7 +202,7 @@ function SocialMediaLinksContent({
             title="Không tải được liên kết mạng xã hội"
             description={apiErrorMessage(integrationsError, "Vui lòng thử lại sau.")}
             action={
-              <Button type="button" variant="secondary" onClick={() => integrationQueries.forEach((query) => query.refetch())}>
+              <Button type="button" variant="secondary" onClick={() => integrationQueries.forEach((q) => q.refetch())}>
                 Tải lại
               </Button>
             }
@@ -500,15 +211,10 @@ function SocialMediaLinksContent({
           <EmptyState
             icon={LinkSimple}
             title="Chưa có liên kết mạng xã hội."
-            description="Thêm liên kết Facebook bằng App ID, App Secret, danh sách page và lịch bot theo API mới."
+            description="Thêm liên kết Facebook bằng App ID, App Secret, danh sách page và lịch bot."
             action={
               canCreate ? (
-                <Button
-                  type="button"
-                  disabled={createDisabled}
-                  title={createDisabledTitle}
-                  onClick={openCreate}
-                >
+                <Button type="button" disabled={createDisabled} title={createDisabledTitle} onClick={createFlow.openCreate}>
                   <Plus className="size-4" aria-hidden />
                   Thêm liên kết
                 </Button>
@@ -524,60 +230,52 @@ function SocialMediaLinksContent({
         ) : (
           <SocialMediaIntegrationsTable
             rows={tableRows}
-            onManage={setManageTarget}
+            onManage={manageFlow.setManageTarget}
             onDelete={setDeleteTarget}
           />
         )}
       </div>
 
       <SocialMediaCreateDialog
-        open={createOpen}
-        step={createStep}
-        form={createForm}
-        errors={createErrors}
+        open={createFlow.open}
+        step={createFlow.step}
+        form={createFlow.form}
+        errors={createFlow.errors}
         businesses={businesses}
-        managedPages={facebookPages.data?.pages ?? []}
-        pagesLoading={facebookPages.isLoading || facebookPages.isFetching}
-        pagesError={facebookPages.error}
-        loading={createSubmitting}
-        onOpenChange={(open) => {
-          if (!open) closeCreate();
-          else setCreateOpen(true);
-        }}
-        onStepChange={goToCreateStep}
-        onFormChange={(form) => {
-          setCreateForm(form);
-          setCreateErrors({});
-        }}
-        onRetryPages={() => facebookPages.refetch()}
-        onSubmit={submitCreate}
+        managedPages={createFlow.facebookPages.data?.pages ?? []}
+        pagesLoading={createFlow.facebookPages.isLoading || createFlow.facebookPages.isFetching}
+        pagesError={createFlow.facebookPages.error}
+        loading={createFlow.submitting}
+        onOpenChange={(open) => { if (!open) createFlow.closeCreate(); }}
+        onStepChange={createFlow.goToStep}
+        onFormChange={createFlow.setForm}
+        onRetryPages={() => createFlow.facebookPages.refetch()}
+        onSubmit={createFlow.submit}
       />
 
       <SocialMediaIntegrationManageDialog
-        row={manageTarget}
+        row={manageFlow.manageTarget}
         businesses={businesses}
         canUpdate={canUpdate}
         canReauthorize={canReauthorize}
-        saving={manageConfigSubmitting}
-        onOpenChange={(open) => {
-          if (!open) setManageTarget(null);
-        }}
-        onSaveConfig={saveManageConfig}
-        onRefreshToken={openRefreshToken}
+        saving={manageFlow.saving}
+        onOpenChange={(open) => { if (!open) manageFlow.setManageTarget(null); }}
+        onSaveConfig={manageFlow.saveConfig}
+        onRefreshToken={manageFlow.openRefreshToken}
       />
 
       <RefreshSocialMediaTokenDialog
-        target={refreshTarget}
+        target={manageFlow.refreshTarget}
         businesses={businesses}
-        loading={updateFacebookConfig.isPending}
-        onOpenChange={(open) => !open && setRefreshTarget(null)}
-        onSubmit={saveRefreshTokenConfig}
+        loading={manageFlow.saving}
+        onOpenChange={(open) => { if (!open) manageFlow.setRefreshTarget(null); }}
+        onSubmit={manageFlow.saveRefreshToken}
       />
 
       <DeleteSocialMediaIntegrationDialog
         target={deleteTarget}
-        loading={deleteSubmitting}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        loading={deleteIntegration.isPending}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
         onConfirm={confirmDelete}
       />
     </BusinessPageShell>

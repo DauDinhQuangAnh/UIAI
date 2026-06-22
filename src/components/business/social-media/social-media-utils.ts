@@ -3,6 +3,7 @@ import type {
   BotScheduleRequest,
   BotWorkingScheduleRequest,
   FacebookManagedPage,
+  SaveFacebookPageRequest,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   UpdateSocialMediaPageRequest,
@@ -18,6 +19,16 @@ import type {
   SocialMediaIntegrationRow,
   SocialMediaTableRow,
 } from "./social-media-models";
+
+export function saveFacebookPagePayload(page: SocialMediaCreatePageDraft): SaveFacebookPageRequest {
+  return {
+    externalPageId: page.externalPageId,
+    pageName: page.pageName,
+    pageAvatarUrl: nullableTrim(page.pageAvatarUrl),
+    pageAccessToken: page.pageAccessToken,
+    schedules: schedulesFromDraft(page.schedule),
+  };
+}
 
 export const DEFAULT_TIMEZONE = "Asia/Ho_Chi_Minh";
 export const FULL_TIME_START = "00:00";

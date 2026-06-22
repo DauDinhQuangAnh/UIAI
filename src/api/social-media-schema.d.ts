@@ -1,6 +1,4 @@
 import type {
-  CreateSocialMediaIntegrationRequest,
-  CreateSocialMediaIntegrationResponse,
   FacebookAppConfigRequest,
   FacebookAppConfigResponse,
   FacebookPagesResponse,
@@ -11,7 +9,6 @@ import type {
   SaveFacebookPagesResponse,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
-  SocialMediaProvider,
   UpdateSocialMediaPageRequest,
   UpdateSocialMediaPageResponse,
 } from "./social-media-types";
@@ -128,22 +125,10 @@ type GetPostPathItem<TGet = never, TPost = never> = {
 
 declare module "./schema" {
   interface paths {
-    "/api/social-media/providers": PathItem<{
-      parameters: NoParams;
-      responses: { 200: JsonResponse<SocialMediaProvider[]> };
+    "/api/business-partners/{businessPartnerId}/social-media/integrations": PathItem<{
+      parameters: PathParams<{ businessPartnerId: string }>;
+      responses: { 200: JsonResponse<SocialMediaIntegrationSummary[]> };
     }>;
-    "/api/business-partners/{businessPartnerId}/social-media/integrations": GetPostDeletePathItem<
-      {
-        parameters: PathParams<{ businessPartnerId: string }>;
-        responses: { 200: JsonResponse<SocialMediaIntegrationSummary[]> };
-      },
-      {
-        parameters: PathParams<{ businessPartnerId: string }>;
-        requestBody: { content: { "application/json": CreateSocialMediaIntegrationRequest } };
-        responses: { 200: JsonResponse<CreateSocialMediaIntegrationResponse> };
-      },
-      never
-    >;
     "/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}": GetDeletePathItem<
       {
         parameters: PathParams<{ businessPartnerId: string; integrationId: string }>;
