@@ -87,7 +87,7 @@ function SocialMediaLinksScreen() {
         <EmptyState
           icon={ShieldWarning}
           title="Bạn không có quyền xem liên kết mạng xã hội"
-          description="Cần quyền SOCIAL_MEDIA.FACEBOOK_INTEGRATION.VIEW đềEtruy cập màn hình này."
+          description="Cần quyền SOCIAL_MEDIA.FACEBOOK_INTEGRATION.VIEW để truy cập màn hình này."
         />
       </BusinessPageShell>
     );
@@ -164,9 +164,9 @@ function SocialMediaLinksContent({
   const createSubmitting = createFacebookConfig.isPending || startFacebookOAuth.isPending || saveFacebookPages.isPending;
   const createDisabled = !defaultBusinessId || providerFilter !== "FACEBOOK";
   const createDisabledTitle = !defaultBusinessId
-    ? "Chưa có doanh nghiệp đềEthêm liên kết."
+    ? "Chưa có doanh nghiệp để thêm liên kết."
     : providerFilter !== "FACEBOOK"
-      ? "Thêm liên kết TikTok sẽ được triển khai ềEphase sau."
+      ? "Thêm liên kết TikTok sẽ được triển khai ở phase sau."
       : undefined;
 
   useEffect(() => {
@@ -177,7 +177,7 @@ function SocialMediaLinksContent({
     const businessExists = businesses.some((business) => business.id === context.businessPartnerId);
     if (!businessExists) {
       if (!businessPartners.isFetching) {
-        toast.error("Không tìm thấy doanh nghiệp đềEtiếp tục chọn trang Facebook.");
+        toast.error("Không tìm thấy doanh nghiệp để tiếp tục chọn trang Facebook.");
         clearFacebookOAuthContext();
         setOauthResumeHandled(true);
       }
@@ -270,19 +270,19 @@ function SocialMediaLinksContent({
                     flow: "add-link",
                     resumePageSelection: false,
                   });
-                  toast.info("Đang chuyển sang Facebook đềEđăng nhập...");
+                  toast.info("Đang chuyển sang Facebook để đăng nhập...");
                   setCreateOpen(false);
                   window.location.href = oauthResult.authorizationUrl;
                 },
                 onError: (error) => {
-                  toast.error(apiErrorMessage(error, "Không thềEbắt đầu ủy quyền Facebook."));
+                  toast.error(apiErrorMessage(error, "Không thể bắt đầu ủy quyền Facebook."));
                   setCreateForm((current) => ({ ...current, appSecret: "" }));
                 },
               },
             );
           },
           onError: (error) => {
-            toast.error(apiErrorMessage(error, "Không thềElưu cấu hình Facebook App."));
+            toast.error(apiErrorMessage(error, "Không thể lưu cấu hình Facebook App."));
             setCreateForm((current) => ({ ...current, appSecret: "" }));
           },
         },
@@ -317,7 +317,7 @@ function SocialMediaLinksContent({
           toast.success("Đã lưu page Facebook và lịch hoạt động.");
           closeCreate();
         },
-        onError: (error) => toast.error(apiErrorMessage(error, "Không thềElưu page Facebook và lịch hoạt động.")),
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu page Facebook và lịch hoạt động.")),
       },
     );
   };
@@ -325,14 +325,14 @@ function SocialMediaLinksContent({
   const saveManageConfig = async (row: SocialMediaTableRow, form: ManageConfigForm) => {
     const appSecret = form.appSecret.trim();
     if (!form.businessPartnerId) {
-      toast.error("Vui long chon doanh nghiep.");
+      toast.error("Vui lòng chọn doanh nghiệp.");
       return;
     }
 
     const shouldUpdateAppConfig = isEditedAppSecret(appSecret);
     const shouldUpdatePage = !!row.page?.id;
     if (!shouldUpdateAppConfig && !shouldUpdatePage) {
-      toast.error("Lien ket nay chua co page de cap nhat trang thai bot.");
+      toast.error("Liên kết này chưa có page để cập nhật trạng thái bot.");
       return;
     }
 
@@ -361,12 +361,12 @@ function SocialMediaLinksContent({
           body: managePagePayload(form),
         });
       }
-      toast.success("Da cap nhat lien ket social media.");
+      toast.success("Đã cập nhật liên kết social media.");
       setManageTarget(null);
       integrationQueries.forEach((query) => query.refetch());
     } catch (error) {
       integrationQueries.forEach((query) => query.refetch());
-      toast.error(apiErrorMessage(error, "Khong the cap nhat lien ket social media."));
+      toast.error(apiErrorMessage(error, "Không thể cập nhật liên kết social media."));
     }
   };
   const confirmDelete = () => {
@@ -378,7 +378,7 @@ function SocialMediaLinksContent({
       },
       {
         onSuccess: () => {
-          toast.success("Da xoa mem lien ket mang xa hoi.");
+          toast.success("Đã xóa mềm liên kết mạng xã hội.");
           setDeleteTarget(null);
         },
         onError: (error) => toast.error(deleteSocialMediaErrorMessage(error)),
@@ -393,11 +393,11 @@ function SocialMediaLinksContent({
   const saveRefreshTokenConfig = (row: SocialMediaTableRow, form: RefreshTokenForm) => {
     const appSecret = form.appSecret.trim();
     if (!form.businessPartnerId) {
-      toast.error("Vui long chon doanh nghiep.");
+      toast.error("Vui lòng chọn doanh nghiệp.");
       return;
     }
     if (!isEditedAppSecret(appSecret)) {
-      toast.error("Vui long nhap App Secret moi neu muon cap nhat cau hinh.");
+      toast.error("Vui lòng nhập App Secret mới nếu muốn cập nhật cấu hình.");
       return;
     }
 
@@ -411,11 +411,11 @@ function SocialMediaLinksContent({
       },
       {
         onSuccess: () => {
-          toast.success("Da luu cau hinh lam moi lien ket social media.");
+          toast.success("Đã lưu cấu hình làm mới liên kết social media.");
           setRefreshTarget(null);
           integrationQueries.forEach((query) => query.refetch());
         },
-        onError: (error) => toast.error(apiErrorMessage(error, "Khong the luu cau hinh lam moi lien ket social media.")),
+        onError: (error) => toast.error(apiErrorMessage(error, "Không thể lưu cấu hình làm mới liên kết social media.")),
       },
     );
   };
@@ -480,7 +480,7 @@ function SocialMediaLinksContent({
         ) : businesses.length === 0 ? (
           <EmptyState
             icon={LinkSimple}
-            title="Chưa có doanh nghiệp đềEliên kết mạng xã hội."
+            title="Chưa có doanh nghiệp để liên kết mạng xã hội."
             description="Hãy tạo business partner trước khi cấu hình các kênh social."
           />
         ) : integrationsLoading ? (
@@ -519,7 +519,7 @@ function SocialMediaLinksContent({
           <EmptyState
             icon={LinkSimple}
             title={`Chưa có liên kết ${providerFilter === "FACEBOOK" ? "Facebook" : "TikTok"}.`}
-            description="Đổi bềElọc hoặc thêm liên kết mới đềEbắt đầu."
+            description="Đổi bộ lọc hoặc thêm liên kết mới để bắt đầu."
           />
         ) : (
           <SocialMediaIntegrationsTable

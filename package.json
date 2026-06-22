@@ -1,9 +1,9 @@
 {
-  "name": "social-ai-web",
+  "name": "reo-ai-web",
   "version": "0.5.0",
   "private": true,
   "type": "module",
-  "description": "social-ai customer Dashboard frontend (P5b) — Vite + TanStack Router SPA over the Dashboard API.",
+  "description": "REO - AI (reply enterprise operation) customer dashboard frontend (P5b) — Vite + TanStack Router SPA over the Dashboard API.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -68,6 +68,6 @@
     "vitest": "^4.1.8"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   }
 }

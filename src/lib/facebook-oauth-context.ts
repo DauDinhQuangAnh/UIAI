@@ -9,7 +9,7 @@ export interface FacebookOAuthContext {
   resumePageSelection?: boolean;
 }
 
-const FACEBOOK_OAUTH_CONTEXT_KEY = "social-ai.facebook-oauth-context";
+const FACEBOOK_OAUTH_CONTEXT_KEY = "reo-ai.facebook-oauth-context";
 
 export function storeFacebookOAuthContext(context: FacebookOAuthContext) {
   if (typeof window === "undefined") return;

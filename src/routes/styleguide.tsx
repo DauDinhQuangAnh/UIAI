@@ -69,9 +69,9 @@ function Styleguide() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-12 p-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-4xl text-text-primary">social-ai Console — Hướng dẫn giao diện</h1>
+        <h1 className="text-4xl text-text-primary">REO - AI — reply enterprise operation</h1>
         <p className="text-text-secondary">
-          Kiểm tra đồng bộ token. Mẫu tiếng Việt: <span className="font-display">Trợ lý hỗ trợ khách hàng — Tổng quan</span>
+          Kiểm tra đồng bộ token. Mẫu tiếng Việt: <span className="font-display">REO - reply enterprise operation — Tổng quan</span>
         </p>
       </header>
 

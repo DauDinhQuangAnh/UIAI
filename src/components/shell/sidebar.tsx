@@ -130,12 +130,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         to="/agents"
         onClick={onNavigate}
-        className="mb-2 flex items-center gap-2 rounded-md border border-brand-100 bg-surface px-3 py-2 font-display text-lg font-semibold text-text-primary shadow-xs"
+        className="mb-2 flex items-center gap-3 rounded-md border border-brand-100 bg-surface px-3 py-2 font-display text-text-primary shadow-xs"
       >
         <span className="flex size-8 items-center justify-center rounded-md bg-brand-50 text-brand-600">
           <Sparkle weight="fill" className="size-5" aria-hidden />
         </span>
-        social-ai
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="text-lg font-semibold">REO - AI</span>
+          <span className="truncate text-[11px] font-medium text-text-secondary">reply enterprise operation</span>
+        </span>
       </Link>
 
       {hasBackendMenus ? (

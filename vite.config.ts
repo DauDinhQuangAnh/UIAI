@@ -9,6 +9,7 @@ import path from "node:path";
 // the local backend so the typed client hits real endpoints without CORS.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const isVercel = !!process.env.VERCEL;
 
   return {
   plugins: [
@@ -36,7 +37,7 @@ export default defineConfig(({ mode }) => {
     // Emit straight into the Go embed package so `go build` picks up the assets
     // with no copy step. go:embed cannot reach ../web/dist, so the SPA must live
     // inside the embedding package's tree. Dev uses the Vite server (this is unused).
-    outDir: "../internal/gateway/spa/dist",
+    outDir: isVercel ? "dist" : "../internal/gateway/spa/dist",
     emptyOutDir: true,
     sourcemap: false,
   },
