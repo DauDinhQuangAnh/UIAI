@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
-import { useCreateSocialMediaIntegration } from "@/api/hooks/social-media-integrations";
+import { useCreateSocialMediaIntegration, useFetchAvailableSocialMediaPages } from "@/api/hooks/social-media-integrations";
 import type { CreateFormErrors, CreateStep, SocialMediaCreateForm, SocialMediaSelectablePage } from "./social-media-models";
 import {
   apiErrorMessage,
@@ -13,29 +13,6 @@ import {
   validateCreateUntilStep,
 } from "./social-media-utils";
 
-const TEMP_AVAILABLE_PAGES: SocialMediaSelectablePage[] = [
-  {
-    externalPageId: "657000124932010",
-    pageName: "Shah hoa Lyny Tr",
-    username: "@657000124932010",
-  },
-  {
-    externalPageId: "689000124823419",
-    pageName: "Cửa Lò hội Lữ hành MT",
-    username: "Type travel",
-  },
-  {
-    externalPageId: "104678999810204",
-    pageName: "Hội Kiên Giang",
-    username: "@kiengiang",
-  },
-  {
-    externalPageId: "874010932817501",
-    pageName: "Xí Kho Online An Hội & Nt",
-    username: "Xí Kho Queen Lotus",
-  },
-];
-
 export function useCreateIntegrationFlow({
   defaultBusinessId,
 }: {
@@ -46,13 +23,16 @@ export function useCreateIntegrationFlow({
   const [step, setStep] = useState<CreateStep>("config");
   const [form, setFormState] = useState<SocialMediaCreateForm>(() => defaultCreateForm(""));
   const [errors, setErrors] = useState<CreateFormErrors>({});
+  const [availablePages, setAvailablePages] = useState<SocialMediaSelectablePage[]>([]);
 
   const createIntegration = useCreateSocialMediaIntegration();
+  const fetchAvailablePages = useFetchAvailableSocialMediaPages();
 
   const openCreate = () => {
     setStep("config");
     setFormState(defaultCreateForm(defaultBusinessId));
     setErrors({});
+    setAvailablePages([]);
     setOpen(true);
   };
 
@@ -60,6 +40,7 @@ export function useCreateIntegrationFlow({
     setOpen(false);
     setStep("config");
     setErrors({});
+    setAvailablePages([]);
     setFormState(defaultCreateForm(defaultBusinessId));
   };
 
@@ -82,12 +63,26 @@ export function useCreateIntegrationFlow({
       setErrors(nextErrors);
       if (hasErrors(nextErrors)) return;
 
-      setFormState((current) => ({
-        ...current,
-        businessPartnerId: current.businessPartnerId,
-        pages: [],
-      }));
-      setStep("pages");
+      fetchAvailablePages.mutate(
+        {
+          businessPartnerId: form.businessPartnerId,
+          body: {
+            provider: "Facebook",
+            appId: form.appId.trim(),
+            appSecret: form.appSecret.trim(),
+          },
+        },
+        {
+          onSuccess: (pages) => {
+            setAvailablePages(pages);
+            setFormState((current) => ({ ...current, pages: [] }));
+            setStep("pages");
+            if (pages.length === 0) toast.warning("Không tìm thấy page nào từ tài khoản Facebook này.");
+          },
+          onError: (error) =>
+            toast.error(apiErrorMessage(error, "Không thể lấy danh sách page Facebook. Kiểm tra App ID/App Secret hoặc endpoint backend.")),
+        },
+      );
       return;
     }
 
@@ -99,11 +94,6 @@ export function useCreateIntegrationFlow({
     const nextErrors = validateCreateForm(form);
     setErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
-
-    if (!form.appId.trim() || !form.appSecret.trim()) {
-      toast.error("Chưa có nguồn App ID/App Secret để gửi API tạo liên kết. Cần nối API lấy cấu hình trước khi submit thật.");
-      return;
-    }
 
     createIntegration.mutate(
       { businessPartnerId: form.businessPartnerId, body: createSocialMediaIntegrationPayload(form) },
@@ -122,8 +112,8 @@ export function useCreateIntegrationFlow({
     step,
     form,
     errors,
-    availablePages: TEMP_AVAILABLE_PAGES,
-    submitting: createIntegration.isPending,
+    availablePages,
+    submitting: createIntegration.isPending || fetchAvailablePages.isPending,
     openCreate,
     closeCreate,
     goToStep,

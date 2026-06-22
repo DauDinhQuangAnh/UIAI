@@ -56,6 +56,19 @@ export interface BotScheduleRequest {
   endTime: string;
 }
 
+export interface FetchAvailableSocialMediaPagesRequest {
+  provider: string;
+  appId: string;
+  appSecret: string;
+}
+
+export interface AvailableSocialMediaPage {
+  externalPageId: string;
+  pageName: string;
+  username?: string | null;
+  pageAvatarUrl?: string | null;
+  pageImageUrl?: string | null;
+}
 
 export interface UpdateSocialMediaPageRequest {
   status: string;

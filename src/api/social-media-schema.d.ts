@@ -1,6 +1,8 @@
 import type {
+  AvailableSocialMediaPage,
   CreateSocialMediaIntegrationRequest,
   CreateSocialMediaIntegrationResponse,
+  FetchAvailableSocialMediaPagesRequest,
   SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaProvider,
@@ -63,6 +65,18 @@ type GetDeletePathItem<TGet = never, TDelete = never> = {
   trace?: never;
 };
 
+type PostPathItem<TPost = never> = {
+  parameters: NoParams;
+  post: TPost;
+  get?: never;
+  put?: never;
+  delete?: never;
+  patch?: never;
+  options?: never;
+  head?: never;
+  trace?: never;
+};
+
 type PutDeletePathItem<TPut = never, TDelete = never> = {
   parameters: NoParams;
   put: TPut;
@@ -102,6 +116,11 @@ declare module "./schema" {
         responses: { 204: { headers: { [name: string]: unknown }; content?: never } };
       }
     >;
+    "/api/business-partners/{businessPartnerId}/social-media/pages/available": PostPathItem<{
+      parameters: PathParams<{ businessPartnerId: string }>;
+      requestBody: { content: { "application/json": FetchAvailableSocialMediaPagesRequest } };
+      responses: { 200: JsonResponse<AvailableSocialMediaPage[]> };
+    }>;
     "/api/business-partners/{businessPartnerId}/social-media/pages/{pageId}": PutDeletePathItem<
       {
         parameters: PathParams<{ businessPartnerId: string; pageId: string }>;

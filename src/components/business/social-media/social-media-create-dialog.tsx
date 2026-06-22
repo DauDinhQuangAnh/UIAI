@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { BusinessPartner } from "@/components/business/information/business-information-data";
@@ -81,7 +82,7 @@ export function SocialMediaCreateDialog({
 
         <form className="grid gap-5 pt-2" onSubmit={onSubmit}>
           {step === "config" && (
-            <div className="grid gap-8 py-2">
+            <div className="grid gap-5 py-2">
               <SocialConfigField label="Doanh nghiệp" htmlFor="facebook_create_business" error={errors.businessPartnerId}>
                 <Select
                   value={form.businessPartnerId}
@@ -100,6 +101,29 @@ export function SocialMediaCreateDialog({
                   </SelectContent>
                 </Select>
               </SocialConfigField>
+              <SocialConfigField label="App ID" htmlFor="facebook_create_app_id" error={errors.appId}>
+                <Input
+                  id="facebook_create_app_id"
+                  value={form.appId}
+                  disabled={loading}
+                  invalid={!!errors.appId}
+                  placeholder="Nhập App ID"
+                  autoComplete="off"
+                  onChange={(event) => onFormChange({ ...form, appId: event.target.value })}
+                />
+              </SocialConfigField>
+              <SocialConfigField label="App Secret" htmlFor="facebook_create_app_secret" error={errors.appSecret}>
+                <Input
+                  id="facebook_create_app_secret"
+                  type="password"
+                  value={form.appSecret}
+                  disabled={loading}
+                  invalid={!!errors.appSecret}
+                  placeholder="Nhập App Secret"
+                  autoComplete="off"
+                  onChange={(event) => onFormChange({ ...form, appSecret: event.target.value })}
+                />
+              </SocialConfigField>
             </div>
           )}
 
@@ -111,6 +135,11 @@ export function SocialMediaCreateDialog({
               </div>
               {errors.pages && <p className="text-sm font-medium text-danger-fg">{errors.pages}</p>}
               <div className="grid max-h-[58vh] gap-3 overflow-y-auto pr-1">
+                {availablePages.length === 0 && (
+                  <div className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-text-secondary">
+                    Không có page nào để liên kết.
+                  </div>
+                )}
                 {availablePages.map((page) => {
                   const selected = form.pages.some((selectedPage) => selectedPage.externalPageId === page.externalPageId);
                   return (

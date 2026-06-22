@@ -2,8 +2,10 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { apiClient } from "../client";
 import { ApiRequestError, unwrap } from "../errors";
 import type {
+  AvailableSocialMediaPage,
   CreateSocialMediaIntegrationRequest,
   CreateSocialMediaIntegrationResponse,
+  FetchAvailableSocialMediaPagesRequest,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   SocialMediaPageSchedule,
@@ -15,6 +17,8 @@ import type {
 export const socialMediaKeys = {
   all: ["social-media"] as const,
   providers: () => [...socialMediaKeys.all, "providers"] as const,
+  availablePages: (businessPartnerId: string | undefined, appId: string | undefined) =>
+    [...socialMediaKeys.all, "available-pages", businessPartnerId ?? "missing", appId ?? "missing"] as const,
   integrations: (businessPartnerId: string | undefined) =>
     [...socialMediaKeys.all, "integrations", businessPartnerId ?? "missing"] as const,
   integrationDetail: (businessPartnerId: string | undefined, integrationId: string | undefined) =>
@@ -70,6 +74,26 @@ export function useCreateSocialMediaIntegration() {
     onSuccess: (result, variables) => {
       invalidateIntegrationQueries(queryClient, variables.businessPartnerId, result.integrationId);
     },
+  });
+}
+
+export function useFetchAvailableSocialMediaPages() {
+  return useMutation({
+    mutationFn: async ({
+      businessPartnerId,
+      body,
+    }: {
+      businessPartnerId: string;
+      body: FetchAvailableSocialMediaPagesRequest;
+    }): Promise<AvailableSocialMediaPage[]> =>
+      (
+        unwrap(
+          await apiClient.POST("/api/business-partners/{businessPartnerId}/social-media/pages/available", {
+            params: { path: { businessPartnerId } },
+            body,
+          }),
+        ) ?? []
+      ).map(normalizeAvailablePage),
   });
 }
 
@@ -132,6 +156,16 @@ export function useDeleteSocialMediaPage() {
       queryClient.invalidateQueries({ queryKey: socialMediaKeys.all });
     },
   });
+}
+
+function normalizeAvailablePage(page: AvailableSocialMediaPage): AvailableSocialMediaPage {
+  return {
+    externalPageId: page.externalPageId ?? "",
+    pageName: page.pageName ?? page.username ?? page.externalPageId ?? "Facebook Page",
+    username: page.username ?? null,
+    pageAvatarUrl: page.pageAvatarUrl ?? null,
+    pageImageUrl: page.pageImageUrl ?? null,
+  };
 }
 
 function normalizeProvider(provider: SocialMediaProvider): SocialMediaProvider {

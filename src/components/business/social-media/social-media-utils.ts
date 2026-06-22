@@ -215,6 +215,7 @@ export function validateCreateUntilStep(form: SocialMediaCreateForm, nextStep: s
 
 export function validateCreateForm(form: SocialMediaCreateForm): CreateFormErrors {
   return {
+    ...validateCreateConfig(form),
     ...validateCreatePages(form),
     ...validateCreateSchedules(form),
   };
@@ -222,6 +223,8 @@ export function validateCreateForm(form: SocialMediaCreateForm): CreateFormError
 
 export function validateCreateConfig(form: SocialMediaCreateForm): CreateFormErrors {
   const errors: CreateFormErrors = {};
+  if (!form.appId.trim()) errors.appId = "Vui lòng nhập App ID.";
+  if (!form.appSecret.trim()) errors.appSecret = "Vui lòng nhập App Secret.";
   if (!form.businessPartnerId) errors.businessPartnerId = "Vui lòng chọn doanh nghiệp.";
   return errors;
 }
