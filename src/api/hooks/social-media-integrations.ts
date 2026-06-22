@@ -55,6 +55,27 @@ export function useBusinessPartnersIntegrations(businessPartnerIds: string[], en
   });
 }
 
+export function useAllIntegrationDetails(
+  rows: Array<{ business: { id: string }; integration: { id: string } }>,
+  enabled = true,
+) {
+  return useQueries({
+    queries: rows.map((row) => ({
+      queryKey: socialMediaKeys.integrationDetail(row.business.id, row.integration.id),
+      enabled: enabled && !!row.business.id && !!row.integration.id,
+      queryFn: async (): Promise<SocialMediaIntegrationSummary> =>
+        normalizeIntegration(
+          unwrap(
+            await apiClient.GET(
+              "/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}",
+              { params: { path: { businessPartnerId: row.business.id, integrationId: row.integration.id } } },
+            ),
+          ),
+        ),
+    })),
+  });
+}
+
 export function useSocialMediaProviders() {
   return useQuery({
     queryKey: socialMediaKeys.providers(),

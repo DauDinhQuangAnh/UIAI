@@ -9,6 +9,7 @@ import { BusinessPageShell } from "@/components/business/business-page-shell";
 import { EmptyState } from "@/components/common/empty-state";
 import { useBusinessPartners } from "@/api/hooks/business-partners";
 import {
+  useAllIntegrationDetails,
   useBusinessPartnersIntegrations,
   useDeleteSocialMediaIntegration,
 } from "@/api/hooks/social-media-integrations";
@@ -106,13 +107,24 @@ function SocialMediaLinksContent({
       ),
     [businesses, integrationQueries],
   );
+
+  const detailQueries = useAllIntegrationDetails(integrationRows, !integrationsLoading && !integrationsError);
+  const enrichedRows = useMemo<SocialMediaIntegrationRow[]>(
+    () =>
+      integrationRows.map((row, index) => ({
+        ...row,
+        integration: detailQueries[index]?.data ?? row.integration,
+      })),
+    [integrationRows, detailQueries],
+  );
+
   const filteredRows = useMemo(
-    () => integrationRows.filter((row) => providerCode(row.integration) === providerFilter),
-    [integrationRows, providerFilter],
+    () => enrichedRows.filter((row) => providerCode(row.integration) === providerFilter),
+    [enrichedRows, providerFilter],
   );
   const tableRows = useMemo(() => buildSocialMediaTableRows(filteredRows), [filteredRows]);
-  const facebookCount = integrationRows.filter((row) => providerCode(row.integration) === "FACEBOOK").length;
-  const tiktokCount = integrationRows.filter((row) => providerCode(row.integration) === "TIKTOK").length;
+  const facebookCount = enrichedRows.filter((row) => providerCode(row.integration) === "FACEBOOK").length;
+  const tiktokCount = enrichedRows.filter((row) => providerCode(row.integration) === "TIKTOK").length;
 
   const createDisabled = !defaultBusinessId || providerFilter !== "FACEBOOK";
   const createDisabledTitle = !defaultBusinessId
