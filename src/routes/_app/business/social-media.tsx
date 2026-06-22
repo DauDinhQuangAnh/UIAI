@@ -257,6 +257,7 @@ function SocialMediaLinksContent({
         businesses={businesses}
         canUpdate={canUpdate}
         saving={manageFlow.saving}
+        detailLoading={manageFlow.detailLoading}
         onOpenChange={(open) => { if (!open) manageFlow.setManageTarget(null); }}
         onSaveConfig={manageFlow.saveConfig}
       />

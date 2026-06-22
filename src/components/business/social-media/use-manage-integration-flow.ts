@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { socialMediaKeys, useUpdateSocialMediaPage } from "@/api/hooks/social-media-integrations";
+import { socialMediaKeys, useIntegrationDetail, useUpdateSocialMediaPage } from "@/api/hooks/social-media-integrations";
 import type { ManageConfigForm, SocialMediaTableRow } from "./social-media-models";
 import {
   apiErrorMessage,
@@ -15,6 +15,27 @@ export function useManageIntegrationFlow() {
   const [manageTarget, setManageTarget] = useState<SocialMediaTableRow | null>(null);
 
   const updatePage = useUpdateSocialMediaPage();
+
+  const detailQuery = useIntegrationDetail(
+    manageTarget?.business.id,
+    manageTarget?.integration.id,
+    !!manageTarget,
+  );
+
+  const resolvedManageTarget = useMemo<SocialMediaTableRow | null>(() => {
+    if (!manageTarget) return null;
+    if (manageTarget.page?.id) return manageTarget;
+
+    const pages = detailQuery.data?.pages;
+    if (!pages?.length) return manageTarget;
+
+    const targetExtId = manageTarget.page?.externalPageId;
+    const page = targetExtId
+      ? (pages.find((p) => p.externalPageId === targetExtId) ?? pages[0])
+      : pages[0];
+
+    return { ...manageTarget, integration: detailQuery.data!, page: page ?? null };
+  }, [manageTarget, detailQuery.data]);
 
   const refetchAll = () => {
     queryClient.invalidateQueries({ queryKey: socialMediaKeys.all });
@@ -56,7 +77,8 @@ export function useManageIntegrationFlow() {
   };
 
   return {
-    manageTarget,
+    manageTarget: resolvedManageTarget,
+    detailLoading: detailQuery.isLoading && !!manageTarget,
     setManageTarget,
     saving: updatePage.isPending,
     saveConfig,

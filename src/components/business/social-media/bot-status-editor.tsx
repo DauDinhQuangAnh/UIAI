@@ -1,6 +1,4 @@
 import { CheckCircle } from "@phosphor-icons/react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { DayOfWeekName, ManageBotMode, PageScheduleDraft } from "./social-media-models";
 import {
   DAY_OPTIONS,
@@ -9,6 +7,7 @@ import {
   FULL_TIME_END,
   FULL_TIME_START,
 } from "./social-media-utils";
+import { PartTimeTable } from "./schedule-editor";
 
 export function ManageBotStatusEditor({
   value,
@@ -27,38 +26,26 @@ export function ManageBotStatusEditor({
     if (disabled) return;
     onModeChange(mode);
     if (mode === "full") {
-      onScheduleChange({
-        ...schedule,
-        mode: "full",
-        workingDays: DAY_OPTIONS.map((day) => day.value),
-        startTime: FULL_TIME_START,
-        endTime: FULL_TIME_END,
-      });
+      onScheduleChange({ ...schedule, mode: "full", daySchedules: {} });
     }
     if (mode === "part") {
-      onScheduleChange({
-        ...schedule,
-        mode: "part",
-        startTime: schedule.startTime === FULL_TIME_START ? DEFAULT_PART_TIME_START : schedule.startTime,
-        endTime: schedule.endTime === FULL_TIME_END ? DEFAULT_PART_TIME_END : schedule.endTime,
-        workingDays: schedule.workingDays.length > 0
-          ? schedule.workingDays
-          : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      });
+      const hasDays = Object.keys(schedule.daySchedules).length > 0;
+      if (hasDays) {
+        onScheduleChange({ ...schedule, mode: "part" });
+      } else {
+        const weekdays: DayOfWeekName[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+        const daySchedules: PageScheduleDraft["daySchedules"] = {};
+        for (const day of weekdays) {
+          daySchedules[day] = { fullDay: false, startTime: DEFAULT_PART_TIME_START, endTime: DEFAULT_PART_TIME_END };
+        }
+        onScheduleChange({ ...schedule, mode: "part", daySchedules });
+      }
     }
-  };
-
-  const toggleDay = (day: DayOfWeekName) => {
-    const workingDays = schedule.workingDays.includes(day)
-      ? schedule.workingDays.filter((item) => item !== day)
-      : [...schedule.workingDays, day];
-    onModeChange("part");
-    onScheduleChange({ ...schedule, mode: "part", workingDays });
   };
 
   return (
     <div className="grid gap-2">
-      <Label className="font-medium text-brand-800">Trạng thái hoạt động của Chatbot</Label>
+      <span className="font-medium text-brand-800">Trạng thái hoạt động của Chatbot</span>
       <BotModeRow
         label="Dừng hoạt động"
         selected={value === "inactive"}
@@ -89,51 +76,11 @@ export function ManageBotStatusEditor({
         </button>
         {value === "part" && (
           <div className="border-t border-[#d6dce5] p-3">
-            <div className="grid grid-cols-7 gap-2">
-              {DAY_OPTIONS.map((day) => {
-                const selected = schedule.workingDays.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    disabled={disabled}
-                    className={[
-                      "h-8 rounded-md border text-xs font-semibold transition-colors disabled:cursor-not-allowed",
-                      selected
-                        ? "border-[#2f63a8] bg-[#2f63a8] text-white"
-                        : "border-[#d6dce5] bg-white text-text-secondary hover:border-[#2f63a8]",
-                    ].join(" ")}
-                    onClick={() => toggleDay(day.value)}
-                  >
-                    {day.shortLabel}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm font-medium text-brand-800">
-                Giờ bắt đầu
-                <Input
-                  type="time"
-                  value={schedule.startTime}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    onScheduleChange({ ...schedule, mode: "part", startTime: event.target.value })
-                  }
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-medium text-brand-800">
-                Giờ kết thúc
-                <Input
-                  type="time"
-                  value={schedule.endTime}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    onScheduleChange({ ...schedule, mode: "part", endTime: event.target.value })
-                  }
-                />
-              </label>
-            </div>
+            <PartTimeTable
+              schedule={schedule}
+              disabled={disabled}
+              onChange={onScheduleChange}
+            />
           </div>
         )}
       </div>
@@ -168,3 +115,5 @@ function BotModeRow({
   );
 }
 
+// Re-exports for anything that imported these from here directly
+export { FULL_TIME_START, FULL_TIME_END, DAY_OPTIONS };

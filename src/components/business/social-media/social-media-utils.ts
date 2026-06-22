@@ -11,6 +11,7 @@ import type {
 import type {
   CreateFormErrors,
   DayOfWeekName,
+  DaySchedule,
   ManageBotMode,
   ManageConfigForm,
   PageScheduleDraft,
@@ -23,7 +24,7 @@ import type {
 
 export function createSocialMediaIntegrationPayload(form: SocialMediaCreateForm): CreateSocialMediaIntegrationRequest {
   return {
-    provider: "FACEBOOK",
+    provider: "Facebook",
     appId: form.appId.trim(),
     appSecret: form.appSecret.trim(),
     pages: form.pages.map(createSocialMediaPagePayload),
@@ -104,10 +105,17 @@ export function blankScheduleDraft(): PageScheduleDraft {
   return {
     mode: "full",
     timezone: DEFAULT_TIMEZONE,
-    workingDays: DAY_OPTIONS.map((day) => day.value),
-    startTime: FULL_TIME_START,
-    endTime: FULL_TIME_END,
+    daySchedules: {},
   };
+}
+
+export function defaultPartScheduleDraft(): PageScheduleDraft {
+  const weekdays: DayOfWeekName[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const daySchedules: Partial<Record<DayOfWeekName, DaySchedule>> = {};
+  for (const day of weekdays) {
+    daySchedules[day] = { fullDay: false, startTime: DEFAULT_PART_TIME_START, endTime: DEFAULT_PART_TIME_END };
+  }
+  return { mode: "part", timezone: DEFAULT_TIMEZONE, daySchedules };
 }
 
 export function manageBotModeFromPage(page: SocialMediaLinkedPage | null): ManageBotMode {
@@ -130,17 +138,23 @@ export function scheduleDraftFromPage(page: SocialMediaLinkedPage | null): PageS
         schedule.endTime === FULL_TIME_END,
     ),
   );
-
   if (fullTime) return blankScheduleDraft();
 
-  const firstSchedule = schedules[0];
-  return {
-    mode: "part",
-    timezone: firstSchedule?.timeZoneId || DEFAULT_TIMEZONE,
-    workingDays: uniqueDays(schedules.map((schedule) => normalizeDay(schedule.dayOfWeek))),
-    startTime: firstSchedule?.startTime || DEFAULT_PART_TIME_START,
-    endTime: firstSchedule?.endTime || DEFAULT_PART_TIME_END,
-  };
+  const timezone = schedules[0]?.timeZoneId || DEFAULT_TIMEZONE;
+  const daySchedules: Partial<Record<DayOfWeekName, DaySchedule>> = {};
+
+  for (const schedule of schedules) {
+    const day = normalizeDay(schedule.dayOfWeek);
+    if (!isDayOfWeekName(day)) continue;
+    const isFullDay = schedule.startTime === FULL_TIME_START && schedule.endTime === FULL_TIME_END;
+    daySchedules[day] = {
+      fullDay: isFullDay,
+      startTime: schedule.startTime || DEFAULT_PART_TIME_START,
+      endTime: schedule.endTime || DEFAULT_PART_TIME_END,
+    };
+  }
+
+  return { mode: "part", timezone, daySchedules };
 }
 
 export function managePagePayload(form: ManageConfigForm): UpdateSocialMediaPageRequest {
@@ -151,21 +165,31 @@ export function managePagePayload(form: ManageConfigForm): UpdateSocialMediaPage
 }
 
 export function botScheduleFromDraft(draft: PageScheduleDraft): BotScheduleRequest {
+  const timezone = draft.timezone.trim() || DEFAULT_TIMEZONE;
+
   if (draft.mode === "full") {
     return {
-      timezone: draft.timezone.trim() || DEFAULT_TIMEZONE,
-      workingDays: DAY_OPTIONS.map((day) => day.value),
+      timezone,
+      workingDays: DAY_OPTIONS.map((d) => d.value),
       startTime: FULL_TIME_START,
       endTime: FULL_TIME_END,
     };
   }
 
-  return {
-    timezone: draft.timezone.trim() || DEFAULT_TIMEZONE,
-    workingDays: draft.workingDays,
-    startTime: draft.startTime,
-    endTime: draft.endTime,
-  };
+  const activeDays = DAY_OPTIONS
+    .filter((d) => draft.daySchedules[d.value as DayOfWeekName])
+    .map((d) => ({ day: d.value as DayOfWeekName, config: draft.daySchedules[d.value as DayOfWeekName]! }));
+
+  if (activeDays.length === 0) {
+    return { timezone, workingDays: [], startTime: DEFAULT_PART_TIME_START, endTime: DEFAULT_PART_TIME_END };
+  }
+
+  // Find first non-full-day time to use as primary; fall back to 00:00-23:59 if all are "Cả ngày"
+  const firstPartDay = activeDays.find((x) => !x.config.fullDay);
+  const startTime = firstPartDay?.config.startTime ?? FULL_TIME_START;
+  const endTime = firstPartDay?.config.endTime ?? FULL_TIME_END;
+
+  return { timezone, workingDays: activeDays.map((x) => x.day), startTime, endTime };
 }
 
 export function uniqueDays(days: string[]): DayOfWeekName[] {
@@ -250,14 +274,21 @@ export function validateCreateSchedules(form: SocialMediaCreateForm): CreateForm
 }
 
 export function validateScheduleDraft(draft: PageScheduleDraft, pageName: string): string {
-  if (draft.mode === "part" && draft.workingDays.length === 0) {
+  if (draft.mode !== "part") return "";
+
+  const activeDays = Object.entries(draft.daySchedules) as [DayOfWeekName, DaySchedule][];
+  if (activeDays.length === 0) {
     return `${pageName}: vui lòng chọn ít nhất một ngày hoạt động.`;
   }
-  if (!isValidScheduleTime(draft.startTime) || !isValidScheduleTime(draft.endTime)) {
-    return `${pageName}: giờ hoạt động phải đúng định dạng HH:mm.`;
-  }
-  if (draft.startTime === draft.endTime) {
-    return `${pageName}: giờ bắt đầu và giờ kết thúc không được trùng nhau.`;
+
+  for (const [, config] of activeDays) {
+    if (config.fullDay) continue;
+    if (!isValidScheduleTime(config.startTime) || !isValidScheduleTime(config.endTime)) {
+      return `${pageName}: giờ hoạt động phải đúng định dạng HH:mm.`;
+    }
+    if (config.startTime === config.endTime) {
+      return `${pageName}: giờ bắt đầu và giờ kết thúc không được trùng nhau.`;
+    }
   }
   return "";
 }
@@ -293,8 +324,5 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function deleteSocialMediaErrorMessage(error: unknown): string {
-  if (error instanceof ApiRequestError && error.status === 405) {
-    return "Backend hiện chưa bật DELETE /api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}. Endpoint này là soft delete integration theo mục 5.8 DOCX.";
-  }
   return apiErrorMessage(error, "Không thể xóa liên kết mạng xã hội.");
 }

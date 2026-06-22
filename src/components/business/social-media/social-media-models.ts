@@ -7,12 +7,16 @@ export type ScheduleMode = "full" | "part";
 export type ManageBotMode = "inactive" | "full" | "part";
 export type DayOfWeekName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 
+export interface DaySchedule {
+  fullDay: boolean;
+  startTime: string;
+  endTime: string;
+}
+
 export interface PageScheduleDraft {
   mode: ScheduleMode;
   timezone: string;
-  workingDays: DayOfWeekName[];
-  startTime: string;
-  endTime: string;
+  daySchedules: Partial<Record<DayOfWeekName, DaySchedule>>;
 }
 
 export interface SocialMediaCreatePageDraft {

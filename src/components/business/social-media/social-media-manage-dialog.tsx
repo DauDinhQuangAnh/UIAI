@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ export function SocialMediaIntegrationManageDialog({
   businesses,
   canUpdate,
   saving,
+  detailLoading,
   onOpenChange,
   onSaveConfig,
 }: {
@@ -33,6 +35,7 @@ export function SocialMediaIntegrationManageDialog({
   businesses: BusinessPartner[];
   canUpdate: boolean;
   saving: boolean;
+  detailLoading: boolean;
   onOpenChange: (open: boolean) => void;
   onSaveConfig: (row: SocialMediaTableRow, form: ManageConfigForm) => void;
 }) {
@@ -84,13 +87,28 @@ export function SocialMediaIntegrationManageDialog({
               onChange={(businessPartnerId) => setForm((current) => ({ ...current, businessPartnerId }))}
             />
             <DetailReadOnlyField label="App ID" value={integration.appId || "-"} required mono />
-            <DetailReadOnlyField label="Trang" value={displayPageName(page, integration)} />
-            <DetailReadOnlyField label="ID Trang" value={page?.externalPageId || "-"} mono />
+            {detailLoading ? (
+              <>
+                <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-center">
+                  <span className="text-sm font-medium text-brand-800">Trang</span>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[9.5rem_1fr] sm:items-center">
+                  <span className="text-sm font-medium text-brand-800">ID Trang</span>
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              </>
+            ) : (
+              <>
+                <DetailReadOnlyField label="Trang" value={displayPageName(page, integration)} />
+                <DetailReadOnlyField label="ID Trang" value={page?.externalPageId || "-"} mono />
+              </>
+            )}
 
             <ManageBotStatusEditor
               value={form.botMode}
               schedule={form.schedule}
-              disabled={saving || !canUpdate || !page?.id}
+              disabled={saving || !canUpdate || !page?.id || detailLoading}
               onModeChange={(botMode) => setForm((current) => ({ ...current, botMode }))}
               onScheduleChange={(schedule) => setForm((current) => ({ ...current, schedule }))}
             />
@@ -121,13 +139,16 @@ function ManageDialogAvatar({
   url?: string | null;
   fallback: string;
 }) {
-  if (url) {
+  const [imgError, setImgError] = useState(false);
+
+  if (url && !imgError) {
     return (
       <img
         src={url}
         alt=""
         className="size-16 rounded-pill border border-brand-700 bg-white object-cover p-0.5 shadow-xs"
         referrerPolicy="no-referrer"
+        onError={() => setImgError(true)}
       />
     );
   }

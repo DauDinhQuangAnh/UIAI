@@ -8,6 +8,7 @@ import type {
   MetaOAuthCallbackRequest,
   MetaOAuthCallbackResponse,
   MetaOAuthPage,
+  SocialMediaIntegrationDetail,
   SocialMediaIntegrationSummary,
   SocialMediaLinkedPage,
   SocialMediaPageSchedule,
@@ -24,6 +25,25 @@ export const socialMediaKeys = {
   integrationDetail: (businessPartnerId: string | undefined, integrationId: string | undefined) =>
     [...socialMediaKeys.integrations(businessPartnerId), "detail", integrationId ?? "missing"] as const,
 };
+
+export function useIntegrationDetail(
+  businessPartnerId: string | undefined,
+  integrationId: string | undefined,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: socialMediaKeys.integrationDetail(businessPartnerId, integrationId),
+    enabled: enabled && !!businessPartnerId && !!integrationId,
+    queryFn: async (): Promise<SocialMediaIntegrationSummary> =>
+      normalizeIntegration(
+        unwrap(
+          await apiClient.GET("/api/business-partners/{businessPartnerId}/social-media/integrations/{integrationId}", {
+            params: { path: { businessPartnerId: businessPartnerId!, integrationId: integrationId! } },
+          }),
+        ),
+      ),
+  });
+}
 
 export function useBusinessPartnersIntegrations(businessPartnerIds: string[], enabled = true) {
   return useQueries({
@@ -179,8 +199,8 @@ function normalizeProvider(provider: SocialMediaProvider): SocialMediaProvider {
   };
 }
 
-function normalizeIntegration(integration: SocialMediaIntegrationSummary): SocialMediaIntegrationSummary {
-  const provider = (integration as SocialMediaIntegrationSummary & { provider?: { name?: string; code?: string } | null }).provider;
+function normalizeIntegration(integration: SocialMediaIntegrationSummary | SocialMediaIntegrationDetail): SocialMediaIntegrationSummary {
+  const provider = (integration as SocialMediaIntegrationDetail).provider;
   return {
     id: integration.id ?? "",
     providerName: integration.providerName ?? provider?.name ?? integration.providerCode ?? provider?.code ?? "Provider",

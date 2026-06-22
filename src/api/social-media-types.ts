@@ -23,7 +23,14 @@ export interface SocialMediaIntegrationSummary {
   selectedPages?: SocialMediaLinkedPage[];
 }
 
+export interface SocialMediaIntegrationProviderRef {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface SocialMediaIntegrationDetail extends SocialMediaIntegrationSummary {
+  provider?: SocialMediaIntegrationProviderRef | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
