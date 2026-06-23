@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/common/empty-state";
 import { AgentConfigForm } from "@/components/agents/agent-config-form";
-import { useAgent } from "@/api/hooks/agents";
+import { useAgent, type Agent } from "@/api/hooks/agents";
 import { useSession } from "@/auth/session-store";
 import { isAdmin } from "@/auth/guards";
 import { ApiRequestError } from "@/api/errors";
@@ -13,13 +13,33 @@ export const Route = createFileRoute("/_app/agents/$agentId/")({
   component: AgentDetail,
 });
 
+const DEMO_AGENT_ID = "demo";
+
+const DEMO_AGENT = {
+  id: "demo",
+  agent_ref: "reo-messenger-01",
+  display_name: "REO Messenger Bot",
+  status: "active",
+  system_prompt: "Bạn là trợ lý AI thân thiện của REO – AI. Hãy trả lời ngắn gọn, chính xác bằng tiếng Việt. Nếu không chắc chắn, hãy nói thật thay vì đoán.",
+  model: "claude-sonnet-4-6",
+  debounce_ms: 500,
+  history_turns: 10,
+  max_output_tokens: 2048,
+  kg_enabled: true,
+  retrieval_config: { top_k: 5, vector_weight: 0.6, fts_weight: 0.4 },
+  created_at: "2026-06-01T08:00:00Z",
+} as unknown as Agent;
+
 function AgentDetail() {
   const { agentId } = Route.useParams();
   const role = useSession((s) => s.user?.role);
   const admin = isAdmin(role);
-  const { data: agent, isLoading, error } = useAgent(agentId);
+  const isDemoMode = agentId === DEMO_AGENT_ID;
+  const { data: apiAgent, isLoading, error } = useAgent(agentId);
 
-  if (isLoading) {
+  const agent = isDemoMode ? DEMO_AGENT : apiAgent;
+
+  if (!isDemoMode && isLoading) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 sm:p-8">
         <Skeleton className="h-8 w-48" />
@@ -28,7 +48,7 @@ function AgentDetail() {
     );
   }
 
-  if (error || !agent) {
+  if (!isDemoMode && (error || !agent)) {
     const notFound = error instanceof ApiRequestError && error.status === 404;
     return (
       <div className="mx-auto w-full max-w-3xl p-6 sm:p-8">
@@ -44,6 +64,8 @@ function AgentDetail() {
       </div>
     );
   }
+
+  if (!agent) return null;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 sm:p-8">

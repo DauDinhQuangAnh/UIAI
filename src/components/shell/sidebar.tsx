@@ -3,6 +3,7 @@ import { Link, useParams } from "@tanstack/react-router";
 import {
   Buildings,
   CaretDown,
+  House,
   Robot,
   FileText,
   Graph,
@@ -128,7 +129,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="flex h-full w-64 flex-col gap-1 border-r border-border bg-surface p-3" aria-label="Điều hướng chính">
       <div className="flex h-full flex-col gap-2 rounded-md border border-border bg-surface-2 p-2 shadow-sm">
       <Link
-        to="/agents"
+        to="/dashboard"
         onClick={onNavigate}
         className="mb-2 flex items-center gap-3 rounded-md border border-brand-100 bg-surface px-3 py-2 font-display text-text-primary shadow-xs"
       >
@@ -140,6 +141,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <span className="truncate text-[11px] font-medium text-text-secondary">reply enterprise operation</span>
         </span>
       </Link>
+
+      {/* Dashboard – always visible shortcut */}
+      <div className="flex flex-col gap-1 rounded-md bg-surface-2/70 py-1 shadow-xs">
+        <NavItem to="/dashboard" icon={House} label="Dashboard" onNavigate={onNavigate} />
+      </div>
 
       {hasBackendMenus ? (
         backendSections.map((section) => (
@@ -336,6 +342,8 @@ function iconForPage(page: AuthMenuPage): Icon {
   return FileText;
 }
 
+const DEMO_AGENT_ID = "demo";
+
 function AgentNavItem({
   agentId,
   to,
@@ -358,22 +366,11 @@ function AgentNavItem({
   onNavigate?: () => void;
   exact?: boolean;
 }) {
-  if (!agentId) {
-    return (
-      <span
-        className={cn(linkBase, "cursor-not-allowed text-text-dim opacity-60")}
-        title="Select or create an Agent first"
-      >
-        <IconCmp className="size-5" aria-hidden />
-        {label}
-      </span>
-    );
-  }
-
+  const effectiveId = agentId ?? DEMO_AGENT_ID;
   return (
     <Link
       to={to}
-      params={{ agentId }}
+      params={{ agentId: effectiveId }}
       onClick={onNavigate}
       activeOptions={exact ? { exact: true } : undefined}
       className={cn(linkBase, idle)}

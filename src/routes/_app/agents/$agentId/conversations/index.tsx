@@ -12,9 +12,32 @@ export const Route = createFileRoute("/_app/agents/$agentId/conversations/")({
   component: ConversationsScreen,
 });
 
+const DEMO_AGENT_ID = "demo";
+
+const DEMO_CONVERSATIONS: Conversation[] = [
+  { id: "conv-001", conversation_ref: "CONV-20260620-001", end_user_ref: "user_nguyenvana", status: "open", last_activity_at: "2026-06-20T15:32:00Z" },
+  { id: "conv-002", conversation_ref: "CONV-20260620-002", end_user_ref: "user_tranthib", status: "closed", last_activity_at: "2026-06-20T14:10:00Z" },
+  { id: "conv-003", conversation_ref: "CONV-20260619-003", end_user_ref: "user_levanc", status: "open", last_activity_at: "2026-06-19T09:45:00Z" },
+  { id: "conv-004", conversation_ref: "CONV-20260619-004", end_user_ref: "user_phamthid", status: "closed", last_activity_at: "2026-06-19T08:20:00Z" },
+  { id: "conv-005", conversation_ref: "CONV-20260618-005", end_user_ref: "user_hoangvane", status: "open", last_activity_at: "2026-06-18T16:55:00Z" },
+];
+
 function ConversationsScreen() {
   const { agentId } = Route.useParams();
-  const list = useConversations(agentId);
+  const isDemoMode = agentId === DEMO_AGENT_ID;
+  const apiList = useConversations(agentId);
+  const list = isDemoMode
+    ? {
+        items: DEMO_CONVERSATIONS,
+        isLoading: false,
+        isError: false,
+        error: null,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: apiList.fetchNextPage,
+        refetch: apiList.refetch,
+      }
+    : apiList;
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">

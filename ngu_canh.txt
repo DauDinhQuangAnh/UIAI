@@ -1,0 +1,4 @@
+đây là phần mềm dùng để cho người dùng có thể cấu hình kết nối chatbot tới các nền tảng mạng xã hội đầu tiên là MESENGER chúng tôi sẽ thử nghiệm trên đó đầu tiên. hiện tại API các menu Business manager (Business information và Social media) và Permission Management trong source (Role List, Feature Config, Page Config, Action Config) là đang hoạt động trên tài liệu mô tả API API Document - SAR Platform.pdf
+các API đã nối đúng và cũng đã đang hoạt động rồi tuy nhiên thì dò thiết kế flow và một và thứ cần được cải tiến nên là bạn hãy cân nhắc cải tiến hơn phần UI và UX dể làm chuyên nghiệp hơn trang web
+
+các thông tin trên mục đích cung cấp ngữ cảnhc cho bạn thôi Trang bây giờ đang cần 1 trang dashboard và khi đăng nhập sẽ hướng vào trang đó để coi thông tin, có thể tạo trang và sử dụgn các thong tin hưu ích để làm dashboard nha lên kế hoạch và kĩ hãy hóa thân thành ng dùng để biết cái nào thuật tiện cho nngười dùng

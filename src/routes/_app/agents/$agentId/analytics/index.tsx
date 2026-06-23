@@ -4,27 +4,41 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { KpiCard } from "@/components/analytics/kpi-card";
-import { useStats } from "@/api/hooks/stats";
+import { useStats, type Stats } from "@/api/hooks/stats";
 
 export const Route = createFileRoute("/_app/agents/$agentId/analytics/")({
   component: AnalyticsScreen,
 });
 
+const DEMO_AGENT_ID = "demo";
+
+const DEMO_STATS: Stats = {
+  conversations: 142,
+  messages_30d: 891,
+  kg_entities: 58,
+  kg_relations: 73,
+  pending_dedup: 3,
+  documents_by_status: { ready: 3, queued: 1 },
+};
+
 function AnalyticsScreen() {
   const { agentId } = Route.useParams();
-  const { data: stats, isLoading, isError, refetch } = useStats(agentId);
+  const isDemoMode = agentId === DEMO_AGENT_ID;
+  const { data: apiStats, isLoading, isError, refetch } = useStats(agentId);
+
+  const stats = isDemoMode ? DEMO_STATS : apiStats ?? undefined;
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
       <h1 className="font-display text-3xl font-semibold text-text-primary">Analytics</h1>
 
-      {isLoading ? (
+      {!isDemoMode && isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-2xl" />
           ))}
         </div>
-      ) : isError || !stats ? (
+      ) : !isDemoMode && (isError || !stats) ? (
         <EmptyState
           title="Không thể tải Analytics"
           description="Vui lòng thử lại."
@@ -34,7 +48,7 @@ function AnalyticsScreen() {
             </Button>
           }
         />
-      ) : (
+      ) : stats ? (
         <div className="flex flex-col gap-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <KpiCard label="Conversations" value={stats.conversations} icon={ChatsCircle} />
@@ -51,7 +65,7 @@ function AnalyticsScreen() {
 
           <DocumentsByStatus byStatus={stats.documents_by_status} />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

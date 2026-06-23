@@ -26,10 +26,32 @@ export const Route = createFileRoute("/_app/agents/$agentId/documents/")({
   component: DocumentsScreen,
 });
 
+const DEMO_AGENT_ID = "demo";
+
+const DEMO_DOCS: Document[] = [
+  { id: "doc-001", agent_id: "demo", title: "REO Product Manual 2026.pdf", format: "pdf", status: "ready", created_at: "2026-06-10T09:00:00Z" },
+  { id: "doc-002", agent_id: "demo", title: "FAQ Messenger Support.docx", format: "docx", status: "ready", created_at: "2026-06-12T14:30:00Z" },
+  { id: "doc-003", agent_id: "demo", title: "Quy trình xử lý khiếu nại.pdf", format: "pdf", status: "ready", created_at: "2026-06-15T10:00:00Z" },
+  { id: "doc-004", agent_id: "demo", title: "Company Policy 2026.docx", format: "docx", status: "queued", created_at: "2026-06-22T08:00:00Z" },
+];
+
 function DocumentsScreen() {
   const { agentId } = Route.useParams();
   const admin = isAdmin(useSession((s) => s.user?.role));
-  const list = useDocuments(agentId);
+  const isDemoMode = agentId === DEMO_AGENT_ID;
+  const apiList = useDocuments(agentId);
+  const list = isDemoMode
+    ? {
+        items: DEMO_DOCS,
+        isLoading: false,
+        isError: false,
+        error: null,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: apiList.fetchNextPage,
+        refetch: apiList.refetch,
+      }
+    : apiList;
   const upload = useUploadDocument(agentId);
   const del = useDeleteDocument(agentId);
 

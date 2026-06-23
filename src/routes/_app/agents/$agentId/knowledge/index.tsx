@@ -7,13 +7,21 @@ import { Label } from "@/components/ui/label";
 import { KeysetList } from "@/components/common/keyset-list";
 import { EmptyState } from "@/components/common/empty-state";
 import { CandidateCard } from "@/components/knowledge/candidate-card";
-import { useCandidates } from "@/api/hooks/knowledge";
+import { useCandidates, type Candidate } from "@/api/hooks/knowledge";
 import { useSession } from "@/auth/session-store";
 import { isAdmin } from "@/auth/guards";
 
 export const Route = createFileRoute("/_app/agents/$agentId/knowledge/")({
   component: KnowledgeScreen,
 });
+
+const DEMO_AGENT_ID = "demo";
+
+const DEMO_CANDIDATES: Candidate[] = [
+  { id: "cand-001", entity_a_id: "ent-REO-AI-Platform", entity_b_id: "ent-REO-Platform", similarity: 0.91, status: "pending" },
+  { id: "cand-002", entity_a_id: "ent-Messenger-Bot", entity_b_id: "ent-Facebook-Messenger-Bot", similarity: 0.84, status: "pending" },
+  { id: "cand-003", entity_a_id: "ent-Customer-Support", entity_b_id: "ent-CS-Support", similarity: 0.78, status: "pending" },
+];
 
 const STATUS_OPTIONS = ["pending", "merged", "dismissed"] as const;
 const STATUS_LABEL: Record<(typeof STATUS_OPTIONS)[number], string> = {
@@ -26,7 +34,20 @@ function KnowledgeScreen() {
   const { agentId } = Route.useParams();
   const admin = isAdmin(useSession((s) => s.user?.role));
   const [status, setStatus] = useState<string>("pending");
-  const list = useCandidates(agentId, status);
+  const isDemoMode = agentId === DEMO_AGENT_ID;
+  const apiList = useCandidates(agentId, status);
+  const list = isDemoMode
+    ? {
+        items: status === "pending" ? DEMO_CANDIDATES : [],
+        isLoading: false,
+        isError: false,
+        error: null,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        fetchNextPage: apiList.fetchNextPage,
+        refetch: apiList.refetch,
+      }
+    : apiList;
 
   // Reconcile-from-200: a merged/dismissed card reports its id here so it leaves the
   // current (e.g. pending) view immediately, before the invalidated refetch lands.

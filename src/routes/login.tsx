@@ -22,7 +22,7 @@ export const Route = createFileRoute("/login")({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
   beforeLoad: () => {
-    if (useSession.getState().accessToken) throw redirect({ to: "/agents" });
+    if (useSession.getState().accessToken) throw redirect({ to: "/dashboard" });
   },
   component: LoginScreen,
 });
@@ -41,7 +41,7 @@ function LoginScreen() {
   const onSubmit = handleSubmit((values) => {
     setFormError(null);
     login.mutate(values, {
-      onSuccess: () => navigate({ to: redirectTo ?? "/agents" }),
+      onSuccess: () => navigate({ to: redirectTo ?? "/dashboard" }),
       onError: (err) => {
         if (err instanceof AuthRequestError && err.status === 400) {
           setFormError("Vui lòng kiểm tra thông tin và thử lại.");
